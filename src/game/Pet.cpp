@@ -622,6 +622,29 @@ HappinessState Pet::GetHappinessState()
         return CONTENT;
 }
 
+float Pet::GetHappinessDamageMod()
+{
+    if (getPetType() != HUNTER_PET)
+        return 1.0f;
+    else
+    {
+        switch(GetHappinessState())
+        {
+            case HAPPY:
+                // 125% of normal damage
+                return 1.25f;
+            case CONTENT:
+                // 100% of normal damage
+                return 1.0f;
+            case UNHAPPY:
+                // 75% of normal damage
+                return 0.75f;
+            default:
+                return 1.0f;
+        }
+    }
+}
+
 bool Pet::CanTakeMoreActiveSpells(uint32 spellid)
 {
     uint8  activecount = 1;
