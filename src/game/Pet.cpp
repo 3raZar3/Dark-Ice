@@ -799,10 +799,12 @@ bool Pet::InitStatsForLevel(uint32 petlevel, Unit* owner)
     CreatureInfo const *cinfo = GetCreatureInfo();
     assert(cinfo);
 
-    if(!owner)
+    if (!owner)
     {
+        // Do not remove *owner as function argument, GetOwner() won't work on summoning pet if the owner
+        // is no player, because pet is not yet in world; see ObjectAccessor::GetUnit
         owner = GetOwner();
-        if(!owner)
+        if (!owner)
         {
             sLog.outError("attempt to summon pet (Entry %u) without owner! Attempt terminated.", cinfo->Entry);
             return false;
@@ -813,171 +815,155 @@ bool Pet::InitStatsForLevel(uint32 petlevel, Unit* owner)
 
     SetLevel(petlevel);
 
-    SetMeleeDamageSchool(SpellSchools(cinfo->dmgschool));
-
-    SetModifierValue(UNIT_MOD_ARMOR, BASE_VALUE, float(petlevel*50));
-
-    SetAttackTime(BASE_ATTACK, BASE_ATTACK_TIME);
-    SetAttackTime(OFF_ATTACK, BASE_ATTACK_TIME);
-    SetAttackTime(RANGED_ATTACK, BASE_ATTACK_TIME);
-
     SetFloatValue(UNIT_MOD_CAST_SPEED, 1.0);
 
-    CreatureFamilyEntry const* cFamily = sCreatureFamilyStore.LookupEntry(cinfo->family);
-    if(cFamily && cFamily->minScale > 0.0f && getPetType()==HUNTER_PET)
+    // find stored pet level stats
+    PetLevelInfo const* pInfo = sObjectMgr.GetPetLevelInfo(creature_ID, petlevel);
+    if (pInfo)
     {
-        float scale;
-        if (getLevel() >= cFamily->maxScaleLevel)
-            scale = cFamily->maxScale;
-        else if (getLevel() <= cFamily->minScaleLevel)
-            scale = cFamily->minScale;
-        else
-            scale = cFamily->minScale + float(getLevel() - cFamily->minScaleLevel) / cFamily->maxScaleLevel * (cFamily->maxScale - cFamily->minScale);
+        SetCreateHealth(pInfo->health);
+        SetCreateMana(pInfo->mana);
 
-        SetFloatValue(OBJECT_FIELD_SCALE_X, scale);
+        SetModifierValue(UNIT_MOD_ARMOR, BASE_VALUE, float(pInfo->armor));
+
+        SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, float(pInfo->mindmg));
+        SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, float(pInfo->maxdmg));
+
+        for( int i = STAT_STRENGTH; i < MAX_STATS; ++i)
+        {
+            SetCreateStat(Stats(i),  float(pInfo->stats[i]));
+        }
     }
-    m_bonusdamage = 0;
-
-    int32 createResistance[MAX_SPELL_SCHOOL] = {0,0,0,0,0,0,0};
-
-    if(cinfo && getPetType() != HUNTER_PET)
+    else
     {
-        createResistance[SPELL_SCHOOL_HOLY]   = cinfo->resistance1;
-        createResistance[SPELL_SCHOOL_FIRE]   = cinfo->resistance2;
-        createResistance[SPELL_SCHOOL_NATURE] = cinfo->resistance3;
-        createResistance[SPELL_SCHOOL_FROST]  = cinfo->resistance4;
-        createResistance[SPELL_SCHOOL_SHADOW] = cinfo->resistance5;
-        createResistance[SPELL_SCHOOL_ARCANE] = cinfo->resistance6;
+        //maybe different handling for pets summoned by creatures (fixed states from creatureinfo?)
+
+        // use some fake values
+        SetCreateHealth(28 + 30*petlevel);
+        SetCreateMana(28 + 10*petlevel);
+
+        SetModifierValue(UNIT_MOD_ARMOR, BASE_VALUE, float(petlevel*50));
+
+        // 0.5dps/lvl, damagerange = petlevel/2
+        SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, float(petlevel - (petlevel / 4)));
+        SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, float(petlevel + (petlevel / 4)));
+
+        SetCreateStat(STAT_STRENGTH,  22 + petlevel  );
+        SetCreateStat(STAT_AGILITY,   22 + petlevel/2);
+        SetCreateStat(STAT_STAMINA,   25 + petlevel  );
+        SetCreateStat(STAT_INTELLECT, 28 + petlevel/2);
+        SetCreateStat(STAT_SPIRIT,    27 + petlevel/2);
     }
 
-    switch(getPetType())
+    // custom stat calculation
+    switch (getPetType())
     {
         case SUMMON_PET:
+        case GUARDIAN_PET:
         {
-            if(owner->GetTypeId() == TYPEID_PLAYER)
+            // as the creature_template entries for summoned and guardian pets are just used for
+            // pets (not for normal creatures as well), we can use some entries
+            SetAttackTime(BASE_ATTACK, cinfo->baseattacktime);
+            SetAttackTime(OFF_ATTACK, cinfo->baseattacktime);
+            SetAttackTime(RANGED_ATTACK, cinfo->rangeattacktime);
+            SetMeleeDamageSchool(SpellSchools(cinfo->dmgschool));
+
+            SetModifierValue(UNIT_MOD_RESISTANCE_HOLY,   BASE_VALUE, float(cinfo->resistance1));
+            SetModifierValue(UNIT_MOD_RESISTANCE_FIRE,   BASE_VALUE, float(cinfo->resistance2));
+            SetModifierValue(UNIT_MOD_RESISTANCE_NATURE, BASE_VALUE, float(cinfo->resistance3));
+            SetModifierValue(UNIT_MOD_RESISTANCE_FROST,  BASE_VALUE, float(cinfo->resistance4));
+            SetModifierValue(UNIT_MOD_RESISTANCE_SHADOW, BASE_VALUE, float(cinfo->resistance5));
+            SetModifierValue(UNIT_MOD_RESISTANCE_ARCANE, BASE_VALUE, float(cinfo->resistance6));
+
+            float statBonus[MAX_STATS] = {0, 0, 0, 0, 0},
+                  armorBonus = 0,
+                  apBonus = 0,
+                  bonusDamage = 0;
+
+            // some pets scale not dynamically with master's stats (don't have scaling auras),
+            // we just add the bonus here as unit mods
+            switch (cinfo->Entry)
             {
-                switch(owner->getClass())
+                // mage's Water Elemental
+                case 510:
+                case 37994:
                 {
-                    case CLASS_WARLOCK:
-                    {
-
-                        //the damage bonus used for pets is either fire or shadow damage, whatever is higher
-                        uint32 fire  = owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + SPELL_SCHOOL_FIRE);
-                        uint32 shadow = owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + SPELL_SCHOOL_SHADOW);
-                        uint32 val  = (fire > shadow) ? fire : shadow;
-
-                        SetBonusDamage(int32 (val * 0.15f));
-                        //bonusAP += val * 0.57;
-                        break;
-                    }
-                    case CLASS_MAGE:
-                    {
-                                                            //40% damage bonus of mage's frost damage
-                        float val = owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + SPELL_SCHOOL_FROST) * 0.4;
-                        if(val < 0)
-                            val = 0;
-                        SetBonusDamage( int32(val));
-                        break;
-                    }
-                    default:
-                        break;
+                    statBonus[STAT_STAMINA] = owner->GetStat(STAT_STAMINA) * 0.3f;
+                    statBonus[STAT_INTELLECT] = owner->GetStat(STAT_INTELLECT) * 0.3f;
+                    armorBonus = owner->GetArmor() * 0.35f;
+                    bonusDamage = owner->SpellBaseDamageBonus(SPELL_SCHOOL_MASK_FROST) * 0.4f;
+                    break;
                 }
-            }
-
-            SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, float(petlevel - (petlevel / 4)) );
-            SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, float(petlevel + (petlevel / 4)) );
-
-            //SetModifierValue(UNIT_MOD_ATTACK_POWER, BASE_VALUE, float(cinfo->attackpower));
-
-            PetLevelInfo const* pInfo = sObjectMgr.GetPetLevelInfo(creature_ID, petlevel);
-            if(pInfo)                                       // exist in DB
-            {
-                SetCreateHealth(pInfo->health);
-                SetCreateMana(pInfo->mana);
-
-                if(pInfo->armor > 0)
-                    SetModifierValue(UNIT_MOD_ARMOR, BASE_VALUE, float(pInfo->armor));
-
-                for(int stat = 0; stat < MAX_STATS; ++stat)
+                // priest's Shadowfiend
+                case 19668:
                 {
-                    SetCreateStat(Stats(stat), float(pInfo->stats[stat]));
+                    apBonus = owner->SpellBaseDamageBonus(SPELL_SCHOOL_MASK_SHADOW) * 0.565f;
+                    break;
                 }
-            }
-            else                                            // not exist in DB, use some default fake data
-            {
-                sLog.outErrorDb("Summoned pet (Entry: %u) not have pet stats data in DB",cinfo->Entry);
+                // Feral Spirit Wolves
+                case 29264:
+                {
+                    // 30% of owners stamina, 35% of owners armor
+                    statBonus[STAT_STAMINA] = owner->GetStat(STAT_STAMINA) * 0.3f;
+                    armorBonus = owner->GetArmor() * 0.35f;
 
-                // remove elite bonuses included in DB values
-                SetCreateHealth(uint32(((float(cinfo->maxhealth) / cinfo->maxlevel) / (1 + 2 * cinfo->rank)) * petlevel) );
-                SetCreateMana(  uint32(((float(cinfo->maxmana)   / cinfo->maxlevel) / (1 + 2 * cinfo->rank)) * petlevel) );
+                    // 30% of masters attack power, modified by dummy aura
+                    apBonus = 30;
+                    if (Aura* pDummy = owner->GetDummyAura(63271))
+                        apBonus += pDummy->GetModifier()->m_miscvalue;
+                    apBonus = apBonus * owner->GetTotalAttackPowerValue(BASE_ATTACK) / 100;
 
-                SetCreateStat(STAT_STRENGTH, 22);
-                SetCreateStat(STAT_AGILITY, 22);
-                SetCreateStat(STAT_STAMINA, 25);
-                SetCreateStat(STAT_INTELLECT, 28);
-                SetCreateStat(STAT_SPIRIT, 27);
+                    // TODO: hitchance with spell 61783 (cast manually...? not in petspell dbc's :-/)
+                    break;
+                }
+                // Mirror Image
+                case 31216:
+                {
+                    bonusDamage = owner->GetMaxSpellBaseDamageBonus(SPELL_SCHOOL_MASK_MAGIC);
+                    break;
+                }
+                default:
+                    break;
             }
+
+            for (uint8 i = 0; i < MAX_STATS; i++)
+                HandleStatModifier(UnitMods(UNIT_MOD_STAT_START + i), TOTAL_VALUE, statBonus[i] > 0 ? statBonus[i] : 0, true);
+
+            HandleStatModifier(UNIT_MOD_ARMOR, TOTAL_VALUE, armorBonus > 0 ? armorBonus : 0, true);
+            HandleStatModifier(UNIT_MOD_ATTACK_POWER, TOTAL_VALUE, apBonus > 0 ? apBonus : 0, true);
+            SetBonusDamage(bonusDamage > 0 ? bonusDamage : 0);
+
             break;
         }
         case HUNTER_PET:
         {
+            // hunter pets always use base attack time and do physical damage
+            SetAttackTime(BASE_ATTACK, BASE_ATTACK_TIME);
+            SetAttackTime(OFF_ATTACK, BASE_ATTACK_TIME);
+            SetAttackTime(RANGED_ATTACK, BASE_ATTACK_TIME);
+            SetMeleeDamageSchool(SPELL_SCHOOL_NORMAL);
+
             SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, sObjectMgr.GetXPForPetLevel(petlevel));
-            //these formula may not be correct; however, it is designed to be close to what it should be
-            //this makes dps 0.5 of pets level
-            SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, float(petlevel - (petlevel / 4)) );
-            //damage range is then petlevel / 2
-            SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, float(petlevel + (petlevel / 4)) );
-            //damage is increased afterwards as strength and pet scaling modify attack power
 
-            //stored standard pet stats are entry 1 in pet_levelinfo
-            PetLevelInfo const* pInfo = sObjectMgr.GetPetLevelInfo(creature_ID, petlevel);
-            if(pInfo)                                       // exist in DB
+            // size scaling
+            CreatureFamilyEntry const* cFamily = sCreatureFamilyStore.LookupEntry(cinfo->family);
+            if (cFamily && cFamily->minScale > 0.0f && getPetType()==HUNTER_PET)
             {
-                SetCreateHealth(pInfo->health);
-                SetModifierValue(UNIT_MOD_ARMOR, BASE_VALUE, float(pInfo->armor));
-                //SetModifierValue(UNIT_MOD_ATTACK_POWER, BASE_VALUE, float(cinfo->attackpower));
+                float scale;
+                if (getLevel() >= cFamily->maxScaleLevel)
+                    scale = cFamily->maxScale;
+                else if (getLevel() <= cFamily->minScaleLevel)
+                    scale = cFamily->minScale;
+                else
+                    scale = cFamily->minScale + float(getLevel() - cFamily->minScaleLevel) / cFamily->maxScaleLevel * (cFamily->maxScale - cFamily->minScale);
 
-                for( int i = STAT_STRENGTH; i < MAX_STATS; ++i)
-                {
-                    SetCreateStat(Stats(i),  float(pInfo->stats[i]));
-                }
-            }
-            else                                            // not exist in DB, use some default fake data
-            {
-                sLog.outErrorDb("Hunter pet levelstats missing in DB");
-
-                // remove elite bonuses included in DB values
-                SetCreateHealth( uint32(((float(cinfo->maxhealth) / cinfo->maxlevel) / (1 + 2 * cinfo->rank)) * petlevel) );
-
-                SetCreateStat(STAT_STRENGTH, 22);
-                SetCreateStat(STAT_AGILITY, 22);
-                SetCreateStat(STAT_STAMINA, 25);
-                SetCreateStat(STAT_INTELLECT, 28);
-                SetCreateStat(STAT_SPIRIT, 27);
+                SetFloatValue(OBJECT_FIELD_SCALE_X, scale);
             }
             break;
         }
-        case GUARDIAN_PET:
-            SetUInt32Value(UNIT_FIELD_PETEXPERIENCE, 0);
-            SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, 1000);
-
-            SetCreateMana(28 + 10*petlevel);
-            SetCreateHealth(28 + 30*petlevel);
-
-            // FIXME: this is wrong formula, possible each guardian pet have own damage formula
-            //these formula may not be correct; however, it is designed to be close to what it should be
-            //this makes dps 0.5 of pets level
-            SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, float(petlevel - (petlevel / 4)));
-            //damage range is then petlevel / 2
-            SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, float(petlevel + (petlevel / 4)));
-            break;
         default:
-            sLog.outError("Pet have incorrect type (%u) for levelup.", getPetType());
-            break;
+             break;
     }
-
-    for (int i = SPELL_SCHOOL_HOLY; i < MAX_SPELL_SCHOOL; ++i)
-        SetModifierValue(UnitMods(UNIT_MOD_RESISTANCE_START + i), BASE_VALUE, float(createResistance[i]));
 
     UpdateAllStats();
 
@@ -1910,6 +1896,263 @@ void Pet::CastPetAura(PetAura const* aura)
     }
     else
         CastSpell(this, auraId, true);
+}
+
+void Pet::UpdateScalingAuras()
+{
+    // there exists temp. summoned pets with scaling auras
+    // they should not scale dynamically
+    if (isTemporarySummoned())
+        return;
+
+    for (AuraList::const_iterator itr = m_scalingauras.begin(); itr != m_scalingauras.end(); ++itr)
+    {
+        SpellEntry const* spellInfo = (*itr)->GetSpellProto();
+        // check if we need to update aura
+        int32 amount = CalculateSpellDamage(spellInfo, (*itr)->GetEffIndex(), 0 ,this);
+        if ((*itr)->GetModifier()->m_amount == amount)
+            continue;
+
+        // update aura amount
+        (*itr)->UpdateModifierAmount(amount);
+    }
+}
+
+uint32 Pet::CalcScalingAuraBonus(SpellEntry const* spellInfo, uint8 effect_index)
+{
+    Player* owner = GetCharmerOrOwnerPlayerOrPlayerItself();
+    if (!owner || spellInfo->Effect[effect_index] != SPELL_EFFECT_APPLY_AURA)
+        return 0;
+
+    uint32 ownerValue = 0;
+    uint32 bonusValue = 0;
+    float scale = 0;
+
+    switch (spellInfo->EffectApplyAuraName[effect_index])
+    {
+        case SPELL_AURA_MOD_DAMAGE_DONE:
+        {
+            switch (spellInfo->Id)
+            {
+                // hunter pet scaling aura
+                case 34902:
+                {
+                    ownerValue = owner->GetTotalAttackPowerValue(RANGED_ATTACK);
+                    scale = 0.1287f;
+
+                    // search for "Wild Hunt"
+                    for (PetSpellMap::const_iterator itr = m_spells.begin(); itr != m_spells.end(); ++itr)
+                        if (itr->second.state != PETSPELL_REMOVED)
+                        {
+                            SpellEntry const* spellInfo = sSpellStore.LookupEntry(itr->first);
+                            if (!spellInfo || spellInfo->SpellIconID == 3748)
+                                continue;
+                            scale *= float(spellInfo->EffectBasePoints[1] +101) / 100.0f;
+                            break;
+                         }
+                    break;
+                }
+                // warlock pet scaling aura
+                case 34947:
+                {
+                    ownerValue = owner->GetMaxSpellBaseDamageBonus(SpellSchoolMask(SPELL_SCHOOL_MASK_FIRE | SPELL_SCHOOL_MASK_SHADOW));
+                    scale = 0.15f;
+                    break;
+                }
+                // dk pet scaling aura, unknown for now
+                case 54566:
+                    break;
+            }
+            break;
+        }
+        case SPELL_AURA_MOD_STAT:
+        {
+            // only single stats in scaling auras (otherwise scaling not possible)
+            if (spellInfo->EffectMiscValue[effect_index] < 0 || spellInfo->EffectMiscValue[effect_index] > 4)
+                return 0;
+
+            ownerValue = uint32(owner->GetTotalStatValue(Stats(spellInfo->EffectMiscValue[effect_index])));
+
+            switch(spellInfo->EffectMiscValue[effect_index])
+            {
+                case STAT_STRENGTH:
+                {
+                    // just dk scaling aura here
+                    scale = 0.678f;
+
+                    // search for "Ravenous Dead" and "Glyph of Ghoul"
+                    AuraList const& mDummy = owner->GetAurasByType(SPELL_AURA_DUMMY);
+                    for(Unit::AuraList::const_iterator itr = mDummy.begin(); itr != mDummy.end(); ++itr)
+                        if ((*itr)->GetSpellProto()->SpellIconID == 3010 || (*itr)->GetId() == 58686)
+                            scale *= float((*itr)->GetModifier()->m_amount + 100) / 100.0f;
+
+                    break;
+                }
+                case STAT_STAMINA:
+                {
+                    scale = 0.3f;
+
+                    switch (spellInfo->Id)
+                    {
+                        // hunter pet scaling aura
+                        case 34902:
+                        {
+                            scale = 0.4493f;
+
+                            // search for "Wild Hunt"
+                            for (PetSpellMap::const_iterator itr = m_spells.begin(); itr != m_spells.end(); ++itr)
+                                if (itr->second.state != PETSPELL_REMOVED)
+                                {
+                                    SpellEntry const* spellInfo = sSpellStore.LookupEntry(itr->first);
+                                    if (!spellInfo || spellInfo->SpellIconID != 3748)
+                                        continue;
+                                    scale *= float(spellInfo->EffectBasePoints[0] +101) / 100.0f;
+                                    break;
+                                 }
+                            break;
+                        }
+                        // wl scaling aura
+                        case 34947:
+                        {
+                            scale = 0.7f;
+                            break;
+                        }
+                        // dk pet scaling aura
+                        case 54566:
+                        {
+                            scale = 0.3928f;
+
+                            // search for "Ravenous Dead" and "Glyph of Ghoul"
+                            AuraList const& mDummy = owner->GetAurasByType(SPELL_AURA_DUMMY);
+                            for(AuraList::const_iterator itr = mDummy.begin(); itr != mDummy.end(); ++itr)
+                                if ((*itr)->GetSpellProto()->SpellIconID == 3010 || (*itr)->GetId() == 58686)
+                                     scale *= float((*itr)->GetModifier()->m_amount +100) / 100.0f;
+                            break;
+                        }
+                    }
+                    break;
+                }
+                case STAT_INTELLECT:
+                {
+                    // just warlock pet aura here
+                    scale = 0.3f;
+                    break;
+                }
+            }
+            break;
+        }
+        case SPELL_AURA_MOD_ATTACK_POWER:
+        {
+            switch (spellInfo->Id)
+            {
+                // hunter pet scaling aura
+                case 34902:
+                {
+                    ownerValue = uint32(owner->GetTotalAttackPowerValue(RANGED_ATTACK));
+                    scale = 0.22f;
+
+                    // search for "Wild Hunt"
+                    for (PetSpellMap::const_iterator itr = m_spells.begin(); itr != m_spells.end(); ++itr)
+                        if (itr->second.state != PETSPELL_REMOVED)
+                        {
+                            SpellEntry const* spellInfo = sSpellStore.LookupEntry(itr->first);
+                            if (!spellInfo || spellInfo->SpellIconID != 3748)
+                                continue;
+                            scale *= float(spellInfo->EffectBasePoints[1] + 101) / 100.0f;
+                            break;
+                         }
+
+                    // search for "Hunter vs. Wild"
+                    AuraList const& mAttackPowerMod = owner->GetAurasByType(SPELL_AURA_MOD_ATTACK_POWER_OF_STAT_PERCENT);
+                    for(AuraList::const_iterator itr = mAttackPowerMod.begin(); itr != mAttackPowerMod.end(); ++itr)
+                        if ((*itr)->GetSpellProto()->SpellIconID == 3647)
+                            bonusValue += (*itr)->GetModifier()->m_amount * owner->GetTotalStatValue(Stats((*itr)->GetModifier()->m_miscvalue)) / 100;
+
+                    break;
+                }
+                // warlock pet scaling aura
+                case 34947:
+                {
+                    ownerValue = owner->GetMaxSpellBaseDamageBonus(SpellSchoolMask(SPELL_SCHOOL_MASK_FIRE | SPELL_SCHOOL_MASK_SHADOW));
+                    scale = 0.57f;
+                    break;
+                }
+            }
+            break;
+        }
+        case SPELL_AURA_MOD_RESISTANCE:
+        {
+            // only single schools in scaling auras (otherwise scaling not possible)
+            SpellSchools school = GetFirstSchoolInMask(SpellSchoolMask(spellInfo->EffectMiscValue[effect_index]));
+            ownerValue = owner->GetResistance(school);
+
+            switch(school)
+            {
+                // armor
+                case SPELL_SCHOOL_NORMAL:
+                {
+                    scale = 0.35f;
+
+                    // hunter pet scaling aura
+                    if (spellInfo->Id == 34904)
+                        scale = 0.4497f;
+                    break;
+                }
+                // all other resistances
+                default:
+                {
+                    scale = 0.4f;
+                    break;
+                }
+            }
+            break;
+        }
+        case SPELL_AURA_MOD_DAMAGE_PERCENT_DONE:
+        case SPELL_AURA_MOD_POWER_REGEN:
+            // no information here for now
+            break;
+        case SPELL_AURA_MOD_SPELL_HIT_CHANCE:
+        case SPELL_AURA_MOD_HIT_CHANCE:
+        {
+            // find maximum of owners hit chances (fractions dropped)
+            float hit[3] = {owner->m_modMeleeHitChance, owner->m_modRangedHitChance, owner->m_modSpellHitChance};
+            for (uint8 i = 0; i<3; i++)
+                if (ownerValue < uint32(hit[i]))
+                    ownerValue = uint32(hit[i]);
+            // all known auras scale 1:1
+            scale = 1.0f;
+            break;
+        }
+        case SPELL_AURA_MELEE_SLOW:
+        {
+            // find owners maximum haste (== minimum speedPct factor)
+            float cur = 1.0f, factor[3] = {owner->m_modAttackSpeedPct[BASE_ATTACK], m_modAttackSpeedPct[RANGED_ATTACK], owner->GetFloatValue(UNIT_MOD_CAST_SPEED)};
+            for (uint8 i = 0; i<3; i++)
+                if (cur > factor[i])
+                    cur = factor[i];
+            // get percent haste out of factor
+            ownerValue = uint32(100.0f/cur -100);
+
+            // just death knight ghoul aura here for now, 1:1
+            scale = 1.0f;
+        }
+        case SPELL_AURA_MOD_EXPERTISE:
+        {
+            // expertise scales proportional to owners hitchance (fractions dropped)
+            // (e.g. 5% hitchance owner -> 5% less chance, that the attack ist dodged/parried)
+            // note: 1 point expertise gives 0.25% less chance to fail
+            float cur = 0, hit[3] = {owner->m_modMeleeHitChance, owner->m_modRangedHitChance, owner->m_modSpellHitChance};
+            for (uint8 i = 0; i<3; i++)
+                if (cur < hit[i])
+                    cur = hit[i];
+            bonusValue = uint32(4*cur);
+            break;
+        }
+        default:
+            return 0;
+    }
+
+    return uint32(ownerValue * scale) + bonusValue;
 }
 
 struct DoPetLearnSpell
