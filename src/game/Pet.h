@@ -173,7 +173,7 @@ class Pet : public Creature
         void GivePetXP(uint32 xp);
         void GivePetLevel(uint32 level);
         void SynchronizeLevelWithOwner();
-        bool InitStatsForLevel(uint32 level, Unit* owner = NULL);
+        bool InitStatsForLevel(uint32 level);
         bool HaveInDiet(ItemPrototype const* item) const;
         uint32 GetCurrentFoodBenefitLevel(uint32 itemlevel);
         void SetDuration(int32 dur) { m_duration = dur; }
@@ -183,12 +183,15 @@ class Pet : public Creature
 
         bool UpdateStats(Stats stat);
         bool UpdateAllStats();
-        void UpdateResistances(uint32 school);
+        // void UpdateResistances(uint32 school);
         void UpdateArmor();
         void UpdateMaxHealth();
         void UpdateMaxPower(Powers power);
         void UpdateAttackPowerAndDamage(bool ranged = false);
         void UpdateDamagePhysical(WeaponAttackType attType);
+        void UpdateScalingAuras();
+
+        uint32 CalcScalingAuraBonus(SpellEntry const* spellInfo, uint8 effect_index);
 
         bool CanTakeMoreActiveSpells(uint32 SpellIconID);
         void ToggleAutocast(uint32 spellid, bool apply);
@@ -219,6 +222,7 @@ class Pet : public Creature
 
         PetSpellMap     m_spells;
         AutoSpellList   m_autospells;
+        AuraList        m_scalingauras;
 
         void InitPetCreateSpells();
 
