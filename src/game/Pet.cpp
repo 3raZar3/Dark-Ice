@@ -1913,8 +1913,15 @@ void Pet::UpdateScalingAuras()
         if ((*itr)->GetModifier()->m_amount == amount)
             continue;
 
+        // temp. hack to restore health/mana after reapplying aura modifier
+        uint32 health = GetHealth();
+        uint32 mana   = GetPower(POWER_MANA);
+
         // update aura amount
         (*itr)->UpdateModifierAmount(amount);
+
+        SetHealth(health <= GetMaxHealth() ? health : GetMaxHealth());
+        SetPower(POWER_MANA, mana <= GetMaxPower(POWER_MANA) ? mana : GetMaxPower(POWER_MANA));
     }
 }
 
