@@ -598,6 +598,22 @@ void Aura::SetModifier(AuraType t, int32 a, uint32 pt, int32 miscValue)
     m_modifier.periodictime = pt;
 }
 
+void Aura::UpdateModifierAmount(int32 amount)
+{
+    // use this method, to modify modifier.amount when aura is already applied
+    AuraType aura = m_modifier.m_auraname;
+
+    SetInUse(true);
+    if(aura < TOTAL_AURAS)
+    {
+        // maybe we can find a better way here?
+        (*this.*AuraHandler [aura])(false, true);
+        m_modifier.m_amount = amount;
+        (*this.*AuraHandler [aura])(true, true);
+    }
+    SetInUse(false);
+}
+
 void Aura::Update(uint32 diff)
 {
     if (m_duration > 0)
