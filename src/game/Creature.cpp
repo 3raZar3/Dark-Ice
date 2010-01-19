@@ -264,10 +264,16 @@ bool Creature::InitEntry(uint32 Entry, uint32 team, const CreatureData *data )
 
     SetFloatValue(UNIT_MOD_CAST_SPEED, 1.0f);
 
+<<<<<<< HEAD
     SetSpeed(MOVE_WALK,     cinfo->speed );
     SetSpeed(MOVE_RUN,      cinfo->speed );
     SetSpeed(MOVE_SWIM,     cinfo->speed );
     SetSpeed(MOVE_FLIGHT,   cinfo->speed );
+=======
+    SetSpeedRate(MOVE_WALK, cinfo->speed );
+    SetSpeedRate(MOVE_RUN,  cinfo->speed );
+    SetSpeedRate(MOVE_SWIM, cinfo->speed );
+>>>>>>> 8a90affe7295b69c7d6d37477bad3646faddaaef
 
     SetFloatValue(OBJECT_FIELD_SCALE_X, cinfo->scale);
 
@@ -377,9 +383,9 @@ void Creature::Update(uint32 diff)
                 //Call AI respawn virtual function
                 i_AI->JustRespawned();
 
-                uint16 poolid = sPoolMgr.IsPartOfAPool(GetGUIDLow(), GetTypeId());
+                uint16 poolid = GetDBTableGUIDLow() ? sPoolMgr.IsPartOfAPool<Creature>(GetDBTableGUIDLow()) : 0;
                 if (poolid)
-                    sPoolMgr.UpdatePool(poolid, GetGUIDLow(), TYPEID_UNIT);
+                    sPoolMgr.UpdatePool<Creature>(poolid, GetDBTableGUIDLow());
                 else
                     GetMap()->Add(this);
             }
@@ -559,6 +565,8 @@ void Creature::DoFleeToGetAssistance()
         cell_lock->Visit(cell_lock, grid_creature_searcher, *GetMap(), *this, radius);
 
         SetNoSearchAssistance(true);
+        UpdateSpeed(MOVE_RUN, false);
+
         if(!pCreature)
             SetFeared(true, getVictim()->GetGUID(), 0 ,sWorld.getConfig(CONFIG_CREATURE_FAMILY_FLEE_DELAY));
         else
@@ -1244,7 +1252,12 @@ void Creature::setDeathState(DeathState s)
         if (canFly() && FallGround())
             return;
 
-        SetNoSearchAssistance(false);
+        if (HasSearchedAssistance())
+        {
+            SetNoSearchAssistance(false);
+            UpdateSpeed(MOVE_RUN, false);
+        }
+
         Unit::setDeathState(CORPSE);
         if(isVehicle())
             ((Vehicle*)this)->Die();
@@ -1637,16 +1650,19 @@ void Creature::SaveRespawnTime()
 
 bool Creature::IsOutOfThreatArea(Unit* pVictim) const
 {
-    if(!pVictim)
+    if (!pVictim)
         return true;
 
-    if(!pVictim->IsInMap(this))
+    if (!pVictim->IsInMap(this))
         return true;
 
-    if(!pVictim->isTargetableForAttack())
+    if (!pVictim->isTargetableForAttack())
         return true;
 
-    if(!pVictim->isInAccessablePlaceFor(this))
+    if (!pVictim->isInAccessablePlaceFor(this))
+        return true;
+
+    if (!pVictim->isVisibleForOrDetect(this,this,false))
         return true;
 
     if(sMapStore.LookupEntry(GetMapId())->IsDungeon())
