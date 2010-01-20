@@ -1694,6 +1694,9 @@ void Spell::SetTargetMap(uint32 effIndex, uint32 targetMode, UnitList& targetUni
                     break;
                 default:
                     FillAreaTargets(targetUnitMap, m_targets.m_destX, m_targets.m_destY, radius, PUSH_DEST_CENTER, SPELL_TARGETS_AOE_DAMAGE);
+
+                    // exclude caster (this can be important if this not original caster, for example vehicle)
+                    targetUnitMap.remove(m_caster);
                     break;
             }
             break;
