@@ -405,11 +405,12 @@ class MANGOS_DLL_SPEC Creature : public Unit
         void GetRespawnCoord(float &x, float &y, float &z, float* ori = NULL, float* dist =NULL) const;
         uint32 GetEquipmentId() const { return m_equipmentId; }
 
-		CreatureSubtype GetSubtype() const { return m_subtype; }
-        bool isPet() const { return m_isPet; }
-        bool isVehicle() const { return m_isVehicle; }
         bool CreateVehicleKit(uint32 id);
         Vehicle *GetVehicleKit()const { return m_vehicleKit; }
+
+        CreatureSubtype GetSubtype() const { return m_subtype; }
+        bool isPet() const { return m_subtype == CREATURE_SUBTYPE_PET; }
+        bool isVehicle() const { return m_subtype == CREATURE_SUBTYPE_VEHICLE; }
         bool isTotem() const { return m_subtype == CREATURE_SUBTYPE_TOTEM; }
         bool isTemporarySummon() const { return m_subtype == CREATURE_SUBTYPE_TEMPORARY_SUMMON; }
 

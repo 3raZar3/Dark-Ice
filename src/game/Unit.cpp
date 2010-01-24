@@ -10961,7 +10961,7 @@ int32 Unit::CalculateSpellDamage(SpellEntry const* spellProto, uint8 effect_inde
     if(GetTypeId() == TYPEID_PLAYER)
         unitPlayer = (Player*)this;
     else if(((Creature*)this)->isVehicle())
-        unitPlayer = GetCharmer();
+        unitPlayer = (Player*)GetCharmer();
     else
         unitPlayer = NULL;
 
@@ -11023,7 +11023,7 @@ int32 Unit::CalculateSpellDuration(SpellEntry const* spellProto, uint8 effect_in
     if(GetTypeId() == TYPEID_PLAYER)
         unitPlayer = (Player*)this;
     else if(((Creature*)this)->isVehicle())
-        unitPlayer = GetCharmer();
+        unitPlayer = (Player*)GetCharmer();
     else
         unitPlayer = NULL;
 
