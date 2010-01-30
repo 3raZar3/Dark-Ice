@@ -39,6 +39,14 @@
 #include "ArenaTeam.h"
 #include "Language.h"
 
+// config option SkipCinematics supported values
+enum CinematicsSkipMode
+{
+    CINEMATICS_SKIP_NONE      = 0,
+    CINEMATICS_SKIP_SAME_RACE = 1,
+    CINEMATICS_SKIP_ALL       = 2,
+};
+
 class LoginQueryHolder : public SqlQueryHolder
 {
     private:
@@ -60,7 +68,11 @@ bool LoginQueryHolder::Initialize()
 
     // NOTE: all fields in `characters` must be read to prevent lost character data at next save in case wrong DB structure.
     // !!! NOTE: including unused `zone`,`online`
-    res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADFROM,            "SELECT guid, account, data, name, race, class, gender, level, xp, money, playerBytes, playerBytes2, playerFlags, position_x, position_y, position_z, map, orientation, taximask, cinematic, totaltime, leveltime, rest_bonus, logout_time, is_logout_resting, resettalents_cost, resettalents_time, trans_x, trans_y, trans_z, trans_o, transguid, extra_flags, stable_slots, at_login, zone, online, death_expire_time, taxi_path, dungeon_difficulty, arena_pending_points FROM characters WHERE guid = '%u'", GUID_LOPART(m_guid));
+    res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADFROM,            "SELECT guid, account, data, name, race, class, gender, level, xp, money, playerBytes, playerBytes2, playerFlags,"
+        "position_x, position_y, position_z, map, orientation, taximask, cinematic, totaltime, leveltime, rest_bonus, logout_time, is_logout_resting, resettalents_cost,"
+        "resettalents_time, trans_x, trans_y, trans_z, trans_o, transguid, extra_flags, stable_slots, at_login, zone, online, death_expire_time, taxi_path, dungeon_difficulty,"
+        "arenaPoints, totalHonorPoints, todayHonorPoints, yesterdayHonorPoints, totalKills, todayKills, yesterdayKills, chosenTitle, knownCurrencies, watchedFaction, drunk,"
+        "health, power1, power2, power3, power4, power5, power6, power7 FROM characters WHERE guid = '%u'", GUID_LOPART(m_guid));
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADGROUP,           "SELECT leaderGuid FROM group_member WHERE memberGuid ='%u'", GUID_LOPART(m_guid));
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADBOUNDINSTANCES,  "SELECT id, permanent, map, difficulty, resettime FROM character_instance LEFT JOIN instance ON instance = id WHERE guid = '%u'", GUID_LOPART(m_guid));
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADAURAS,           "SELECT caster_guid,spell,effect_index,stackcount,amount,maxduration,remaintime,remaincharges FROM character_aura WHERE guid = '%u'", GUID_LOPART(m_guid));
@@ -321,17 +333,17 @@ void WorldSession::HandleCharCreateOpcode( WorldPacket & recv_data )
     }
 
     bool AllowTwoSideAccounts = sWorld.getConfig(CONFIG_ALLOW_TWO_SIDE_ACCOUNTS) || GetSecurity() > SEC_PLAYER;
-    uint32 skipCinematics = sWorld.getConfig(CONFIG_SKIP_CINEMATICS);
+    CinematicsSkipMode skipCinematics = CinematicsSkipMode(sWorld.getConfig(CONFIG_SKIP_CINEMATICS));
 
     bool have_same_race = false;
 
     // if 0 then allowed creating without any characters
     bool have_req_level_for_heroic = (req_level_for_heroic==0);
 
-    if(!AllowTwoSideAccounts || skipCinematics == 1 || class_ == CLASS_DEATH_KNIGHT)
+    if(!AllowTwoSideAccounts || skipCinematics == CINEMATICS_SKIP_SAME_RACE || class_ == CLASS_DEATH_KNIGHT)
     {
         QueryResult *result2 = CharacterDatabase.PQuery("SELECT level,race,class FROM characters WHERE account = '%u' %s",
-            GetAccountId(), (skipCinematics == 1 || class_ == CLASS_DEATH_KNIGHT) ? "" : "LIMIT 1");
+            GetAccountId(), (skipCinematics == CINEMATICS_SKIP_SAME_RACE || class_ == CLASS_DEATH_KNIGHT) ? "" : "LIMIT 1");
         if(result2)
         {
             uint32 team_= Player::TeamForRace(race_);
@@ -351,6 +363,7 @@ void WorldSession::HandleCharCreateOpcode( WorldPacket & recv_data )
                     {
                         data << (uint8)CHAR_CREATE_UNIQUE_CLASS_LIMIT;
                         SendPacket( &data );
+                        delete result2;
                         return;
                     }
                 }
@@ -382,7 +395,7 @@ void WorldSession::HandleCharCreateOpcode( WorldPacket & recv_data )
 
             // search same race for cinematic or same class if need
             // TODO: check if cinematic already shown? (already logged in?; cinematic field)
-            while ((skipCinematics == 1 && !have_same_race) || class_ == CLASS_DEATH_KNIGHT)
+            while ((skipCinematics == CINEMATICS_SKIP_SAME_RACE && !have_same_race) || class_ == CLASS_DEATH_KNIGHT)
             {
                 if(!result2->NextRow())
                     break;
@@ -405,6 +418,7 @@ void WorldSession::HandleCharCreateOpcode( WorldPacket & recv_data )
                         {
                             data << (uint8)CHAR_CREATE_UNIQUE_CLASS_LIMIT;
                             SendPacket( &data );
+                            delete result2;
                             return;
                         }
                     }
@@ -445,7 +459,7 @@ void WorldSession::HandleCharCreateOpcode( WorldPacket & recv_data )
         return;
     }
 
-    if ((have_same_race && skipCinematics == 1) || skipCinematics == 2)
+    if ((have_same_race && skipCinematics == CINEMATICS_SKIP_SAME_RACE) || skipCinematics == CINEMATICS_SKIP_ALL)
         pNewChar->setCinematic(1);                          // not show intro
 
     // Player created, save it now
@@ -724,8 +738,8 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
     {
         // not blizz like, we must correctly save and load player instead...
         if(pCurrChar->getRace() == RACE_NIGHTELF)
-            pCurrChar->CastSpell(pCurrChar, 20584, true, 0);// auras SPELL_AURA_INCREASE_SPEED(+speed in wisp form), SPELL_AURA_INCREASE_SWIM_SPEED(+swim speed in wisp form), SPELL_AURA_TRANSFORM (to wisp form)
-        pCurrChar->CastSpell(pCurrChar, 8326, true, 0);     // auras SPELL_AURA_GHOST, SPELL_AURA_INCREASE_SPEED(why?), SPELL_AURA_INCREASE_SWIM_SPEED(why?)
+            pCurrChar->CastSpell(pCurrChar, 20584, true);   // auras SPELL_AURA_INCREASE_SPEED(+speed in wisp form), SPELL_AURA_INCREASE_SWIM_SPEED(+swim speed in wisp form), SPELL_AURA_TRANSFORM (to wisp form)
+        pCurrChar->CastSpell(pCurrChar, 8326, true);        // auras SPELL_AURA_GHOST, SPELL_AURA_INCREASE_SPEED(why?), SPELL_AURA_INCREASE_SWIM_SPEED(why?)
 
         pCurrChar->SetMovement(MOVE_WATER_WALK);
     }
@@ -741,7 +755,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
 
     // Set FFA PvP for non GM in non-rest mode
     if(sWorld.IsFFAPvPRealm() && !pCurrChar->isGameMaster() && !pCurrChar->HasFlag(PLAYER_FLAGS,PLAYER_FLAGS_RESTING) )
-        pCurrChar->SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP);
+        pCurrChar->SetFFAPvP(true);
 
     if(pCurrChar->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_CONTESTED_PVP))
         pCurrChar->SetContestedPvP();
@@ -862,9 +876,9 @@ void WorldSession::HandleTutorialReset( WorldPacket & /*recv_data*/ )
 void WorldSession::HandleSetWatchedFactionOpcode(WorldPacket & recv_data)
 {
     DEBUG_LOG("WORLD: Received CMSG_SET_WATCHED_FACTION");
-    uint32 fact;
-    recv_data >> fact;
-    GetPlayer()->SetUInt32Value(PLAYER_FIELD_WATCHED_FACTION_INDEX, fact);
+    int32 repId;
+    recv_data >> repId;
+    GetPlayer()->SetInt32Value(PLAYER_FIELD_WATCHED_FACTION_INDEX, repId);
 }
 
 void WorldSession::HandleSetFactionInactiveOpcode(WorldPacket & recv_data)

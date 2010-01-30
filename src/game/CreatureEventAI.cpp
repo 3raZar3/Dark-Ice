@@ -257,17 +257,19 @@ bool CreatureEventAI::ProcessEvent(CreatureEventAIHolder& pHolder, Unit* pAction
             break;
         }
         case EVENT_T_SUMMONED_UNIT:
+        case EVENT_T_SUMMONED_JUST_DIED:
+        case EVENT_T_SUMMONED_JUST_DESPAWN:
         {
             //Prevent event from occuring on no unit or non creatures
             if (!pActionInvoker || pActionInvoker->GetTypeId()!=TYPEID_UNIT)
                 return false;
 
             //Creature id doesn't match up
-            if (((Creature*)pActionInvoker)->GetEntry() != event.summon_unit.creatureId)
+            if (((Creature*)pActionInvoker)->GetEntry() != event.summoned.creatureId)
                 return false;
 
             //Repeat Timers
-            pHolder.UpdateRepeatTimer(m_creature,event.summon_unit.repeatMin,event.summon_unit.repeatMax);
+            pHolder.UpdateRepeatTimer(m_creature,event.summoned.repeatMin,event.summoned.repeatMax);
             break;
         }
         case EVENT_T_TARGET_MANA:
@@ -474,13 +476,16 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
                         //Melee current victim if flag not set
                         if (!(action.cast.castFlags & CAST_NO_MELEE_IF_OOM))
                         {
-                            if (m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() == TARGETED_MOTION_TYPE)
+                            switch(m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType())
                             {
-                                AttackDistance = 0.0f;
-                                AttackAngle = 0.0f;
+                                case CHASE_MOTION_TYPE:
+                                case FOLLOW_MOTION_TYPE:
+                                    AttackDistance = 0.0f;
+                                    AttackAngle = 0.0f;
 
-                                m_creature->GetMotionMaster()->Clear(false);
-                                m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim(), AttackDistance, AttackAngle);
+                                    m_creature->GetMotionMaster()->Clear(false);
+                                    m_creature->GetMotionMaster()->MoveChase(m_creature->getVictim(), AttackDistance, AttackAngle);
+                                    break;
                             }
                         }
 
@@ -589,7 +594,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
                     if(Unit* victim = m_creature->getVictim())
                         m_creature->SendMeleeAttackStop(victim);
 
-                if (m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() == TARGETED_MOTION_TYPE)
+                if (m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
                 {
                     m_creature->GetMotionMaster()->Clear(false);
                     m_creature->GetMotionMaster()->MoveIdle();
@@ -651,7 +656,7 @@ void CreatureEventAI::ProcessAction(CreatureEventAI_Action const& action, uint32
 
             if (CombatMovementEnabled)
             {
-                if (m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() == TARGETED_MOTION_TYPE)
+                if (m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
                 {
                     //Drop current movement gen
                     m_creature->GetMotionMaster()->Clear(false);
@@ -904,6 +909,30 @@ void CreatureEventAI::JustSummoned(Creature* pUnit)
     for (std::list<CreatureEventAIHolder>::iterator i = CreatureEventAIList.begin(); i != CreatureEventAIList.end(); ++i)
     {
         if ((*i).Event.event_type == EVENT_T_SUMMONED_UNIT)
+            ProcessEvent(*i, pUnit);
+    }
+}
+
+void CreatureEventAI::SummonedCreatureJustDied(Creature* pUnit)
+{
+    if (bEmptyList || !pUnit)
+        return;
+
+    for (std::list<CreatureEventAIHolder>::iterator i = CreatureEventAIList.begin(); i != CreatureEventAIList.end(); ++i)
+    {
+        if ((*i).Event.event_type == EVENT_T_SUMMONED_JUST_DIED)
+            ProcessEvent(*i, pUnit);
+    }
+}
+
+void CreatureEventAI::SummonedCreatureDespawn(Creature* pUnit)
+{
+    if (bEmptyList || !pUnit)
+        return;
+
+    for (std::list<CreatureEventAIHolder>::iterator i = CreatureEventAIList.begin(); i != CreatureEventAIList.end(); ++i)
+    {
+        if ((*i).Event.event_type == EVENT_T_SUMMONED_JUST_DESPAWN)
             ProcessEvent(*i, pUnit);
     }
 }
@@ -1205,8 +1234,7 @@ Unit* CreatureEventAI::DoSelectLowestHpFriendly(float range, uint32 MinHPDiff)
     */
     TypeContainerVisitor<MaNGOS::UnitLastSearcher<MaNGOS::MostHPMissingInRange>, GridTypeMapContainer >  grid_unit_searcher(searcher);
 
-    CellLock<GridReadGuard> cell_lock(cell, p);
-    cell_lock->Visit(cell_lock, grid_unit_searcher, *m_creature->GetMap(), *m_creature, range);
+    cell.Visit(p, grid_unit_searcher, *m_creature->GetMap(), *m_creature, range);
     return pUnit;
 }
 
@@ -1222,8 +1250,7 @@ void CreatureEventAI::DoFindFriendlyCC(std::list<Creature*>& _list, float range)
 
     TypeContainerVisitor<MaNGOS::CreatureListSearcher<MaNGOS::FriendlyCCedInRange>, GridTypeMapContainer >  grid_creature_searcher(searcher);
 
-    CellLock<GridReadGuard> cell_lock(cell, p);
-    cell_lock->Visit(cell_lock, grid_creature_searcher, *m_creature->GetMap(), *m_creature, range);
+    cell.Visit(p, grid_creature_searcher, *m_creature->GetMap(), *m_creature, range);
 }
 
 void CreatureEventAI::DoFindFriendlyMissingBuff(std::list<Creature*>& _list, float range, uint32 spellid)
@@ -1238,8 +1265,7 @@ void CreatureEventAI::DoFindFriendlyMissingBuff(std::list<Creature*>& _list, flo
 
     TypeContainerVisitor<MaNGOS::CreatureListSearcher<MaNGOS::FriendlyMissingBuffInRange>, GridTypeMapContainer >  grid_creature_searcher(searcher);
 
-    CellLock<GridReadGuard> cell_lock(cell, p);
-    cell_lock->Visit(cell_lock, grid_creature_searcher, *m_creature->GetMap(), *m_creature, range);
+    cell.Visit(p, grid_creature_searcher, *m_creature->GetMap(), *m_creature, range);
 }
 
 //*********************************
@@ -1340,8 +1366,8 @@ bool CreatureEventAI::CanCast(Unit* Target, SpellEntry const *Spell, bool Trigge
         return false;
 
     //Silenced so we can't cast
-    if (!Triggered && (m_creature->hasUnitState(UNIT_STAT_CONFUSED | UNIT_STAT_STUNNED | UNIT_STAT_FLEEING | UNIT_STAT_DIED)
-        || m_creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED)))
+    if (!Triggered && (m_creature->hasUnitState(UNIT_STAT_CAN_NOT_REACT) ||
+        m_creature->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED)))
         return false;
 
     //Check for power

@@ -131,6 +131,7 @@ bool ChatHandler::HandleReloadAllScriptsCommand(const char*)
 
     sLog.outString( "Re-Loading Scripts..." );
     HandleReloadGameObjectScriptsCommand("a");
+    HandleReloadGossipScriptsCommand("a");
     HandleReloadEventScriptsCommand("a");
     HandleReloadQuestEndScriptsCommand("a");
     HandleReloadQuestStartScriptsCommand("a");
@@ -179,6 +180,7 @@ bool ChatHandler::HandleReloadAllLocalesCommand(const char* /*args*/)
     HandleReloadLocalesAchievementRewardCommand("a");
     HandleReloadLocalesCreatureCommand("a");
     HandleReloadLocalesGameobjectCommand("a");
+    HandleReloadLocalesGossipMenuOptionCommand("a");
     HandleReloadLocalesItemCommand("a");
     HandleReloadLocalesNpcTextCommand("a");
     HandleReloadLocalesPageTextCommand("a");
@@ -264,6 +266,26 @@ bool ChatHandler::HandleReloadGossipMenuOptionCommand(const char*)
     sLog.outString( "Re-Loading `gossip_menu_option` Table!" );
     sObjectMgr.LoadGossipMenuItems();
     SendGlobalSysMessage("DB table `gossip_menu_option` reloaded.");
+    return true;
+}
+
+bool ChatHandler::HandleReloadGossipScriptsCommand(const char* arg)
+{
+    if(sWorld.IsScriptScheduled())
+    {
+        SendSysMessage("DB scripts used currently, please attempt reload later.");
+        SetSentErrorMessage(true);
+        return false;
+    }
+
+    if(*arg!='a')
+        sLog.outString( "Re-Loading Scripts from `gossip_scripts`...");
+
+    sObjectMgr.LoadGossipScripts();
+
+    if(*arg!='a')
+        SendGlobalSysMessage("DB table `gossip_scripts` reloaded.");
+
     return true;
 }
 
@@ -787,6 +809,14 @@ bool ChatHandler::HandleReloadLocalesGameobjectCommand(const char* /*arg*/)
     sLog.outString( "Re-Loading Locales Gameobject ... ");
     sObjectMgr.LoadGameObjectLocales();
     SendGlobalSysMessage("DB table `locales_gameobject` reloaded.");
+    return true;
+}
+
+bool ChatHandler::HandleReloadLocalesGossipMenuOptionCommand(const char* /*arg*/)
+{
+    sLog.outString( "Re-Loading Locales Gossip Menu Option ... ");
+    sObjectMgr.LoadGossipMenuItemsLocales();
+    SendGlobalSysMessage("DB table `locales_gossip_menu_option` reloaded.");
     return true;
 }
 
@@ -4352,7 +4382,7 @@ static bool HandleResetStatsOrLevelHelper(Player* player)
     player->SetUInt32Value(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE);
 
     //-1 is default value
-    player->SetUInt32Value(PLAYER_FIELD_WATCHED_FACTION_INDEX, uint32(-1));
+    player->SetInt32Value(PLAYER_FIELD_WATCHED_FACTION_INDEX, -1);
 
     //player->SetUInt32Value(PLAYER_FIELD_BYTES, 0xEEE00000 );
     return true;
@@ -5353,8 +5383,7 @@ bool ChatHandler::HandleRespawnCommand(const char* /*args*/)
     MaNGOS::WorldObjectWorker<MaNGOS::RespawnDo> worker(pl,u_do);
 
     TypeContainerVisitor<MaNGOS::WorldObjectWorker<MaNGOS::RespawnDo>, GridTypeMapContainer > obj_worker(worker);
-    CellLock<GridReadGuard> cell_lock(cell, p);
-    cell_lock->Visit(cell_lock, obj_worker, *pl->GetMap());
+    cell.Visit(p, obj_worker, *pl->GetMap());
 
     return true;
 }
@@ -5571,26 +5600,36 @@ bool ChatHandler::HandleMovegensCommand(const char* /*args*/)
             case WAYPOINT_MOTION_TYPE:      SendSysMessage(LANG_MOVEGENS_WAYPOINT);      break;
             case ANIMAL_RANDOM_MOTION_TYPE: SendSysMessage(LANG_MOVEGENS_ANIMAL_RANDOM); break;
             case CONFUSED_MOTION_TYPE:      SendSysMessage(LANG_MOVEGENS_CONFUSED);      break;
-            case TARGETED_MOTION_TYPE:
+            case CHASE_MOTION_TYPE:
             {
+                Unit* target = NULL;
                 if(unit->GetTypeId()==TYPEID_PLAYER)
-                {
-                    TargetedMovementGenerator<Player> const* mgen = static_cast<TargetedMovementGenerator<Player> const*>(*itr);
-                    Unit* target = mgen->GetTarget();
-                    if(target)
-                        PSendSysMessage(LANG_MOVEGENS_TARGETED_PLAYER,target->GetName(),target->GetGUIDLow());
-                    else
-                        SendSysMessage(LANG_MOVEGENS_TARGETED_NULL);
-                }
+                    target = static_cast<ChaseMovementGenerator<Player> const*>(*itr)->GetTarget();
                 else
-                {
-                    TargetedMovementGenerator<Creature> const* mgen = static_cast<TargetedMovementGenerator<Creature> const*>(*itr);
-                    Unit* target = mgen->GetTarget();
-                    if(target)
-                        PSendSysMessage(LANG_MOVEGENS_TARGETED_CREATURE,target->GetName(),target->GetGUIDLow());
-                    else
-                        SendSysMessage(LANG_MOVEGENS_TARGETED_NULL);
-                }
+                    target = static_cast<ChaseMovementGenerator<Creature> const*>(*itr)->GetTarget();
+
+                if (!target)
+                    SendSysMessage(LANG_MOVEGENS_CHASE_NULL);
+                else if (target->GetTypeId()==TYPEID_PLAYER)
+                    PSendSysMessage(LANG_MOVEGENS_CHASE_PLAYER,target->GetName(),target->GetGUIDLow());
+                else
+                    PSendSysMessage(LANG_MOVEGENS_CHASE_CREATURE,target->GetName(),target->GetGUIDLow());
+                break;
+            }
+            case FOLLOW_MOTION_TYPE:
+            {
+                Unit* target = NULL;
+                if(unit->GetTypeId()==TYPEID_PLAYER)
+                    target = static_cast<FollowMovementGenerator<Player> const*>(*itr)->GetTarget();
+                else
+                    target = static_cast<FollowMovementGenerator<Creature> const*>(*itr)->GetTarget();
+
+                if (!target)
+                    SendSysMessage(LANG_MOVEGENS_FOLLOW_NULL);
+                else if (target->GetTypeId()==TYPEID_PLAYER)
+                    PSendSysMessage(LANG_MOVEGENS_FOLLOW_PLAYER,target->GetName(),target->GetGUIDLow());
+                else
+                    PSendSysMessage(LANG_MOVEGENS_FOLLOW_CREATURE,target->GetName(),target->GetGUIDLow());
                 break;
             }
             case HOME_MOTION_TYPE:

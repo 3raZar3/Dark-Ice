@@ -35,6 +35,7 @@
 #include "MapManager.h"
 #include "ObjectAccessor.h"
 #include "CreatureAI.h"
+#include "TemporarySummon.h"
 #include "Formulas.h"
 #include "Pet.h"
 #include "Util.h"
@@ -684,6 +685,16 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
             if (cVictim->AI())
                 cVictim->AI()->JustDied(this);
 
+            if (cVictim->isTemporarySummon())
+            {
+                TemporarySummon* pSummon = (TemporarySummon*)cVictim;
+                if (IS_CREATURE_GUID(pSummon->GetSummonerGUID()))
+                    if(Creature* pSummoner = cVictim->GetMap()->GetCreature(pSummon->GetSummonerGUID()))
+                        if (pSummoner->AI())
+                            pSummoner->AI()->SummonedCreatureJustDied(cVictim);
+            }
+
+
             // Dungeon specific stuff, only applies to players killing creatures
             if(cVictim->GetInstanceId())
             {
@@ -1317,7 +1328,7 @@ void Unit::CalculateMeleeDamage(Unit *pVictim, uint32 damage, CalcDamageInfo *da
         }
         case MELEE_HIT_PARRY:
             damageInfo->TargetState  = VICTIMSTATE_PARRY;
-            damageInfo->procEx|=PROC_EX_PARRY;
+            damageInfo->procEx |= PROC_EX_PARRY;
             damageInfo->cleanDamage += damageInfo->damage;
             damageInfo->damage = 0;
             break;
@@ -1332,12 +1343,13 @@ void Unit::CalculateMeleeDamage(Unit *pVictim, uint32 damage, CalcDamageInfo *da
         {
             damageInfo->TargetState = VICTIMSTATE_NORMAL;
             damageInfo->HitInfo |= HITINFO_BLOCK;
-            damageInfo->procEx|=PROC_EX_BLOCK;
+            damageInfo->procEx |= PROC_EX_BLOCK;
             damageInfo->blocked_amount = damageInfo->target->GetShieldBlockValue();
             if (damageInfo->blocked_amount >= damageInfo->damage)
             {
                 damageInfo->TargetState = VICTIMSTATE_BLOCKS;
                 damageInfo->blocked_amount = damageInfo->damage;
+                damageInfo->procEx |= PROC_EX_FULL_BLOCK;
             }
             damageInfo->damage      -= damageInfo->blocked_amount;
             damageInfo->cleanDamage += damageInfo->blocked_amount;
@@ -1345,9 +1357,9 @@ void Unit::CalculateMeleeDamage(Unit *pVictim, uint32 damage, CalcDamageInfo *da
         }
         case MELEE_HIT_GLANCING:
         {
-            damageInfo->HitInfo     |= HITINFO_GLANCING;
-            damageInfo->TargetState  = VICTIMSTATE_NORMAL;
-            damageInfo->procEx|=PROC_EX_NORMAL_HIT;
+            damageInfo->HitInfo |= HITINFO_GLANCING;
+            damageInfo->TargetState = VICTIMSTATE_NORMAL;
+            damageInfo->procEx |= PROC_EX_NORMAL_HIT;
             float reducePercent = 1.0f;                     //damage factor
             // calculate base values and mods
             float baseLowEnd = 1.3f;
@@ -2159,7 +2171,7 @@ void Unit::CalcAbsorbResist(Unit *pVictim,SpellSchoolMask schoolMask, DamageEffe
 
 void Unit::AttackerStateUpdate (Unit *pVictim, WeaponAttackType attType, bool extra )
 {
-    if(hasUnitState(UNIT_STAT_CONFUSED | UNIT_STAT_STUNNED | UNIT_STAT_FLEEING | UNIT_STAT_DIED) || HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED) )
+    if(hasUnitState(UNIT_STAT_CAN_NOT_REACT) || HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED) )
         return;
 
     if (!pVictim->isAlive())
@@ -3347,10 +3359,10 @@ void Unit::SetInFront(Unit const* target)
     SetOrientation(GetAngle(target));
 }
 
-void Unit::SetFacingToObject(WorldObject* pObject)
+void Unit::SetFacingTo(float ori)
 {
     // update orientation at server
-    SetOrientation(GetAngle(pObject));
+    SetOrientation(ori);
 
     // and client
     WorldPacket data;
@@ -5675,17 +5687,14 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 // Vampiric Embrace
                 case 15286:
                 {
-                    if(!pVictim || !pVictim->isAlive())
+                    // Return if self damage
+                    if (this == pVictim)
                         return false;
 
-                    // pVictim is caster of aura
-                    if(triggeredByAura->GetCasterGUID() != pVictim->GetGUID())
-                        return false;
-
-                    // heal amount
+                    // Heal amount - Self/Team
                     int32 team = triggerAmount*damage/500;
                     int32 self = triggerAmount*damage/100 - team;
-                    pVictim->CastCustomSpell(pVictim,15290,&team,&self,NULL,true,castItem,triggeredByAura);
+                    CastCustomSpell(this,15290,&team,&self,NULL,true,castItem,triggeredByAura);
                     return true;                                // no hidden cooldown
                 }
                 // Priest Tier 6 Trinket (Ashtongue Talisman of Acumen)
@@ -6137,9 +6146,11 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     if(effIndex != 0)                       // effect 1,2 used by seal unleashing code
                         return false;
 
-                    triggered_spell_id = 31803;
+                    // At melee attack or Hammer of the Righteous spell damage considered as melee attack
+                    if ((procFlag & PROC_FLAG_SUCCESSFUL_MELEE_HIT) || (procSpell && procSpell->Id == 53595) )
+                        triggered_spell_id = 31803;         // Holy Vengeance
 
-                    // Add 5-stack effect
+                    // Add 5-stack effect from Holy Vengeance
                     int8 stacks = 0;
                     AuraList const& auras = target->GetAurasByType(SPELL_AURA_PERIODIC_DAMAGE);
                     for(AuraList::const_iterator itr = auras.begin(); itr!=auras.end(); ++itr)
@@ -6237,9 +6248,11 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     if(effIndex != 0)                       // effect 1,2 used by seal unleashing code
                         return false;
 
-                    triggered_spell_id = 53742;
+                    // At melee attack or Hammer of the Righteous spell damage considered as melee attack
+                    if ((procFlag & PROC_FLAG_SUCCESSFUL_MELEE_HIT) || (procSpell && procSpell->Id == 53595))
+                        triggered_spell_id = 53742;         // Blood Corruption
 
-                    // Add 5-stack effect
+                    // Add 5-stack effect from Blood Corruption
                     int8 stacks = 0;
                     AuraList const& auras = target->GetAurasByType(SPELL_AURA_PERIODIC_DAMAGE);
                     for(AuraList::const_iterator itr = auras.begin(); itr!=auras.end(); ++itr)
@@ -7616,6 +7629,14 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
                 return false;
             break;
         }
+        // Freezing Fog (Rime triggered)
+        case 59052:
+        {
+            // Howling Blast cooldown reset
+            if (GetTypeId() == TYPEID_PLAYER)
+                ((Player*)this)->RemoveSpellCategoryCooldown(1248, true);
+            break;
+        }
         // Druid - Savage Defense
         case 62606:
         {
@@ -7883,7 +7904,7 @@ bool Unit::IsHostileTo(Unit const* unit) const
             return false;
 
         // PvP FFA state
-        if(pTester->HasByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP) && pTarget->HasByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP))
+        if(pTester->IsFFAPvP() && pTarget->IsFFAPvP())
             return true;
 
         //= PvP states
@@ -7995,7 +8016,7 @@ bool Unit::IsFriendlyTo(Unit const* unit) const
             return true;
 
         // PvP FFA state
-        if(pTester->HasByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP) && pTarget->HasByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP))
+        if(pTester->IsFFAPvP() && pTarget->IsFFAPvP())
             return false;
 
         //= PvP states
@@ -8178,7 +8199,12 @@ bool Unit::AttackStop(bool targetSwitch /*=false*/)
     if(!targetSwitch && GetTypeId()==TYPEID_UNIT )
     {
         ((Creature*)this)->SetNoCallAssistance(false);
-        ((Creature*)this)->SetNoSearchAssistance(false);
+
+        if (((Creature*)this)->HasSearchedAssistance())
+        {
+            ((Creature*)this)->SetNoSearchAssistance(false);
+            UpdateSpeed(MOVE_RUN, false);
+        }
     }
 
     SendMeleeAttackStop(victim);
@@ -8198,43 +8224,31 @@ void Unit::CombatStop(bool includingCast)
     ClearInCombat();
 }
 
+struct CombatStopWithPetsHelper
+{
+    explicit CombatStopWithPetsHelper(bool _includingCast) : includingCast(_includingCast) {}
+    void operator()(Unit* unit) const { unit->CombatStop(includingCast); }
+    bool includingCast;
+};
+
 void Unit::CombatStopWithPets(bool includingCast)
 {
     CombatStop(includingCast);
-    if(Pet* pet = GetPet())
-        pet->CombatStop(includingCast);
-    if(Unit* charm = GetCharm())
-        charm->CombatStop(includingCast);
-
-    for(GuardianPetList::const_iterator itr = m_guardianPets.begin(); itr != m_guardianPets.end(); ++itr)
-        if(Unit* guardian = Unit::GetUnit(*this,*itr))
-            guardian->CombatStop(includingCast);
+    CallForAllControlledUnits(CombatStopWithPetsHelper(includingCast),false,true,true);
 }
+
+struct IsAttackingPlayerHelper
+{
+    explicit IsAttackingPlayerHelper() {}
+    bool operator()(Unit* unit) const { return unit->isAttackingPlayer(); }
+};
 
 bool Unit::isAttackingPlayer() const
 {
     if(hasUnitState(UNIT_STAT_ATTACK_PLAYER))
         return true;
 
-    Pet* pet = GetPet();
-    if(pet && pet->isAttackingPlayer())
-        return true;
-
-    Unit* charmed = GetCharm();
-    if(charmed && charmed->isAttackingPlayer())
-        return true;
-
-    for (int8 i = 0; i < MAX_TOTEM; ++i)
-    {
-        if(m_TotemSlot[i])
-        {
-            Creature *totem = GetMap()->GetCreature(m_TotemSlot[i]);
-            if(totem && totem->isAttackingPlayer())
-                return true;
-        }
-    }
-
-    return false;
+    return CheckAllControlledUnits(IsAttackingPlayerHelper(),true,true,true);
 }
 
 void Unit::RemoveAllAttackers()
@@ -8411,7 +8425,7 @@ void Unit::SetPet(Pet* pet)
     // FIXME: hack, speed must be set only at follow
     if(pet && GetTypeId()==TYPEID_PLAYER)
         for(int i = 0; i < MAX_MOVE_TYPE; ++i)
-            pet->SetSpeed(UnitMoveType(i), m_speed_rate[i], true);
+            pet->SetSpeedRate(UnitMoveType(i), m_speed_rate[i], true);
 }
 
 void Unit::SetCharm(Unit* pet)
@@ -8451,6 +8465,20 @@ Pet* Unit::FindGuardianWithEntry(uint32 entry)
                 return pet;
 
     return NULL;
+}
+
+Unit* Unit::_GetTotem(uint8 slot) const
+{
+    return GetTotem(slot);
+}
+
+Totem* Unit::GetTotem( uint8 slot ) const
+{
+    if(slot >= MAX_TOTEM || !IsInWorld())
+        return NULL;
+
+    Creature *totem = GetMap()->GetCreature(m_TotemSlot[slot]);
+    return totem && totem->isTotem() ? (Totem*)totem : NULL;
 }
 
 void Unit::UnsummonAllTotems()
@@ -10426,8 +10454,57 @@ bool Unit::canDetectInvisibilityOf(Unit const* u) const
     return false;
 }
 
+struct UpdateWalkModeHelper
+{
+    explicit UpdateWalkModeHelper(Unit* _source) : source(_source) {}
+    void operator()(Unit* unit) const { unit->UpdateWalkMode(source, true); }
+    Unit* source;
+};
+
+void Unit::UpdateWalkMode(Unit* source, bool self)
+{
+    if (GetTypeId() == TYPEID_PLAYER)
+        ((Player*)this)->CallForAllControlledUnits(UpdateWalkModeHelper(source),false,true,true,true);
+    else if (self)
+    {
+        bool on = source->GetTypeId() == TYPEID_PLAYER
+            ? ((Player*)source)->HasMovementFlag(MOVEMENTFLAG_WALK_MODE)
+            : ((Creature*)source)->HasMonsterMoveFlag(MONSTER_MOVE_WALK);
+
+        if (on)
+        {
+            if (((Creature*)this)->isPet() && hasUnitState(UNIT_STAT_FOLLOW))
+                ((Creature*)this)->AddMonsterMoveFlag(MONSTER_MOVE_WALK);
+        }
+        else
+        {
+            if (((Creature*)this)->isPet())
+                ((Creature*)this)->RemoveMonsterMoveFlag(MONSTER_MOVE_WALK);
+        }
+    }
+    else
+        CallForAllControlledUnits(UpdateWalkModeHelper(source),false,true,true);
+}
+
 void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
 {
+    // not in combat pet have same speed as owner
+    switch(mtype)
+    {
+        case MOVE_RUN:
+        case MOVE_WALK:
+        case MOVE_SWIM:
+            if (GetTypeId()==TYPEID_UNIT && ((Creature*)this)->isPet() && hasUnitState(UNIT_STAT_FOLLOW))
+            {
+                if(Unit* owner = GetOwner())
+                {
+                    SetSpeedRate(mtype,owner->GetSpeedRate(mtype),forced);
+                    return;
+                }
+            }
+            break;
+    }
+
     int32 main_speed_mod  = 0;
     float stack_bonus     = 1.0f;
     float non_stack_bonus = 1.0f;
@@ -10503,6 +10580,13 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
             break;
     }
 
+    // for creature case, we check explicit if mob searched for assistance
+    if (GetTypeId() == TYPEID_UNIT)
+    {
+        if (((Creature*)this)->HasSearchedAssistance())
+            speed *= 0.66f;                                 // best guessed value, so this will be 33% reduction. Based off initial speed, mob can then "run", "walk fast" or "walk".
+    }
+
     // Apply strongest slow aura mod to speed
     int32 slow = GetMaxNegativeAuraModifier(SPELL_AURA_MOD_DECREASE_SPEED);
     if (slow)
@@ -10512,7 +10596,7 @@ void Unit::UpdateSpeed(UnitMoveType mtype, bool forced)
         if (speed < min_speed)
             speed = min_speed;
     }
-    SetSpeed(mtype, speed, forced);
+    SetSpeedRate(mtype, speed, forced);
 }
 
 float Unit::GetSpeed( UnitMoveType mtype ) const
@@ -10520,7 +10604,15 @@ float Unit::GetSpeed( UnitMoveType mtype ) const
     return m_speed_rate[mtype]*baseMoveSpeed[mtype];
 }
 
-void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
+struct SetSpeedRateHelper
+{
+    explicit SetSpeedRateHelper(UnitMoveType _mtype, bool _forced) : mtype(_mtype), forced(_forced) {}
+    void operator()(Unit* unit) const { unit->UpdateSpeed(mtype,forced); }
+    UnitMoveType mtype;
+    bool forced;
+};
+
+void Unit::SetSpeedRate(UnitMoveType mtype, float rate, bool forced)
 {
     if (rate < 0)
         rate = 0.0f;
@@ -10566,7 +10658,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 data.Initialize(MSG_MOVE_SET_PITCH_RATE, 8+4+2+4+4+4+4+4+4+4);
                 break;
             default:
-                sLog.outError("Unit::SetSpeed: Unsupported move type (%d), data not sent to client.",mtype);
+                sLog.outError("Unit::SetSpeedRate: Unsupported move type (%d), data not sent to client.",mtype);
                 return;
         }
 
@@ -10621,7 +10713,7 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
                 data.Initialize(SMSG_FORCE_PITCH_RATE_CHANGE, 16);
                 break;
             default:
-                sLog.outError("Unit::SetSpeed: Unsupported move type (%d), data not sent to client.",mtype);
+                sLog.outError("Unit::SetSpeedRate: Unsupported move type (%d), data not sent to client.",mtype);
                 return;
         }
         data.append(GetPackGUID());
@@ -10631,8 +10723,11 @@ void Unit::SetSpeed(UnitMoveType mtype, float rate, bool forced)
         data << float(GetSpeed(mtype));
         SendMessageToSet( &data, true );
     }
-    if(Pet* pet = GetPet())
-        pet->SetSpeed(MOVE_RUN, m_speed_rate[mtype],forced);
+
+    if (GetTypeId() == TYPEID_PLAYER)                       // need include minpet
+        ((Player*)this)->CallForAllControlledUnits(SetSpeedRateHelper(mtype,forced),false,true,true,true);
+    else
+        CallForAllControlledUnits(SetSpeedRateHelper(mtype,forced),false,true,true);
 }
 
 void Unit::SetHover(bool on)
@@ -10870,7 +10965,7 @@ bool Unit::SelectHostileTarget()
     // it in combat but attacker not make any damage and not enter to aggro radius to have record in threat list
     // for example at owner command to pet attack some far away creature
     // Note: creature not have targeted movement generator but have attacker in this case
-    if (GetMotionMaster()->GetCurrentMovementGeneratorType() != TARGETED_MOTION_TYPE || hasUnitState(UNIT_STAT_FOLLOW))
+    if (GetMotionMaster()->GetCurrentMovementGeneratorType() != CHASE_MOTION_TYPE)
     {
         for(AttackerSet::const_iterator itr = m_attackers.begin(); itr != m_attackers.end(); ++itr)
         {
@@ -11094,7 +11189,7 @@ void Unit::ApplyDiminishingAura( DiminishingGroup group, bool apply )
     }
 }
 
-Unit* Unit::GetUnit(WorldObject& object, uint64 guid)
+Unit* Unit::GetUnit(WorldObject const& object, uint64 guid)
 {
     return ObjectAccessor::GetUnit(object,guid);
 }
@@ -12515,17 +12610,14 @@ Unit* Unit::SelectNearbyTarget(Unit* except /*= NULL*/) const
 
     std::list<Unit *> targets;
 
-    {
-        MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck u_check(this, this, ATTACK_DISTANCE);
-        MaNGOS::UnitListSearcher<MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck> searcher(this, targets, u_check);
+    MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck u_check(this, this, ATTACK_DISTANCE);
+    MaNGOS::UnitListSearcher<MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck> searcher(this, targets, u_check);
 
-        TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck>, WorldTypeMapContainer > world_unit_searcher(searcher);
-        TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck>, GridTypeMapContainer >  grid_unit_searcher(searcher);
+    TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck>, WorldTypeMapContainer > world_unit_searcher(searcher);
+    TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyUnfriendlyUnitInObjectRangeCheck>, GridTypeMapContainer >  grid_unit_searcher(searcher);
 
-        CellLock<GridReadGuard> cell_lock(cell, p);
-        cell_lock->Visit(cell_lock, world_unit_searcher, *GetMap(), *this, ATTACK_DISTANCE);
-        cell_lock->Visit(cell_lock, grid_unit_searcher, *GetMap(), *this, ATTACK_DISTANCE);
-    }
+    cell.Visit(p, world_unit_searcher, *GetMap(), *this, ATTACK_DISTANCE);
+    cell.Visit(p, grid_unit_searcher, *GetMap(), *this, ATTACK_DISTANCE);
 
     // remove current target
     if(except)
@@ -12798,6 +12890,9 @@ Pet* Unit::CreateTamedPetFrom(Creature* creatureTarget,uint32 spell_id)
     if(IsPvP())
         pet->SetPvP(true);
 
+    if(IsFFAPvP())
+        pet->SetFFAPvP(true);
+
     uint32 level = (creatureTarget->getLevel() < (getLevel() - 5)) ? (getLevel() - 5) : creatureTarget->getLevel();
 
     if(!pet->InitStatsForLevel(level))
@@ -13011,6 +13106,13 @@ void Unit::NearTeleportTo( float x, float y, float z, float orientation, bool ca
     }
 }
 
+struct SetPvPHelper
+{
+    explicit SetPvPHelper(bool _state) : state(_state) {}
+    void operator()(Unit* unit) const { unit->SetPvP(state); }
+    bool state;
+};
+
 void Unit::SetPvP( bool state )
 {
     if(state)
@@ -13018,15 +13120,24 @@ void Unit::SetPvP( bool state )
     else
         RemoveByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_PVP);
 
-    if(Pet* pet = GetPet())
-        pet->SetPvP(state);
-    if(Unit* charmed = GetCharm())
-        charmed->SetPvP(state);
+    CallForAllControlledUnits(SetPvPHelper(state),true,true,true);
+}
 
-    for (int8 i = 0; i < MAX_TOTEM; ++i)
-        if(m_TotemSlot[i])
-            if(Creature *totem = GetMap()->GetCreature(m_TotemSlot[i]))
-                totem->SetPvP(state);
+struct SetFFAPvPHelper
+{
+    explicit SetFFAPvPHelper(bool _state) : state(_state) {}
+    void operator()(Unit* unit) const { unit->SetFFAPvP(state); }
+    bool state;
+};
+
+void Unit::SetFFAPvP( bool state )
+{
+    if(state)
+        SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP);
+    else
+        RemoveByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_FFA_PVP);
+
+    CallForAllControlledUnits(SetFFAPvPHelper(state),true,true,true);
 }
 
 void Unit::KnockBackFrom(Unit* target, float horizintalSpeed, float verticalSpeed)
@@ -13150,6 +13261,13 @@ void Unit::SendThreatRemove(HostileReference* pHostileReference)
     SendMessageToSet(&data, false);
 }
 
+struct StopAttackFactionHelper
+{
+    explicit StopAttackFactionHelper(uint32 _faction_id) : faction_id(_faction_id) {}
+    void operator()(Unit* unit) const { unit->StopAttackFaction(faction_id); }
+    uint32 faction_id;
+};
+
 void Unit::StopAttackFaction(uint32 faction_id)
 {
     if (Unit* victim = getVictim())
@@ -13180,14 +13298,7 @@ void Unit::StopAttackFaction(uint32 faction_id)
 
     getHostileRefManager().deleteReferencesForFaction(faction_id);
 
-    if(Pet* pet = GetPet())
-        pet->StopAttackFaction(faction_id);
-    if(Unit* charm = GetCharm())
-        charm->StopAttackFaction(faction_id);
-
-    for(GuardianPetList::const_iterator itr = m_guardianPets.begin(); itr != m_guardianPets.end(); ++itr)
-        if(Unit* guardian = Unit::GetUnit(*this,*itr))
-            guardian->StopAttackFaction(faction_id);
+    CallForAllControlledUnits(StopAttackFactionHelper(faction_id),false,true,true);
 }
 
 void Unit::CleanupDeletedAuras()

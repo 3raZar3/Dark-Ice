@@ -38,11 +38,10 @@ char const* petTypeSuffix[MAX_PET_TYPE] =
 };
 
 Pet::Pet(PetType type) :
-Creature(), m_removed(false), m_petType(type), m_happinessTimer(7500), m_duration(0), m_resetTalentsCost(0),
+Creature(CREATURE_SUBTYPE_PET), m_removed(false), m_petType(type), m_happinessTimer(7500), m_duration(0), m_resetTalentsCost(0),
 m_bonusdamage(0), m_resetTalentsTime(0), m_usedTalentCount(0), m_auraUpdateMask(0), m_loading(false),
 m_declinedname(NULL), m_petModeFlags(PET_MODE_DEFAULT)
 {
-    m_isPet = true;
     m_name = "Pet";
     m_regenTimer = 4000;
 
@@ -225,6 +224,9 @@ bool Pet::LoadPetFromDB( Player* owner, uint32 petentry, uint32 petnumber, bool 
     if(owner->IsPvP())
         SetPvP(true);
 
+    if(owner->IsFFAPvP())
+        SetFFAPvP(true);
+
     SetCanModifyStats(true);
     InitStatsForLevel(petlevel);
     InitTalentForLevel();                                   // set original talents points before spell loading
@@ -289,6 +291,8 @@ bool Pet::LoadPetFromDB( Player* owner, uint32 petentry, uint32 petnumber, bool 
         SetHealth(savedhealth > GetMaxHealth() ? GetMaxHealth() : savedhealth);
         SetPower(POWER_MANA, savedmana > GetMaxPower(POWER_MANA) ? GetMaxPower(POWER_MANA) : savedmana);
     }
+
+    UpdateWalkMode(owner);
 
     AIM_Initialize();
     map->Add((Creature*)this);
@@ -733,7 +737,7 @@ void Pet::GivePetXP(uint32 xp)
         newXP -= nextLvlXP;
 
         GivePetLevel(level+1);
-        SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, sObjectMgr.GetXPForLevel(level+1)/4);
+        SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, sObjectMgr.GetXPForPetLevel(level+1));
 
         level = getLevel();
         nextLvlXP = GetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP);
@@ -795,7 +799,7 @@ bool Pet::CreateBaseAtCreature(Creature* creature)
     setPowerType(POWER_FOCUS);
     SetUInt32Value(UNIT_FIELD_PET_NAME_TIMESTAMP, 0);
     SetUInt32Value(UNIT_FIELD_PETEXPERIENCE, 0);
-    SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, sObjectMgr.GetXPForLevel(creature->getLevel())/4);
+    SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, sObjectMgr.GetXPForPetLevel(creature->getLevel()));
     SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_NONE);
 
     if(CreatureFamilyEntry const* cFamily = sCreatureFamilyStore.LookupEntry(cinfo->family))
@@ -946,7 +950,7 @@ bool Pet::InitStatsForLevel(uint32 petlevel)
         }
         case HUNTER_PET:
         {
-            SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, sObjectMgr.GetXPForLevel(petlevel)/10);
+            SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, sObjectMgr.GetXPForPetLevel(petlevel));
 
             // size scaling
             CreatureFamilyEntry const* cFamily = sCreatureFamilyStore.LookupEntry(cinfo->family);
@@ -2183,7 +2187,7 @@ void Pet::SynchronizeLevelWithOwner()
             if(getLevel() > owner->getLevel())
             {
                 GivePetLevel(owner->getLevel());
-                SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, sObjectMgr.GetXPForLevel(owner->getLevel())/4);
+                SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, sObjectMgr.GetXPForPetLevel(owner->getLevel()));
                 SetUInt32Value(UNIT_FIELD_PETEXPERIENCE, GetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP)-1);
             }
             break;
