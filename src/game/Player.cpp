@@ -1376,9 +1376,9 @@ void Player::Update( uint32 p_time )
     // group update
     SendUpdateToOutOfRangeGroupMembers();
 
-    Pet* pet = GetPet();
+    if (Pet* pet = GetPet())
     {
-        if (pet && !pet->IsWithinDistInMap(this, GetMap()->GetVisibilityDistance()) && (GetCharmGUID() && (pet->GetGUID() != GetCharmGUID())))
+        if (!pet->IsWithinDistInMap(this, GetMap()->GetVisibilityDistance()) && (GetCharmGUID() && (pet->GetGUID() != GetCharmGUID())))
             RemovePet(pet, PET_SAVE_NOT_IN_SLOT, true);
         else if (m_petScalingUpdateTimer)
         {
