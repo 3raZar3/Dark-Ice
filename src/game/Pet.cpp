@@ -1928,7 +1928,7 @@ void Pet::UpdateScalingAuras()
         (*itr)->UpdateModifierAmount(amount);
 
         SetHealth(health <= GetMaxHealth() ? health : GetMaxHealth());
-        SetPower(POWER_MANA, mana <= GetMaxPower(POWER_MANA));
+        SetPower(POWER_MANA, mana <= GetMaxPower(POWER_MANA) ? mana : GetMaxPower(POWER_MANA));
     }
 }
 
