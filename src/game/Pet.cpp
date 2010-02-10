@@ -519,8 +519,8 @@ void Pet::Update(uint32 diff)
 
             if(m_duration > 0)
             {
-                if(m_duration > diff)
-                    m_duration -= diff;
+                if(m_duration > (int32)diff)
+                    m_duration -= (int32)diff;
                 else
                 {
                     Remove(getPetType() != SUMMON_PET ? PET_SAVE_AS_DELETED:PET_SAVE_NOT_IN_SLOT);
@@ -822,28 +822,27 @@ bool Pet::InitStatsForLevel(uint32 petlevel)
     CreatureInfo const *cinfo = GetCreatureInfo();
     assert(cinfo);
 
-    Unit* owner = GetOwner();
-    if(!owner)
+    if (!owner)
     {
-        sLog.outError("attempt to summon pet (Entry %u) without owner! Attempt terminated.", cinfo->Entry);
-        return false;
+        // Do not remove *owner as function argument, GetOwner() won't work on summoning pet if the owner
+        // is no player, because pet is not yet in world; see ObjectAccessor::GetUnit
+        owner = GetOwner();
+        if (!owner)
+        {
+            sLog.outError("attempt to summon pet (Entry %u) without owner! Attempt terminated.", cinfo->Entry);
+            return false;
+        }
     }
 
     uint32 creature_ID = (getPetType() == HUNTER_PET) ? 1 : cinfo->Entry;
 
     SetLevel(petlevel);
 
-    SetMeleeDamageSchool(SpellSchools(cinfo->dmgschool));
-
-    SetAttackTime(BASE_ATTACK, BASE_ATTACK_TIME);
-    SetAttackTime(OFF_ATTACK, BASE_ATTACK_TIME);
-    SetAttackTime(RANGED_ATTACK, BASE_ATTACK_TIME);
-
     SetFloatValue(UNIT_MOD_CAST_SPEED, 1.0);
 
     // find stored pet level stats
     PetLevelInfo const* pInfo = sObjectMgr.GetPetLevelInfo(creature_ID, petlevel);
-    if(pInfo)
+    if (pInfo)
     {
         SetCreateHealth(pInfo->health);
         SetCreateMana(pInfo->mana);
@@ -860,6 +859,8 @@ bool Pet::InitStatsForLevel(uint32 petlevel)
     }
     else
     {
+        //maybe different handling for pets summoned by creatures (fixed states from creatureinfo?)
+
         // use some fake values
         SetCreateHealth(28 + 30*petlevel);
         SetCreateMana(28 + 10*petlevel);
@@ -878,12 +879,18 @@ bool Pet::InitStatsForLevel(uint32 petlevel)
     }
 
     // custom stat calculation
-    switch(getPetType())
+    switch (getPetType())
     {
         case SUMMON_PET:
         case GUARDIAN_PET:
         {
-            // this is correct?
+            // as the creature_template entries for summoned and guardian pets are just used for
+            // pets (not for normal creatures as well), we can use some entries
+            SetAttackTime(BASE_ATTACK, cinfo->baseattacktime);
+            SetAttackTime(OFF_ATTACK, cinfo->baseattacktime);
+            SetAttackTime(RANGED_ATTACK, cinfo->rangeattacktime);
+            SetMeleeDamageSchool(SpellSchools(cinfo->dmgschool));
+
             SetModifierValue(UNIT_MOD_RESISTANCE_HOLY,   BASE_VALUE, float(cinfo->resistance1));
             SetModifierValue(UNIT_MOD_RESISTANCE_FIRE,   BASE_VALUE, float(cinfo->resistance2));
             SetModifierValue(UNIT_MOD_RESISTANCE_NATURE, BASE_VALUE, float(cinfo->resistance3));
@@ -902,6 +909,7 @@ bool Pet::InitStatsForLevel(uint32 petlevel)
             {
                 // mage's Water Elemental
                 case 510:
+                case 37994:
                 {
                     statBonus[STAT_STAMINA] = owner->GetStat(STAT_STAMINA) * 0.3f;
                     statBonus[STAT_INTELLECT] = owner->GetStat(STAT_INTELLECT) * 0.3f;
@@ -927,6 +935,8 @@ bool Pet::InitStatsForLevel(uint32 petlevel)
                     if (Aura* pDummy = owner->GetDummyAura(63271))
                         apBonus += pDummy->GetModifier()->m_miscvalue;
                     apBonus = apBonus * owner->GetTotalAttackPowerValue(BASE_ATTACK) / 100;
+
+                    // TODO: hitchance with spell 61783 (cast manually...? not in petspell dbc's :-/)
                     break;
                 }
                 // Mirror Image
@@ -950,11 +960,17 @@ bool Pet::InitStatsForLevel(uint32 petlevel)
         }
         case HUNTER_PET:
         {
+            // hunter pets always use base attack time and do physical damage
+            SetAttackTime(BASE_ATTACK, BASE_ATTACK_TIME);
+            SetAttackTime(OFF_ATTACK, BASE_ATTACK_TIME);
+            SetAttackTime(RANGED_ATTACK, BASE_ATTACK_TIME);
+            SetMeleeDamageSchool(SPELL_SCHOOL_NORMAL);
+
             SetUInt32Value(UNIT_FIELD_PETNEXTLEVELEXP, sObjectMgr.GetXPForPetLevel(petlevel));
 
             // size scaling
             CreatureFamilyEntry const* cFamily = sCreatureFamilyStore.LookupEntry(cinfo->family);
-            if(cFamily && cFamily->minScale > 0.0f && getPetType()==HUNTER_PET)
+            if (cFamily && cFamily->minScale > 0.0f && getPetType()==HUNTER_PET)
             {
                 float scale;
                 if (getLevel() >= cFamily->maxScaleLevel)
@@ -1177,7 +1193,7 @@ void Pet::_LoadAuras(uint32 timediff)
             // prevent wrong values of remaincharges
             if(spellproto->procCharges)
             {
-                if(remaincharges <= 0 || remaincharges > spellproto->procCharges)
+                if(remaincharges <= 0 || remaincharges > (int32)spellproto->procCharges)
                     remaincharges = spellproto->procCharges;
             }
             else
@@ -1767,7 +1783,7 @@ void Pet::ToggleAutocast(uint32 spellid, bool apply)
 
     PetSpellMap::iterator itr = m_spells.find(spellid);
 
-    int i;
+    uint32 i;
 
     if(apply)
     {
@@ -2128,13 +2144,27 @@ uint32 Pet::CalcScalingAuraBonus(SpellEntry const* spellInfo, uint8 effect_index
         case SPELL_AURA_MOD_SPELL_HIT_CHANCE:
         case SPELL_AURA_MOD_HIT_CHANCE:
         {
-            // hitchance scales proportional to owners hitchance (fractions dropped)
-            // find maximum
+            // find maximum of owners hit chances (fractions dropped)
             float hit[3] = {owner->m_modMeleeHitChance, owner->m_modRangedHitChance, owner->m_modSpellHitChance};
             for (uint8 i = 0; i<3; i++)
-                if (bonusValue < uint32(hit[i]))
-                    bonusValue = uint32(hit[i]);
+                if (ownerValue < uint32(hit[i]))
+                    ownerValue = uint32(hit[i]);
+            // all known auras scale 1:1
+            scale = 1.0f;
             break;
+        }
+        case SPELL_AURA_MELEE_SLOW:
+        {
+            // find owners maximum haste (== minimum speedPct factor)
+            float cur = 1.0f, factor[3] = {owner->m_modAttackSpeedPct[BASE_ATTACK], m_modAttackSpeedPct[RANGED_ATTACK], owner->GetFloatValue(UNIT_MOD_CAST_SPEED)};
+            for (uint8 i = 0; i<3; i++)
+                if (cur > factor[i])
+                    cur = factor[i];
+            // get percent haste out of factor
+            ownerValue = uint32(100.0f/cur -100);
+
+            // just death knight ghoul aura here for now, 1:1
+            scale = 1.0f;
         }
         case SPELL_AURA_MOD_EXPERTISE:
         {
