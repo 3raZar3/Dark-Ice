@@ -449,6 +449,7 @@ const uint32 ItemQualityColors[MAX_ITEM_QUALITY] = {
 #define SPELL_ATTR_EX6_UNK30                      0x40000000            // 30 not set in 3.0.3
 #define SPELL_ATTR_EX6_UNK31                      0x80000000            // 31 not set in 3.0.3
 
+#define MAX_TALENT_SPEC_COUNT   2
 #define MAX_GLYPH_SLOT_INDEX    6
 
 enum SheathTypes
@@ -624,7 +625,7 @@ enum SpellEffects
     SPELL_EFFECT_SELF_RESURRECT            = 94,
     SPELL_EFFECT_SKINNING                  = 95,
     SPELL_EFFECT_CHARGE                    = 96,
-    SPELL_EFFECT_97                        = 97,
+    SPELL_EFFECT_SUMMON_ALL_TOTEMS         = 97,
     SPELL_EFFECT_KNOCK_BACK                = 98,
     SPELL_EFFECT_DISENCHANT                = 99,
     SPELL_EFFECT_INEBRIATE                 = 100,
@@ -2270,13 +2271,15 @@ enum TotemCategory
 
 enum UnitDynFlags
 {
-    UNIT_DYNFLAG_LOOTABLE          = 0x0001,
-    UNIT_DYNFLAG_TRACK_UNIT        = 0x0002,
-    UNIT_DYNFLAG_OTHER_TAGGER      = 0x0004,
-    UNIT_DYNFLAG_ROOTED            = 0x0008,
-    UNIT_DYNFLAG_SPECIALINFO       = 0x0010,
-    UNIT_DYNFLAG_DEAD              = 0x0020,
-    UNIT_DYNFLAG_REFER_A_FRIEND    = 0x0040
+    UNIT_DYNFLAG_NONE                       = 0x0000,
+    UNIT_DYNFLAG_LOOTABLE                   = 0x0001,
+    UNIT_DYNFLAG_TRACK_UNIT                 = 0x0002,
+    UNIT_DYNFLAG_TAPPED                     = 0x0004,       // Lua_UnitIsTapped
+    UNIT_DYNFLAG_TAPPED_BY_PLAYER           = 0x0008,       // Lua_UnitIsTappedByPlayer
+    UNIT_DYNFLAG_SPECIALINFO                = 0x0010,
+    UNIT_DYNFLAG_DEAD                       = 0x0020,
+    UNIT_DYNFLAG_REFER_A_FRIEND             = 0x0040,
+    UNIT_DYNFLAG_TAPPED_BY_ALL_THREAT_LIST  = 0x0080        // Lua_UnitIsTappedByAllThreatList
 };
 
 enum CorpseDynFlags
@@ -2651,26 +2654,26 @@ enum MailResponseResult
 // in fact, these are also used elsewhere
 enum PetTameFailureReason
 {
-    PETTAME_INVALIDCREATURE         = 0,
-    PETTAME_TOOMANY                 = 1,
-    PETTAME_CREATUREALREADYOWNED    = 2,
-    PETTAME_NOTTAMEABLE             = 3,
-    PETTAME_ANOTHERSUMMONACTIVE     = 4,
-    PETTAME_UNITSCANTTAME           = 5,
-    PETTAME_NOPETAVAILABLE          = 6,  // not used in taming
-    PETTAME_INTERNALERROR           = 7,
-    PETTAME_TOOHIGHLEVEL            = 8,
-    PETTAME_DEAD                    = 9,  // not used in taming
-    PETTAME_NOTDEAD                 = 10, // not used in taming
-    PETTAME_CANTCONTROLEXOTIC       = 11, // 3.x
-    PETTAME_UNKNOWNERROR            = 12
+    PETTAME_INVALIDCREATURE         = 1,
+    PETTAME_TOOMANY                 = 2,
+    PETTAME_CREATUREALREADYOWNED    = 3,
+    PETTAME_NOTTAMEABLE             = 4,
+    PETTAME_ANOTHERSUMMONACTIVE     = 5,
+    PETTAME_UNITSCANTTAME           = 6,
+    PETTAME_NOPETAVAILABLE          = 7,                    // not used in taming
+    PETTAME_INTERNALERROR           = 8,
+    PETTAME_TOOHIGHLEVEL            = 9,
+    PETTAME_DEAD                    = 10,                   // not used in taming
+    PETTAME_NOTDEAD                 = 11,                   // not used in taming
+    PETTAME_CANTCONTROLEXOTIC       = 12,                   // 3.x
+    PETTAME_UNKNOWNERROR            = 13
 };
 
 // we need to stick to 1 version or half of the stuff will work for someone
 // others will not and opposite
-// will only support WoW, WoW:TBC and WoW:WotLK 3.3.0a client build 11159...
+// will only support WoW, WoW:TBC and WoW:WotLK 3.3.2 client build 11403...
 
-#define EXPECTED_MANGOSD_CLIENT_BUILD        {11159, 0}
+#define EXPECTED_MANGOSD_CLIENT_BUILD        {11403, 0}
 
 // max supported expansion level in mangosd
 // NOTE: not set it more that supported by targeted client version with all expansions installed
