@@ -4103,7 +4103,7 @@ void Aura::HandleAuraModRoot(bool apply, bool Real)
                 data.append(m_target->GetPackGUID());
                 data << (uint32)2;
                 m_target->SendMessageToSet(&data,true);
-
+            }
             //Clear unit movement flags
             ((Player*)m_target)->m_movementInfo.SetMovementFlags(MOVEFLAG_NONE);
         }
@@ -4172,7 +4172,7 @@ void Aura::HandleAuraModSilence(bool apply, bool Real)
                 if(spell->m_spellInfo->PreventionType == SPELL_PREVENTION_TYPE_SILENCE)
                     // Stop spells on prepare or casting state
                     m_target->InterruptSpell(CurrentSpellTypes(i), false);
-    }
+	}
     else
     {
         // Real remove called after current aura remove from lists, check if other similar auras active

@@ -297,7 +297,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         // now client not include swimming flag in case jumping under water
         plMover->SetInWater( !plMover->IsInWater() || plMover->GetBaseMap()->IsUnderWater(movementInfo.GetPos()->x, movementInfo.GetPos()->y, movementInfo.GetPos()->z) );
     }
-    if (movementInfo.HasMovementFlag(MOVEMENTFLAG_SWIMMING))
+    if (movementInfo.HasMovementFlag(MOVEFLAG_SWIMMING))
     {
         if(mover->GetTypeId() == TYPEID_UNIT)
         {
@@ -639,8 +639,7 @@ void WorldSession::HandleChangeSeatsOnControlledVehicle(WorldPacket &recv_data)
 
     if(Vehicle *vehicle = ObjectAccessor::GetVehicle(vehicleGUID))
     {
-        MovementInfo mi;
-        ReadMovementInfo(recv_data, &mi);
+        MovementInfo mi(recv_data);
         //_player->m_movementInfo = mi;
 
         uint64 guid = 0;

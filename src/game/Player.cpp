@@ -20260,8 +20260,8 @@ void Player::InitGlyphsForLevel()
 
 void Player::SendEnterVehicle(Vehicle *vehicle)
 {
-    m_movementInfo.AddMovementFlag(MOVEMENTFLAG_ONTRANSPORT);
-    m_movementInfo.AddMovementFlag(MOVEMENTFLAG_FLY_UNK1);
+    m_movementInfo.AddMovementFlag(MOVEFLAG_ONTRANSPORT);
+    m_movementInfo.AddMovementFlag(MOVEFLAG_ROOT);
 
     if(m_transport)                                         // if we were on a transport, leave
     {
