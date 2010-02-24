@@ -151,6 +151,7 @@ void WorldSession::HandleAutostoreLootItemOpcode( WorldPacket & recv_data )
         player->SendNewItem(newitem, uint32(item->count), false, false, true);
         player->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_LOOT_ITEM, item->itemid, item->count);
         player->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_LOOT_TYPE, loot->loot_type, item->count);
+        player->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_LOOT_EPIC_ITEM, item->itemid, item->count);
     }
     else
         player->SendEquipError( msg, NULL, NULL );
@@ -221,7 +222,7 @@ void WorldSession::HandleLootMoneyOpcode( WorldPacket & /*recv_data*/ )
                 Player* playerGroup = itr->getSource();
                 if(!playerGroup)
                     continue;
-                if (player->IsWithinDistInMap(playerGroup,sWorld.getConfig(CONFIG_GROUP_XP_DISTANCE),false))
+                if (player->IsWithinDistInMap(playerGroup,sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE),false))
                     playersNear.push_back(playerGroup);
             }
 
@@ -312,7 +313,7 @@ void WorldSession::DoLootRelease( uint64 lguid )
                 // only vein pass this check
                 if(go_min != 0 && go_max > go_min)
                 {
-                    float amount_rate = sWorld.getRate(RATE_MINING_AMOUNT);
+                    float amount_rate = sWorld.getConfig(CONFIG_FLOAT_RATE_MINING_AMOUNT);
                     float min_amount = go_min*amount_rate;
                     float max_amount = go_max*amount_rate;
 
@@ -323,7 +324,7 @@ void WorldSession::DoLootRelease( uint64 lguid )
                     {
                         if(uses >= min_amount)
                         {
-                            float chance_rate = sWorld.getRate(RATE_MINING_NEXT);
+                            float chance_rate = sWorld.getConfig(CONFIG_FLOAT_RATE_MINING_NEXT);
 
                             int32 ReqValue = 175;
                             LockEntry const *lockInfo = sLockStore.LookupEntry(go->GetGOInfo()->chest.lockId);
@@ -331,7 +332,7 @@ void WorldSession::DoLootRelease( uint64 lguid )
                                 ReqValue = lockInfo->Skill[0];
                             float skill = float(player->GetSkillValue(SKILL_MINING))/(ReqValue+25);
                             double chance = pow(0.8*chance_rate,4*(1/double(max_amount))*double(uses));
-                            if(roll_chance_f(100*chance+skill))
+                            if(roll_chance_f(float(100.0f*chance+skill)))
                             {
                                 go->SetLootState(GO_READY);
                             }
@@ -505,6 +506,7 @@ void WorldSession::HandleLootMasterGiveOpcode( WorldPacket & recv_data )
     target->SendNewItem(newitem, uint32(item.count), false, false, true );
     target->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_LOOT_ITEM, item.itemid, item.count);
     target->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_LOOT_TYPE, pLoot->loot_type, item.count);
+    target->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_LOOT_EPIC_ITEM, item.itemid, item.count);
 
     // mark as looted
     item.count=0;
