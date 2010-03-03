@@ -323,6 +323,18 @@ enum ItemEnchantmentType
     ITEM_ENCHANTMENT_TYPE_PRISMATIC_SOCKET = 8
 };
 
+enum ItemLimitCategoryMode
+{
+    ITEM_LIMIT_CATEGORY_MODE_HAVE  = 0,                      // limit applied to amount items in inventory/bank
+    ITEM_LIMIT_CATEGORY_MODE_EQUIP = 1,                      // limit applied to amount equipped items (including used gems)
+};
+
+// some used in code cases
+enum ItemLimitCategory
+{
+    ITEM_LIMIT_CATEGORY_MANA_GEM   = 4,
+};
+
 enum TotemCategoryType
 {
     TOTEM_CATEGORY_TYPE_KNIFE   = 1,
@@ -381,5 +393,14 @@ enum SummonPropFlags
     SUMMON_PROP_FLAG_UNK13             = 0x1000,            // 8 spells in 3.0.3, siege vehicle
     SUMMON_PROP_FLAG_UNK14             = 0x2000,            // 2 spells in 3.0.3, escort?
 };
+
+enum SpellEffectIndex
+{
+    EFFECT_INDEX_0     = 0,
+    EFFECT_INDEX_1     = 1,
+    EFFECT_INDEX_2     = 2
+};
+
+#define MAX_EFFECT_INDEX 3
 
 #endif

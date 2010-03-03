@@ -256,11 +256,7 @@ void GameObject::Update(uint32 /*p_time*/)
                                 return;
                             }
                                                             // respawn timer
-                            uint16 poolid = GetDBTableGUIDLow() ? sPoolMgr.IsPartOfAPool<GameObject>(GetDBTableGUIDLow()) : 0;
-                            if (poolid)
-                                sPoolMgr.UpdatePool<GameObject>(poolid, GetDBTableGUIDLow());
-                            else
-                                GetMap()->Add(this);
+                            GetMap()->Add(this);
                             break;
                     }
                 }
@@ -441,11 +437,20 @@ void GameObject::Update(uint32 /*p_time*/)
 
             m_respawnTime = m_spawnedByDefault ? time(NULL) + m_respawnDelayTime : 0;
 
+            // since pool system can fail to roll unspawned object, this one can remain spawned, so must set respawn nevertheless
+            m_respawnTime = time(NULL) + m_respawnDelayTime;
+
             // if option not set then object will be saved at grid unload
             if(sWorld.getConfig(CONFIG_BOOL_SAVE_RESPAWN_TIME_IMMEDIATLY))
                 SaveRespawnTime();
 
-            UpdateObjectVisibility();
+            // if part of pool, let pool system schedule new spawn instead of just scheduling respawn
+            if(uint16 poolid = GetDBTableGUIDLow() ? sPoolMgr.IsPartOfAPool<GameObject>(GetDBTableGUIDLow()) : 0)
+                sPoolMgr.UpdatePool<GameObject>(poolid, GetDBTableGUIDLow());
+
+            // can be not in world at pool despawn
+            if (IsInWorld())
+                UpdateObjectVisibility();
 
             break;
         }
@@ -1066,6 +1071,16 @@ void GameObject::Use(Unit* user)
 
             // cast this spell later if provided
             spellId = info->goober.spellId;
+
+            // database may contain a dummy spell, so it need replacement by actually existing
+            switch(spellId)
+            {
+                case 34448: spellId = 26566; break;
+                case 34452: spellId = 26572; break;
+                case 37639: spellId = 36326; break;
+                case 45367: spellId = 45371; break;
+                case 45370: spellId = 45368; break;
+            }
 
             break;
         }
