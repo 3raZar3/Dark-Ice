@@ -3731,7 +3731,7 @@ void Spell::EffectSummonType(SpellEffectIndex eff_idx)
                 case SUMMON_PROP_TYPE_SIEGE_VEH:
                 case SUMMON_PROP_TYPE_DRAKE_VEH:
                     // TODO
-                    EffectSummonVehicle(i);
+                    EffectSummonVehicle(eff_idx);
                     break;
                 default:
                     sLog.outError("EffectSummonType: Unhandled summon type %u", summon_prop->Type);
@@ -3760,7 +3760,7 @@ void Spell::EffectSummonType(SpellEffectIndex eff_idx)
         case SUMMON_PROP_GROUP_VEHICLE:
         {
             // TODO
-            EffectSummonVehicle(i);
+            EffectSummonVehicle(eff_idx);
             break;
         }
         default:
