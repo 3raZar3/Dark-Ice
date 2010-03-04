@@ -33,7 +33,7 @@
 #include "ObjectMgr.h"
 #include "World.h"
 
-#define __ANTI_DEBUG__
+//#define __ANTI_DEBUG__
 
 #ifdef __ANTI_DEBUG__
 #include "Chat.h"
