@@ -531,11 +531,11 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         {   delta_t = 15000.0f;   }
  
         // Tangens of walking angel
-        /*if (!(movementInfo.flags & (MOVEMENTFLAG_FLYING | MOVEMENTFLAG_SWIMMING)))
+        if (!(movementInfo.GetMovementFlags() & (MOVEFLAG_FLYING | MOVEFLAG_SWIMMING)))
         {
             //Mount hack detection currently disabled
             tg_z = ((delta !=0.0f) && (delta_z > 0.0f)) ? (atan((delta_z*delta_z) / delta) * 180.0f / M_PI) : 0.0f;
-        }*/
+        }
 
         //antiOFF fall-damage, MOVEMENTFLAG_UNK4 seted by client if player try movement when falling and unset in this case the MOVEMENTFLAG_FALLING flag.
          
@@ -582,18 +582,18 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         }
          
         // Check for walking upwards a mountain while not beeing able to do that
-        /*if ((tg_z > 85.0f))
+        if ((tg_z > 85.0f))
         {
             Anti__CheatOccurred(CurTime,"Mount hack",tg_z,NULL,delta,delta_z);
         }
-        */
+        
         
         static const float DIFF_OVERGROUND = 10.0f;
         float Anti__GroundZ = GetPlayer()->GetMap()->GetHeight(GetPlayer()->GetPositionX(),GetPlayer()->GetPositionY(),MAX_HEIGHT);
         float Anti__FloorZ  = GetPlayer()->GetMap()->GetHeight(GetPlayer()->GetPositionX(),GetPlayer()->GetPositionY(),GetPlayer()->GetPositionZ());
         float Anti__MapZ = ((Anti__FloorZ <= (INVALID_HEIGHT+5.0f)) ? Anti__GroundZ : Anti__FloorZ) + DIFF_OVERGROUND;
          
-        if(!GetPlayer()->CanFly() &&
+        if(!GetPlayer()->CanFly() && !plMover->isGameMaster() &&
            !GetPlayer()->GetBaseMap()->IsUnderWater(movementInfo.GetPos()->x, movementInfo.GetPos()->y, movementInfo.GetPos()->z-7.0f) &&
            Anti__MapZ < GetPlayer()->GetPositionZ() && Anti__MapZ > (INVALID_HEIGHT+DIFF_OVERGROUND + 5.0f))
         {
@@ -619,13 +619,13 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
             }*/
         }
  
-        /*
+        
         if(Anti__FloorZ < -199900.0f && Anti__GroundZ >= -199900.0f &&
            GetPlayer()->GetPositionZ()+5.0f < Anti__GroundZ)
         {
             Anti__CheatOccurred(CurTime,"Teleport2Plane hack",
                                 GetPlayer()->GetPositionZ(),NULL,Anti__GroundZ);
-        }*/
+        }
     } 
     // <<---- anti-cheat features
 
