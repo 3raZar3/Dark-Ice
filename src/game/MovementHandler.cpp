@@ -33,7 +33,7 @@
 #include "ObjectMgr.h"
 #include "World.h"
 
-//#define __ANTI_DEBUG__
+#define __ANTI_DEBUG__
 
 #ifdef __ANTI_DEBUG__
 #include "Chat.h"
@@ -46,62 +46,62 @@ std::string FlagsToStr(const uint32 Flags)
         return Ret;
     }
     
-    if(Flags & MOVEMENTFLAG_FORWARD)
+    if(Flags & MOVEFLAG_FORWARD)
     {   Ret+="FW "; }
-    if(Flags & MOVEMENTFLAG_BACKWARD)
+    if(Flags & MOVEFLAG_BACKWARD)
     {   Ret+="BW "; }
-    if(Flags & MOVEMENTFLAG_STRAFE_LEFT)
+    if(Flags & MOVEFLAG_STRAFE_LEFT)
     {   Ret+="STL ";    }
-    if(Flags & MOVEMENTFLAG_STRAFE_RIGHT)
+    if(Flags & MOVEFLAG_STRAFE_RIGHT)
     {   Ret+="STR ";    }
-    if(Flags & MOVEMENTFLAG_LEFT)
+    if(Flags & MOVEFLAG_LEFT)
     {   Ret+="LF "; }
-    if(Flags & MOVEMENTFLAG_RIGHT)
+    if(Flags & MOVEFLAG_RIGHT)
     {   Ret+="RI "; }
-    if(Flags & MOVEMENTFLAG_PITCH_UP)
+    if(Flags & MOVEFLAG_PITCH_UP)
     {   Ret+="PTUP ";   }
-    if(Flags & MOVEMENTFLAG_PITCH_DOWN)
+    if(Flags & MOVEFLAG_PITCH_DOWN)
     {   Ret+="PTDW ";   }
-    if(Flags & MOVEMENTFLAG_WALK_MODE)
+    if(Flags & MOVEFLAG_WALK_MODE)
     {   Ret+="WALK ";   }
-    if(Flags & MOVEMENTFLAG_ONTRANSPORT)
+    if(Flags & MOVEFLAG_ONTRANSPORT)
     {   Ret+="TRANS ";  }
-    if(Flags & MOVEMENTFLAG_LEVITATING)
+    if(Flags & MOVEFLAG_LEVITATING)
     {   Ret+="LEVI ";   }
-    if(Flags & MOVEMENTFLAG_FLY_UNK1)
+    if(Flags & MOVEFLAG_FLY_UNK1)
     {   Ret+="FLYUNK1 ";    }
-    if(Flags & MOVEMENTFLAG_JUMPING)
+    if(Flags & MOVEFLAG_JUMPING)
     {   Ret+="JUMP ";   }
-    if(Flags & MOVEMENTFLAG_UNK4)
+    if(Flags & MOVEFLAG_UNK4)
     {   Ret+="UNK4 ";   }
-    if(Flags & MOVEMENTFLAG_FALLING)
+    if(Flags & MOVEFLAG_FALLING)
     {   Ret+="FALL ";   }
-    if(Flags & MOVEMENTFLAG_SWIMMING)
+    if(Flags & MOVEFLAG_SWIMMING)
     {   Ret+="SWIM ";   }
-    if(Flags & MOVEMENTFLAG_FLY_UP)
+    if(Flags & MOVEFLAG_FLY_UP)
     {   Ret+="FLYUP ";  }
-    if(Flags & MOVEMENTFLAG_CAN_FLY)
+    if(Flags & MOVEFLAG_CAN_FLY)
     {   Ret+="CFLY ";   }
-    if(Flags & MOVEMENTFLAG_FLYING)
+    if(Flags & MOVEFLAG_FLYING)
     {   Ret+="FLY ";    }
-    if(Flags & MOVEMENTFLAG_FLYING2)
+    if(Flags & MOVEFLAG_FLYING2)
     {   Ret+="FLY2 ";   }
-    if(Flags & MOVEMENTFLAG_WATERWALKING)
+    if(Flags & MOVEFLAG_WATERWALKING)
     {   Ret+="WTWALK "; }
-    if(Flags & MOVEMENTFLAG_SAFE_FALL)
+    if(Flags & MOVEFLAG_SAFE_FALL)
     {   Ret+="SAFE ";   }
-    if(Flags & MOVEMENTFLAG_UNK3)
+    if(Flags & MOVEFLAG_UNK3)
     {   Ret+="UNK3 ";   }
-    if(Flags & MOVEMENTFLAG_SPLINE)
+    if(Flags & MOVEFLAG_SPLINE)
     {   Ret+="SPLINE ";     }
-    if(Flags & MOVEMENTFLAG_SPLINE2)
+    if(Flags & MOVEFLAG_SPLINE2)
     {   Ret+="SPLINE2 ";    }
     
     return Ret;
 }
 #endif // __ANTI_DEBUG__
 
-bool WorldSession::Anti__ReportCheat(const char* Reason,float Speed,const char* Op,float Val1,uint32 Val2,MovementInfo* MvInfo)
+bool WorldSession::Anti__ReportCheat(const char* Reason,float Speed,const char* Op,float Val1,uint32 Val2 /*,MovementInfo* MvInfo*/)
 {
     if(!Reason)
     {
@@ -151,16 +151,16 @@ bool WorldSession::Anti__ReportCheat(const char* Reason,float Speed,const char* 
         std::stringstream Pos;
         Pos << "OldPos: " << GetPlayer()->GetPositionX() << " " << GetPlayer()->GetPositionY() << " "
             << GetPlayer()->GetPositionZ();
-        if(MvInfo)
+        /*if(MvInfo)
         {
             Pos << "\nNew: " << MvInfo->x << " " << MvInfo->y << " " << MvInfo->z << "\n"
                 << "Flags: " << MvInfo->flags << "\n"
                 << "t_guid: " << MvInfo->t_guid << " falltime: " << MvInfo->fallTime;
-        }
+        }*/
         CharacterDatabase.PExecute("INSERT INTO cheaters (player,acctid,reason,speed,count,first_date,last_date,`Op`,Val1,Val2,Map,Pos,Level) "
-                                   "VALUES ('%s','%u','%s','%f','1',NOW(),NOW(),'%s','%f','%u','%u','%s','%u')",
+                                   "VALUES ('%s','%u','%s','%f','1',NOW(),NOW(),'%s','%f','%u','%u',0,'%u')",
                                    Player,Acc,Reason,Speed,Op,Val1,Val2,Map,
-                                   Pos.str().c_str(),GetPlayer()->getLevel());
+                                   /*Pos.str().c_str(),*/GetPlayer()->getLevel());
     }
 
     if(sWorld.GetMvAnticheatKill() && GetPlayer()->isAlive())
@@ -194,7 +194,7 @@ bool WorldSession::Anti__ReportCheat(const char* Reason,float Speed,const char* 
 }
 
 bool WorldSession::Anti__CheatOccurred(uint32 CurTime,const char* Reason,float Speed,const char* Op,
-                                float Val1,uint32 Val2,MovementInfo* MvInfo)
+                                float Val1,uint32 Val2/*,MovementInfo* MvInfo*/)
 {
     if(!Reason)
     {
@@ -207,7 +207,7 @@ bool WorldSession::Anti__CheatOccurred(uint32 CurTime,const char* Reason,float S
 
     if (GetPlayer()->m_anti_alarmcount > sWorld.GetMvAnticheatAlarmCount())
     {
-        Anti__ReportCheat(Reason,Speed,Op,Val1,Val2,MvInfo);
+        Anti__ReportCheat(Reason,Speed,Op,Val1,Val2/*,MvInfo*/);
         return true;
     }
     return false;
@@ -458,7 +458,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         // if we boarded a transport, add us to it
         if (plMover && !plMover->m_transport)
         {
-            float trans_rad = movementInfo.t_x*movementInfo.t_x + movementInfo.t_y*movementInfo.t_y + movementInfo.t_z*movementInfo.t_z;
+            float trans_rad = movementInfo.GetTransportPos()->x*movementInfo.GetTransportPos()->x + movementInfo.GetTransportPos()->y*movementInfo.GetTransportPos()->y + movementInfo.GetTransportPos()->z*movementInfo.GetTransportPos()->z;
             if (trans_rad > 3600.0f) // transport radius = 60 yards //cheater with on_transport_flag
             {
  	            return;
@@ -490,7 +490,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
     {
         // now client not include swimming flag in case jumping under water
         plMover->SetInWater( !plMover->IsInWater() || plMover->GetBaseMap()->IsUnderWater(movementInfo.GetPos()->x, movementInfo.GetPos()->y, movementInfo.GetPos()->z) );
-        if(plMover->GetBaseMap()->IsUnderWater(movementInfo.x, movementInfo.y, movementInfo.z-7.0f))
+        if(plMover->GetBaseMap()->IsUnderWater(movementInfo.GetPos()->x, movementInfo.GetPos()->y, movementInfo.GetPos()->z-7.0f))
         {
             plMover->m_anti_BeginFallZ=INVALID_HEIGHT;
         }
@@ -517,9 +517,9 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         else if (movementInfo.flags & MOVEMENTFLAG_WALK_MODE) move_type = MOVE_WALK;
         else move_type = MOVE_RUN;*/
  
-        float delta_x = GetPlayer()->GetPositionX() - movementInfo.x;
-        float delta_y = GetPlayer()->GetPositionY() - movementInfo.y;
-        float delta_z = GetPlayer()->GetPositionZ() - movementInfo.z;
+        float delta_x = GetPlayer()->GetPositionX() - movementInfo.GetPos()->x;
+        float delta_y = GetPlayer()->GetPositionY() - movementInfo.GetPos()->y;
+        float delta_z = GetPlayer()->GetPositionZ() - movementInfo.GetPos()->z;
         float delta = sqrt(delta_x * delta_x + delta_y * delta_y); // Len of movement-vector via Pythagoras (a^2+b^2=Len^2)
         float tg_z = 0.0f; //tangens
         float delta_t = getMSTimeDiff(GetPlayer()->m_anti_lastmovetime,CurTime);
@@ -540,9 +540,9 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         //antiOFF fall-damage, MOVEMENTFLAG_UNK4 seted by client if player try movement when falling and unset in this case the MOVEMENTFLAG_FALLING flag.
          
         if((GetPlayer()->m_anti_BeginFallZ == INVALID_HEIGHT) &&
-           (movementInfo.flags & (MOVEMENTFLAG_FALLING | MOVEMENTFLAG_UNK4)) != 0)
+           (movementInfo.GetMovementFlags() & (MOVEFLAG_FALLING | MOVEFLAG_FALLINGFAR)) != 0)
         {
-            GetPlayer()->m_anti_BeginFallZ=(float)(movementInfo.z);
+            GetPlayer()->m_anti_BeginFallZ=(float)(movementInfo.GetPos()->z);
         }
  
         if(GetPlayer()->m_anti_NextLenCheck <= CurTime)
@@ -555,14 +555,14 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
             static const float MaxDeltaXYT = sWorld.GetMvAnticheatMaxXYT();
 
 #ifdef __ANTI_DEBUG__
-            SendAreaTriggerMessage("XYT: %f ; Flags: %s",delta_xyt,FlagsToStr(movementInfo.flags).c_str());
+            SendAreaTriggerMessage("XYT: %f ; Flags: %s",delta_xyt,FlagsToStr(movementInfo.GetMovementFlags()).c_str());
 #endif //__ANTI_DEBUG__
              
             if(delta_xyt > MaxDeltaXYT && delta<=100.0f && GetPlayer()->GetZoneId() != 2257)
             {
                 Anti__CheatOccurred(CurTime,"Speed hack",delta_xyt,LookupOpcodeName(opcode),
                                     (float)(GetPlayer()->GetMotionMaster()->GetCurrentMovementGeneratorType()),
-                                    (float)(getMSTimeDiff(OldNextLenCheck-500,CurTime)),&movementInfo);
+                                    (float)(getMSTimeDiff(OldNextLenCheck-500,CurTime))/*,&movementInfo*/);
             }
         }
  
@@ -572,13 +572,13 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         }
 
         // Check for waterwalking
-        if(((movementInfo.flags & MOVEMENTFLAG_WATERWALKING) != 0) &&
-           ((movementInfo.flags ^ MOVEMENTFLAG_WATERWALKING) != 0) && // Client sometimes set waterwalk where it shouldn't do that...
-           ((movementInfo.flags & MOVEMENTFLAG_JUMPING) == 0) &&
-           GetPlayer()->GetBaseMap()->IsUnderWater(movementInfo.x, movementInfo.y, movementInfo.z-6.0f) &&
+        if(((movementInfo.GetMovementFlags() & MOVEFLAG_WATERWALKING) != 0) &&
+           ((movementInfo.GetMovementFlags() ^ MOVEFLAG_WATERWALKING) != 0) && // Client sometimes set waterwalk where it shouldn't do that...
+           ((movementInfo.GetMovementFlags() & MOVEFLAG_FALLING) == 0) &&
+           GetPlayer()->GetBaseMap()->IsUnderWater(movementInfo.GetPos()->x, movementInfo.GetPos()->y, movementInfo.GetPos()->z-6.0f) &&
            !(GetPlayer()->HasAuraType(SPELL_AURA_WATER_WALK) || GetPlayer()->HasAuraType(SPELL_AURA_GHOST)))
         {
-            Anti__CheatOccurred(CurTime,"Water walking",0.0f,NULL,0.0f,(uint32)(movementInfo.flags));
+            Anti__CheatOccurred(CurTime,"Water walking",0.0f,NULL,0.0f/*,(uint32)(movementInfo.GetMovementFlags())*/);
         }
          
         // Check for walking upwards a mountain while not beeing able to do that
@@ -594,13 +594,13 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         float Anti__MapZ = ((Anti__FloorZ <= (INVALID_HEIGHT+5.0f)) ? Anti__GroundZ : Anti__FloorZ) + DIFF_OVERGROUND;
          
         if(!GetPlayer()->CanFly() &&
-           !GetPlayer()->GetBaseMap()->IsUnderWater(movementInfo.x, movementInfo.y, movementInfo.z-7.0f) &&
+           !GetPlayer()->GetBaseMap()->IsUnderWater(movementInfo.GetPos()->x, movementInfo.GetPos()->y, movementInfo.GetPos()->z-7.0f) &&
            Anti__MapZ < GetPlayer()->GetPositionZ() && Anti__MapZ > (INVALID_HEIGHT+DIFF_OVERGROUND + 5.0f))
         {
             static const float DIFF_AIRJUMP=25.0f; // 25 is realy high, but to many false positives...
              
             // Air-Jump-Detection definitively needs a better way to be detected...
-            if((movementInfo.flags & (MOVEMENTFLAG_CAN_FLY | MOVEMENTFLAG_FLYING | MOVEMENTFLAG_FLYING2)) != 0) // Fly Hack
+            if((movementInfo.GetMovementFlags() & (MOVEFLAG_CAN_FLY | MOVEFLAG_FLYING | MOVEFLAG_ROOT)) != 0) // Fly Hack
             {
                 Anti__CheatOccurred(CurTime,"Fly hack",
                                     ((uint8)(GetPlayer()->HasAuraType(SPELL_AURA_FLY))) +

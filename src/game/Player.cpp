@@ -20829,7 +20829,7 @@ void Player::HandleFall(MovementInfo const& movementInfo)
 {
     // calculate total z distance of the fall
     //float z_diff = m_lastFallZ - movementInfo.z;
-    float z_diff = (m_lastFallZ >= m_anti_BeginFallZ ? m_lastFallZ : m_anti_BeginFallZ) - movementInfo.z;
+    float z_diff = (m_lastFallZ >= m_anti_BeginFallZ ? m_lastFallZ : m_anti_BeginFallZ) - movementInfo.GetPos()->z;
      
     m_anti_BeginFallZ=INVALID_HEIGHT;
     //float z_diff = m_lastFallZ - movementInfo.GetPos()->z;
