@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@ bool LoadScriptingModule(char const* libName)
     ScriptsSet testScript=new _ScriptSet;
 
     std::string name = strlen(libName) ? libName : MANGOS_SCRIPT_NAME;
-    name += MANGOS_SCRIPT_EXT;
+    name = MANGOS_SCRIPT_PREFIX + name + MANGOS_SCRIPT_SUFFIX;
 
     testScript->hScriptsLib=MANGOS_LOAD_LIBRARY(name.c_str());
 
@@ -76,6 +76,7 @@ bool LoadScriptingModule(char const* libName)
         ||!(testScript->EffectDummyGameObj  =(scriptCallEffectDummyGameObj  )MANGOS_GET_PROC_ADDR(testScript->hScriptsLib,"EffectDummyGameObj"  ))
         ||!(testScript->EffectDummyCreature =(scriptCallEffectDummyCreature )MANGOS_GET_PROC_ADDR(testScript->hScriptsLib,"EffectDummyCreature" ))
         ||!(testScript->EffectDummyItem     =(scriptCallEffectDummyItem     )MANGOS_GET_PROC_ADDR(testScript->hScriptsLib,"EffectDummyItem"     ))
+        ||!(testScript->EffectAuraDummy     =(scriptCallEffectAuraDummy     )MANGOS_GET_PROC_ADDR(testScript->hScriptsLib,"EffectAuraDummy"     ))
         ||!(testScript->GetAI               =(scriptCallGetAI               )MANGOS_GET_PROC_ADDR(testScript->hScriptsLib,"GetAI"               ))
         ||!(testScript->CreateInstanceData  =(scriptCallCreateInstanceData  )MANGOS_GET_PROC_ADDR(testScript->hScriptsLib,"CreateInstanceData"  ))
         )
@@ -94,7 +95,7 @@ bool LoadScriptingModule(char const* libName)
     UnloadScriptingModule();
 
     Script=testScript;
-    Script->ScriptsInit(objmgr.GetScriptNames());
+    Script->ScriptsInit(sObjectMgr.GetScriptNames());
 
     sWorld.SetScriptsVersion(Script->ScriptsVersion());
 

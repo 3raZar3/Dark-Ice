@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -108,7 +108,7 @@ class MANGOS_DLL_DECL MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::
             return IsValidMapCoord(loc.mapid,loc.coord_x,loc.coord_y,loc.coord_z,loc.orientation);
         }
 
-        void DoDelayedMovesAndRemoves();
+        void RemoveAllObjectsInRemoveList();
 
         void LoadTransports();
 
@@ -122,6 +122,7 @@ class MANGOS_DLL_DECL MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::
         void RemoveBonesFromMap(uint32 mapid, uint64 guid, float x, float y);
         uint32 GenerateInstanceId() { return ++i_MaxInstanceId; }
         void InitMaxInstanceId();
+        void InitializeVisibilityDistanceInfo();
 
         /* statistics */
         uint32 GetNumInstances();
@@ -153,4 +154,7 @@ class MANGOS_DLL_DECL MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::
 
         uint32 i_MaxInstanceId;
 };
+
+#define sMapMgr MapManager::Instance()
+
 #endif

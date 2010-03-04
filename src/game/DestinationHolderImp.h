@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 
 #include "MapManager.h"
 #include "DestinationHolder.h"
+#include "Unit.h"
 
 #include <cmath>
 
@@ -93,19 +94,20 @@ template<typename TRAVELLER>
 bool
 DestinationHolder<TRAVELLER>::UpdateTraveller(TRAVELLER &traveller, uint32 diff, bool force_update, bool micro_movement)
 {
-    if(!micro_movement)
+    if (!micro_movement)
     {
         i_tracker.Update(diff);
         i_timeElapsed += diff;
-        if( i_tracker.Passed() || force_update )
+        if (i_tracker.Passed() || force_update)
         {
             ResetUpdate();
-            if(!i_destSet) return true;
+            if (!i_destSet)
+                return true;
+
             float x,y,z;
             GetLocationNowNoMicroMovement(x, y, z);
-            if( x == -431602080 )
-                return false;
-            if( traveller.GetTraveller().GetPositionX() != x || traveller.GetTraveller().GetPositionY() != y )
+
+            if (traveller.GetTraveller().GetPositionX() != x || traveller.GetTraveller().GetPositionY() != y  || traveller.GetTraveller().GetPositionZ() != z)
             {
                 float ori = traveller.GetTraveller().GetAngle(x, y);
                 traveller.Relocation(x, y, z, ori);
@@ -116,24 +118,21 @@ DestinationHolder<TRAVELLER>::UpdateTraveller(TRAVELLER &traveller, uint32 diff,
     }
     i_tracker.Update(diff);
     i_timeElapsed += diff;
-    if( i_tracker.Passed() || force_update )
+    if (i_tracker.Passed() || force_update)
     {
         ResetUpdate();
-        if(!i_destSet) return true;
-        float x,y,z;
+        if (!i_destSet) return true;
 
-        if(!traveller.GetTraveller().hasUnitState(UNIT_STAT_MOVING | UNIT_STAT_IN_FLIGHT))
+        if (!traveller.GetTraveller().hasUnitState(UNIT_STAT_MOVING | UNIT_STAT_IN_FLIGHT))
             return true;
 
-        if(traveller.GetTraveller().hasUnitState(UNIT_STAT_IN_FLIGHT))
+        float x,y,z;
+        if (traveller.GetTraveller().hasUnitState(UNIT_STAT_IN_FLIGHT))
             GetLocationNow(traveller.GetTraveller().GetBaseMap() ,x, y, z, true);                  // Should reposition Object with right Coord, so I can bypass some Grid Relocation
         else
             GetLocationNow(traveller.GetTraveller().GetBaseMap(), x, y, z, false);
 
-        if( x == -431602080 )
-            return false;
-
-        if( traveller.GetTraveller().GetPositionX() != x || traveller.GetTraveller().GetPositionY() != y )
+        if (traveller.GetTraveller().GetPositionX() != x || traveller.GetTraveller().GetPositionY() != y || traveller.GetTraveller().GetPositionZ() != z)
         {
             float ori = traveller.GetTraveller().GetAngle(x, y);
             traveller.Relocation(x, y, z, ori);
@@ -160,23 +159,23 @@ template<typename TRAVELLER>
 void
 DestinationHolder<TRAVELLER>::GetLocationNow(const Map * map, float &x, float &y, float &z, bool is3D) const
 {
-    if( HasArrived() )
+    if (HasArrived())
     {
         x = i_destX;
         y = i_destY;
         z = i_destZ;
     }
-    else if(HasDestination())
+    else if (HasDestination())
     {
         double percent_passed = (double)i_timeElapsed / (double)i_totalTravelTime;
-        const float distanceX = ((i_destX - i_fromX) * percent_passed);
-        const float distanceY = ((i_destY - i_fromY) * percent_passed);
-        const float distanceZ = ((i_destZ - i_fromZ) * percent_passed);
+        const float distanceX = float((i_destX - i_fromX) * percent_passed);
+        const float distanceY = float((i_destY - i_fromY) * percent_passed);
+        const float distanceZ = float((i_destZ - i_fromZ) * percent_passed);
         x = i_fromX + distanceX;
         y = i_fromY + distanceY;
         float z2 = i_fromZ + distanceZ;
         // All that is not finished but previous code neither... Traveller need be able to swim.
-        if(is3D)
+        if (is3D)
             z = z2;
         else
         {
@@ -193,11 +192,11 @@ DestinationHolder<TRAVELLER>::GetLocationNow(const Map * map, float &x, float &y
 
 template<typename TRAVELLER>
 float
-DestinationHolder<TRAVELLER>::GetDistance2dFromDestSq(const WorldObject &obj) const
+DestinationHolder<TRAVELLER>::GetDistance3dFromDestSq(const WorldObject &obj) const
 {
     float x,y,z;
     obj.GetPosition(x,y,z);
-    return (i_destX-x)*(i_destX-x)+(i_destY-y)*(i_destY-y);
+    return (i_destX-x)*(i_destX-x)+(i_destY-y)*(i_destY-y)+(i_destZ-z)*(i_destZ-z);
 }
 
 template<typename TRAVELLER>
@@ -211,7 +210,7 @@ template<typename TRAVELLER>
 void
 DestinationHolder<TRAVELLER>::GetLocationNowNoMicroMovement(float &x, float &y, float &z) const
 {
-    if( HasArrived() )
+    if (HasArrived())
     {
         x = i_destX;
         y = i_destY;
@@ -220,9 +219,9 @@ DestinationHolder<TRAVELLER>::GetLocationNowNoMicroMovement(float &x, float &y, 
     else
     {
         double percent_passed = (double)i_timeElapsed / (double)i_totalTravelTime;
-        x = i_fromX + ((i_destX - i_fromX) * percent_passed);
-        y = i_fromY + ((i_destY - i_fromY) * percent_passed);
-        z = i_fromZ + ((i_destZ - i_fromZ) * percent_passed);
+        x = i_fromX + float((i_destX - i_fromX) * percent_passed);
+        y = i_fromY + float((i_destY - i_fromY) * percent_passed);
+        z = i_fromZ + float((i_destZ - i_fromZ) * percent_passed);
     }
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@
 #include "Player.h"
 #include "Chat.h"
 
-void utf8print(const char* str)
+void utf8print(void* arg, const char* str)
 {
 #if PLATFORM == PLATFORM_WINDOWS
     wchar_t wtemp_buf[6000];
@@ -45,17 +45,23 @@ void utf8print(const char* str)
 
     char temp_buf[6000];
     CharToOemBuffW(&wtemp_buf[0],&temp_buf[0],wtemp_len+1);
-    printf(temp_buf);
+    printf("%s", temp_buf);
 #else
-    printf(str);
+    printf("%s", str);
 #endif
+}
+
+void commandFinished(void*, bool sucess)
+{
+    printf("mangos>");
+    fflush(stdout);
 }
 
 /// Delete a user account and all associated characters in this realm
 /// \todo This function has to be enhanced to respect the login/realm split (delete char, delete account chars in realm, delete account chars in realm then delete account
 bool ChatHandler::HandleAccountDeleteCommand(const char* args)
 {
-    if(!*args)
+    if (!*args)
         return false;
 
     ///- Get the account name from the command line
@@ -64,15 +70,15 @@ bool ChatHandler::HandleAccountDeleteCommand(const char* args)
         return false;
 
     std::string account_name = account_name_str;
-    if(!AccountMgr::normilizeString(account_name))
+    if (!AccountMgr::normalizeString(account_name))
     {
         PSendSysMessage(LANG_ACCOUNT_NOT_EXIST,account_name.c_str());
         SetSentErrorMessage(true);
         return false;
     }
 
-    uint32 account_id = accmgr.GetId(account_name);
-    if(!account_id)
+    uint32 account_id = sAccountMgr.GetId(account_name);
+    if (!account_id)
     {
         PSendSysMessage(LANG_ACCOUNT_NOT_EXIST,account_name.c_str());
         SetSentErrorMessage(true);
@@ -85,7 +91,7 @@ bool ChatHandler::HandleAccountDeleteCommand(const char* args)
     if(HasLowerSecurityAccount (NULL,account_id,true))
         return false;
 
-    AccountOpResult result = accmgr.DeleteAccount(account_id);
+    AccountOpResult result = sAccountMgr.DeleteAccount(account_id);
     switch(result)
     {
         case AOR_OK:
@@ -124,7 +130,7 @@ bool ChatHandler::HandleCharacterDeleteCommand(const char* args)
     uint64 character_guid;
     uint32 account_id;
 
-    Player *player = objmgr.GetPlayer(character_name.c_str());
+    Player *player = sObjectMgr.GetPlayer(character_name.c_str());
     if(player)
     {
         character_guid = player->GetGUID();
@@ -133,7 +139,7 @@ bool ChatHandler::HandleCharacterDeleteCommand(const char* args)
     }
     else
     {
-        character_guid = objmgr.GetPlayerGUIDByName(character_name);
+        character_guid = sObjectMgr.GetPlayerGUIDByName(character_name);
         if(!character_guid)
         {
             PSendSysMessage(LANG_NO_PLAYER,character_name.c_str());
@@ -141,14 +147,22 @@ bool ChatHandler::HandleCharacterDeleteCommand(const char* args)
             return false;
         }
 
-        account_id = objmgr.GetPlayerAccountIdByGUID(character_guid);
+        account_id = sObjectMgr.GetPlayerAccountIdByGUID(character_guid);
     }
 
     std::string account_name;
-    accmgr.GetName (account_id,account_name);
+    sAccountMgr.GetName (account_id,account_name);
 
     Player::DeleteFromDB(character_guid, account_id, true);
     PSendSysMessage(LANG_CHARACTER_DELETED,character_name.c_str(),GUID_LOPART(character_guid),account_name.c_str(), account_id);
+    return true;
+}
+
+/// Close RA connection
+bool ChatHandler::HandleQuitCommand(const char* /*args*/)
+{
+    // processed in RASocket
+    SendSysMessage(LANG_QUIT_WRONG_USE_ERROR);
     return true;
 }
 
@@ -219,11 +233,11 @@ bool ChatHandler::HandleAccountCreateCommand(const char* args)
     if(!szAcc || !szPassword)
         return false;
 
-    // normilized in accmgr.CreateAccount
+    // normalized in accmgr.CreateAccount
     std::string account_name = szAcc;
     std::string password = szPassword;
 
-    AccountOpResult result = accmgr.CreateAccount(account_name, password);
+    AccountOpResult result = sAccountMgr.CreateAccount(account_name, password);
     switch(result)
     {
         case AOR_OK:
@@ -334,7 +348,7 @@ void CliRunnable::run()
                 continue;
             }
 
-            sWorld.QueueCliCommand(&utf8print,command.c_str());
+            sWorld.QueueCliCommand(new CliCommandHolder(NULL, command.c_str(), &utf8print, &commandFinished));
         }
         else if (feof(stdin))
         {

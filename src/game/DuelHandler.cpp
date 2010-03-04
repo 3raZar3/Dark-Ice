@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,6 @@
 
 void WorldSession::HandleDuelAcceptedOpcode(WorldPacket& recvPacket)
 {
-    CHECK_PACKET_SIZE(recvPacket,8);
-
     uint64 guid;
     Player *pl;
     Player *plTarget;
@@ -44,23 +42,19 @@ void WorldSession::HandleDuelAcceptedOpcode(WorldPacket& recvPacket)
         return;
 
     //sLog.outDebug( "WORLD: received CMSG_DUEL_ACCEPTED" );
-    DEBUG_LOG("Player 1 is: %u (%s)", pl->GetGUIDLow(),pl->GetName());
-    DEBUG_LOG("Player 2 is: %u (%s)", plTarget->GetGUIDLow(),plTarget->GetName());
+    DEBUG_LOG("Player 1 is: %u (%s)", pl->GetGUIDLow(), pl->GetName());
+    DEBUG_LOG("Player 2 is: %u (%s)", plTarget->GetGUIDLow(), plTarget->GetName());
 
     time_t now = time(NULL);
     pl->duel->startTimer = now;
     plTarget->duel->startTimer = now;
 
-    WorldPacket data(SMSG_DUEL_COUNTDOWN, 4);
-    data << (uint32)3000;                                   // 3 seconds
-    pl->GetSession()->SendPacket(&data);
-    plTarget->GetSession()->SendPacket(&data);
+    pl->SendDuelCountdown(3000);
+    plTarget->SendDuelCountdown(3000);
 }
 
 void WorldSession::HandleDuelCancelledOpcode(WorldPacket& recvPacket)
 {
-    CHECK_PACKET_SIZE(recvPacket,8);
-
     //sLog.outDebug( "WORLD: received CMSG_DUEL_CANCELLED" );
 
     // no duel requested

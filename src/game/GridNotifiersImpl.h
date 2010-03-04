@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,14 +26,17 @@
 #include "UpdateData.h"
 #include "CreatureAI.h"
 #include "SpellAuras.h"
+#include "DBCEnums.h"
 
 template<class T>
 inline void
 MaNGOS::VisibleNotifier::Visit(GridRefManager<T> &m)
 {
+    WorldObject const* viewPoint = i_player.GetViewPoint();
+
     for(typename GridRefManager<T>::iterator iter = m.begin(); iter != m.end(); ++iter)
     {
-        i_player.UpdateVisibilityOf(iter->getSource(),i_data,i_data_updates,i_visibleNow);
+        i_player.UpdateVisibilityOf(viewPoint,iter->getSource(),i_data,i_data_updates,i_visibleNow);
         i_clientGUIDs.erase(iter->getSource()->GetGUID());
     }
 }
@@ -42,8 +45,7 @@ inline void
 MaNGOS::ObjectUpdater::Visit(CreatureMapType &m)
 {
     for(CreatureMapType::iterator iter=m.begin(); iter != m.end(); ++iter)
-        if(!iter->getSource()->isSpiritService())
-            iter->getSource()->Update(i_timeDiff);
+        iter->getSource()->Update(i_timeDiff);
 }
 
 inline void
@@ -64,13 +66,13 @@ MaNGOS::PlayerRelocationNotifier::Visit(PlayerMapType &m)
     }
 }
 
-inline void PlayerCreatureRelocationWorker(Player* pl, Creature* c)
+inline void PlayerCreatureRelocationWorker(Player* pl, WorldObject const* viewPoint, Creature* c)
 {
     // update creature visibility at player/creature move
-    pl->UpdateVisibilityOf(c);
+    pl->UpdateVisibilityOf(viewPoint,c);
 
     // Creature AI reaction
-    if(!c->hasUnitState(UNIT_STAT_SEARCHING | UNIT_STAT_FLEEING))
+    if(!c->hasUnitState(UNIT_STAT_FLEEING))
     {
         if( c->AI() && c->AI()->IsVisible(pl) && !c->IsInEvadeMode() )
             c->AI()->MoveInLineOfSight(pl);
@@ -79,13 +81,13 @@ inline void PlayerCreatureRelocationWorker(Player* pl, Creature* c)
 
 inline void CreatureCreatureRelocationWorker(Creature* c1, Creature* c2)
 {
-    if(!c1->hasUnitState(UNIT_STAT_SEARCHING | UNIT_STAT_FLEEING))
+    if(!c1->hasUnitState(UNIT_STAT_FLEEING))
     {
         if( c1->AI() && c1->AI()->IsVisible(c2) && !c1->IsInEvadeMode() )
             c1->AI()->MoveInLineOfSight(c2);
     }
 
-    if(!c2->hasUnitState(UNIT_STAT_SEARCHING | UNIT_STAT_FLEEING))
+    if(!c2->hasUnitState(UNIT_STAT_FLEEING))
     {
         if( c2->AI() && c2->AI()->IsVisible(c1) && !c2->IsInEvadeMode() )
             c2->AI()->MoveInLineOfSight(c1);
@@ -98,9 +100,11 @@ MaNGOS::PlayerRelocationNotifier::Visit(CreatureMapType &m)
     if(!i_player.isAlive() || i_player.isInFlight())
         return;
 
+    WorldObject const* viewPoint = i_player.GetViewPoint();
+
     for(CreatureMapType::iterator iter=m.begin(); iter != m.end(); ++iter)
-        if( iter->getSource()->isAlive())
-            PlayerCreatureRelocationWorker(&i_player,iter->getSource());
+        if (iter->getSource()->isAlive())
+            PlayerCreatureRelocationWorker(&i_player,viewPoint,iter->getSource());
 }
 
 template<>
@@ -111,8 +115,9 @@ MaNGOS::CreatureRelocationNotifier::Visit(PlayerMapType &m)
         return;
 
     for(PlayerMapType::iterator iter=m.begin(); iter != m.end(); ++iter)
-        if( iter->getSource()->isAlive() && !iter->getSource()->isInFlight())
-            PlayerCreatureRelocationWorker(iter->getSource(), &i_creature);
+        if (Player* player = iter->getSource())
+            if (player->isAlive() && !player->isInFlight())
+                PlayerCreatureRelocationWorker(player, player->GetViewPoint(), &i_creature);
 }
 
 template<>
@@ -168,7 +173,7 @@ inline void MaNGOS::DynamicObjectUpdater::VisitHelper(Unit* target)
         return;
 
     SpellEntry const *spellInfo = sSpellStore.LookupEntry(i_dynobject.GetSpellId());
-    uint32 eff_index  = i_dynobject.GetEffIndex();
+    SpellEffectIndex eff_index  = i_dynobject.GetEffIndex();
     // Check target immune to spell or aura
     if (target->IsImmunedToSpell(spellInfo) || target->IsImmunedToSpellEffect(spellInfo, eff_index))
         return;

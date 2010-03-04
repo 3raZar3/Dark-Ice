@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ struct GameObjectInfo
     uint32  faction;
     uint32  flags;
     float   size;
-    uint32  questItems[4];
+    uint32  questItems[6];
     union                                                   // different GO types have different data field
     {
         //0 GAMEOBJECT_TYPE_DOOR
@@ -53,7 +53,7 @@ struct GameObjectInfo
         {
             uint32 startOpen;                               //0 used client side to determine GO_ACTIVATED means open/closed
             uint32 lockId;                                  //1 -> Lock.dbc
-            uint32 autoCloseTime;                           //2 secs till autoclose = autoCloseTime / 0x10000
+            uint32 autoCloseTime;                           //2 secs till autoclose = autoCloseTime / IN_MILISECONDS (previous was 0x10000)
             uint32 noDamageImmune;                          //3 break opening whenever you recieve damage?
             uint32 openTextID;                              //4 can be used to replace castBarCaption?
             uint32 closeTextID;                             //5
@@ -64,8 +64,8 @@ struct GameObjectInfo
         {
             uint32 startOpen;                               //0
             uint32 lockId;                                  //1 -> Lock.dbc
-            uint32 autoCloseTime;                           //2 secs till autoclose = autoCloseTime / 0x10000
-            uint32 linkedTrap;                              //3
+            uint32 autoCloseTime;                           //2 secs till autoclose = autoCloseTime / IN_MILISECONDS (previous was 0x10000)
+            uint32 linkedTrapId;                            //3
             uint32 noDamageImmune;                          //4 isBattlegroundObject
             uint32 large;                                   //5
             uint32 openTextID;                              //6 can be used to replace castBarCaption?
@@ -127,7 +127,7 @@ struct GameObjectInfo
             uint32 spellId;                                 //3
             uint32 charges;                                 //4 need respawn (if > 0)
             uint32 cooldown;                                //5 time in secs
-            uint32 autoCloseTime;                           //6
+            uint32 autoCloseTime;                           //6 secs till autoclose = autoCloseTime / IN_MILISECONDS (previous was 0x10000)
             uint32 startDelay;                              //7
             uint32 serverOnly;                              //8
             uint32 stealthed;                               //9
@@ -170,7 +170,7 @@ struct GameObjectInfo
             uint32 lockId;                                  //0 -> Lock.dbc
             uint32 questId;                                 //1
             uint32 eventId;                                 //2
-            uint32 autoCloseTime;                           //3
+            uint32 autoCloseTime;                           //3 secs till autoclose = autoCloseTime / IN_MILISECONDS (previous was 0x10000)
             uint32 customAnim;                              //4
             uint32 consumable;                              //5
             uint32 cooldown;                                //6
@@ -194,7 +194,7 @@ struct GameObjectInfo
         {
             uint32 pause;                                   //0
             uint32 startOpen;                               //1
-            uint32 autoCloseTime;                           //2 secs till autoclose = autoCloseTime / 0x10000
+            uint32 autoCloseTime;                           //2 secs till autoclose = autoCloseTime / IN_MILISECONDS (previous was 0x10000)
             uint32 pause1EventID;                           //3
             uint32 pause2EventID;                           //4
         } transport;
@@ -206,7 +206,7 @@ struct GameObjectInfo
             uint32 damageMin;                               //2
             uint32 damageMax;                               //3
             uint32 damageSchool;                            //4
-            uint32 autoCloseTime;                           //5 secs till autoclose = autoCloseTime / 0x10000
+            uint32 autoCloseTime;                           //5 secs till autoclose = autoCloseTime / IN_MILISECONDS (previous was 0x10000)
             uint32 openTextID;                              //6
             uint32 closeTextID;                             //7
         } areadamage;
@@ -457,6 +457,7 @@ struct GameObjectInfo
     {
         switch(type)
         {
+            case GAMEOBJECT_TYPE_BUTTON:      return button.linkedTrapId;
             case GAMEOBJECT_TYPE_CHEST:       return chest.linkedTrapId;
             case GAMEOBJECT_TYPE_SPELL_FOCUS: return spellFocus.linkedTrapId;
             case GAMEOBJECT_TYPE_GOOBER:      return goober.linkedTrapId;
@@ -477,7 +478,7 @@ struct GameObjectInfo
             case GAMEOBJECT_TYPE_AREADAMAGE:    autoCloseTime = areadamage.autoCloseTime; break;
             default: break;
         }
-        return autoCloseTime / 0x10000;
+        return autoCloseTime / IN_MILISECONDS;              // prior to 3.0.3, conversion was / 0x10000;
     }
 
     uint32 GetLootId() const
@@ -486,6 +487,16 @@ struct GameObjectInfo
         {
             case GAMEOBJECT_TYPE_CHEST:       return chest.lootId;
             case GAMEOBJECT_TYPE_FISHINGHOLE: return fishinghole.lootId;
+            default: return 0;
+        }
+    }
+
+    uint32 GetGossipMenuId() const
+    {
+        switch(type)
+        {
+            case GAMEOBJECT_TYPE_QUESTGIVER:    return questgiver.gossipID;
+            case GAMEOBJECT_TYPE_GOOBER:        return goober.gossipID;
             default: return 0;
         }
     }
@@ -559,21 +570,12 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
 
         void AddToWorld();
         void RemoveFromWorld();
-        void CleanupsBeforeDelete();
 
         bool Create(uint32 guidlow, uint32 name_id, Map *map, uint32 phaseMask, float x, float y, float z, float ang, float rotation0, float rotation1, float rotation2, float rotation3, uint32 animprogress, GOState go_state);
         void Update(uint32 p_time);
         GameObjectInfo const* GetGOInfo() const;
 
         bool IsTransport() const;
-
-        void SetOwnerGUID(uint64 owner)
-        {
-            m_spawnedByDefault = false;                     // all object with owner is despawned after delay
-            SetUInt64Value(OBJECT_FIELD_CREATED_BY, owner);
-        }
-        uint64 GetOwnerGUID() const { return GetUInt64Value(OBJECT_FIELD_CREATED_BY); }
-        Unit* GetOwner() const;
 
         uint32 GetDBTableGUIDLow() const { return m_DBTableGuid; }
 
@@ -593,6 +595,21 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
         bool LoadFromDB(uint32 guid, Map *map);
         void DeleteFromDB();
 
+        void SetOwnerGUID(uint64 owner)
+        {
+            m_spawnedByDefault = false;                     // all object with owner is despawned after delay
+            SetUInt64Value(OBJECT_FIELD_CREATED_BY, owner);
+        }
+        uint64 GetOwnerGUID() const { return GetUInt64Value(OBJECT_FIELD_CREATED_BY); }
+        Unit* GetOwner() const;
+
+        void SetSpellId(uint32 id)
+        {
+            m_spawnedByDefault = false;                     // all summoned object is despawned after delay
+            m_spellId = id;
+        }
+        uint32 GetSpellId() const { return m_spellId;}
+
         time_t GetRespawnTime() const { return m_respawnTime; }
         time_t GetRespawnTimeEx() const
         {
@@ -603,10 +620,10 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
                 return now;
         }
 
-        void SetRespawnTime(int32 respawn)
+        void SetRespawnTime(time_t respawn)
         {
             m_respawnTime = respawn > 0 ? time(NULL) + respawn : 0;
-            m_respawnDelayTime = respawn > 0 ? respawn : 0;
+            m_respawnDelayTime = respawn > 0 ? uint32(respawn) : 0;
         }
         void Respawn();
         bool isSpawned() const
@@ -619,8 +636,6 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
         uint32 GetRespawnDelay() const { return m_respawnDelayTime; }
         void Refresh();
         void Delete();
-        void SetSpellId(uint32 id) { m_spellId = id;}
-        uint32 GetSpellId() const { return m_spellId;}
         void getFishLoot(Loot *loot, Player* loot_owner);
         GameobjectTypes GetGoType() const { return GameobjectTypes(GetByteValue(GAMEOBJECT_BYTES_1, 1)); }
         void SetGoType(GameobjectTypes type) { SetByteValue(GAMEOBJECT_BYTES_1, 1, type); }
@@ -662,10 +677,13 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
                                                             // 0 = use `gameobject`.`spawntimesecs`
         void ResetDoorOrButton();
 
+        bool IsHostileTo(Unit const* unit) const;
+        bool IsFriendlyTo(Unit const* unit) const;
 
+        void SummonLinkedTrapIfAny();
         void TriggeringLinkedGameObject( uint32 trapEntry, Unit* target);
 
-        bool isVisibleForInState(Player const* u, bool inVisibleList) const;
+        bool isVisibleForInState(Player const* u, WorldObject const* viewPoint, bool inVisibleList) const;
 
         GameObject* LookupFishingHoleAround(float range);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,6 @@
 
 BattleGroundNA::BattleGroundNA()
 {
-    m_BgObjects.resize(BG_NA_OBJECT_MAX);
-
     m_StartDelayTimes[BG_STARTING_EVENT_FIRST]  = BG_START_DELAY_1M;
     m_StartDelayTimes[BG_STARTING_EVENT_SECOND] = BG_START_DELAY_30S;
     m_StartDelayTimes[BG_STARTING_EVENT_THIRD]  = BG_START_DELAY_15S;
@@ -56,17 +54,11 @@ void BattleGroundNA::Update(uint32 diff)
 
 void BattleGroundNA::StartingEventCloseDoors()
 {
-    for(uint32 i = BG_NA_OBJECT_DOOR_1; i <= BG_NA_OBJECT_DOOR_4; ++i)
-        SpawnBGObject(i, RESPAWN_IMMEDIATELY);
 }
 
 void BattleGroundNA::StartingEventOpenDoors()
 {
-    for(uint32 i = BG_NA_OBJECT_DOOR_1; i <= BG_NA_OBJECT_DOOR_2; ++i)
-        DoorOpen(i);
-
-    for(uint32 i = BG_NA_OBJECT_BUFF_1; i <= BG_NA_OBJECT_BUFF_2; ++i)
-        SpawnBGObject(i, 60);
+    OpenDoorEvent(BG_EVENT_DOOR);
 }
 
 void BattleGroundNA::AddPlayer(Player *plr)
@@ -113,7 +105,7 @@ void BattleGroundNA::HandleKillPlayer(Player *player, Player *killer)
 
 bool BattleGroundNA::HandlePlayerUnderMap(Player *player)
 {
-    player->TeleportTo(GetMapId(),4055.504395,2919.660645,13.611241,player->GetOrientation(),false);
+    player->TeleportTo(GetMapId(),4055.504395f,2919.660645f,13.611241f,player->GetOrientation(),false);
     return true;
 }
 
@@ -154,19 +146,6 @@ void BattleGroundNA::Reset()
 
 bool BattleGroundNA::SetupBattleGround()
 {
-    // gates
-    if (!AddObject(BG_NA_OBJECT_DOOR_1, BG_NA_OBJECT_TYPE_DOOR_1, 4031.854, 2966.833, 12.6462, -2.648788, 0, 0, 0.9697962, -0.2439165, RESPAWN_IMMEDIATELY)
-        || !AddObject(BG_NA_OBJECT_DOOR_2, BG_NA_OBJECT_TYPE_DOOR_2, 4081.179, 2874.97, 12.39171, 0.4928045, 0, 0, 0.2439165, 0.9697962, RESPAWN_IMMEDIATELY)
-        || !AddObject(BG_NA_OBJECT_DOOR_3, BG_NA_OBJECT_TYPE_DOOR_3, 4023.709, 2981.777, 10.70117, -2.648788, 0, 0, 0.9697962, -0.2439165, RESPAWN_IMMEDIATELY)
-        || !AddObject(BG_NA_OBJECT_DOOR_4, BG_NA_OBJECT_TYPE_DOOR_4, 4090.064, 2858.438, 10.23631, 0.4928045, 0, 0, 0.2439165, 0.9697962, RESPAWN_IMMEDIATELY)
-    // buffs
-        || !AddObject(BG_NA_OBJECT_BUFF_1, BG_NA_OBJECT_TYPE_BUFF_1, 4009.189941, 2895.250000, 13.052700, -1.448624, 0, 0, 0.6626201, -0.7489557, 120)
-        || !AddObject(BG_NA_OBJECT_BUFF_2, BG_NA_OBJECT_TYPE_BUFF_2, 4103.330078, 2946.350098, 13.051300, -0.06981307, 0, 0, 0.03489945, -0.9993908, 120))
-    {
-        sLog.outErrorDb("BatteGroundNA: Failed to spawn some object!");
-        return false;
-    }
-
     return true;
 }
 

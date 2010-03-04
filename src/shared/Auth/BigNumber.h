@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 #define _AUTH_BIGNUMBER_H
 
 #include "Common.h"
-#include "ByteBuffer.h"
 
 struct bignum_st;
 
@@ -72,6 +71,8 @@ class BigNumber
             return t %= bn;
         }
 
+        bool isZero() const;
+
         BigNumber ModExp(const BigNumber &bn1, const BigNumber &bn2);
         BigNumber Exp(const BigNumber &);
 
@@ -81,8 +82,6 @@ class BigNumber
 
         uint32 AsDword();
         uint8* AsByteArray(int minSize = 0);
-        ByteBuffer AsByteBuffer();
-        std::vector<uint8> AsByteVector();
 
         const char *AsHexStr();
         const char *AsDecStr();

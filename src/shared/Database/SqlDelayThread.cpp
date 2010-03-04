@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,6 @@ SqlDelayThread::SqlDelayThread(Database* db) : m_dbEngine(db), m_running(true)
 
 void SqlDelayThread::run()
 {
-    SqlOperation* s;
     #ifndef DO_POSTGRESQL
     mysql_thread_init();
     #endif
@@ -36,9 +35,9 @@ void SqlDelayThread::run()
         // if the running state gets turned off while sleeping
         // empty the queue before exiting
         ACE_Based::Thread::Sleep(10);
-        while (!m_sqlQueue.empty())
+        SqlOperation* s;
+        while (m_sqlQueue.next(s))
         {
-            s = m_sqlQueue.next();
             s->Execute(m_dbEngine);
             delete s;
         }

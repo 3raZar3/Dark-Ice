@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include "Policies/SingletonImp.h"
 #include "Config/ConfigEnv.h"
 #include "Util.h"
+#include "ByteBuffer.h"
 
 #include <stdarg.h>
 
@@ -225,9 +226,9 @@ void Log::Initialize()
     }
 
     charLogfile = openLogFile("CharLogFile","CharLogTimestamp","a");
-
     dberLogfile = openLogFile("DBErrorLogFile",NULL,"a");
     raLogfile = openLogFile("RaLogFile",NULL,"a");
+    worldLogfile = openLogFile("WorldLogFile","WorldLogTimestamp","a");
 
     // Main log file settings
     m_includeTime  = sConfig.GetBoolDefault("LogTime", false);
@@ -328,15 +329,15 @@ void Log::outTitle( const char * str)
         SetColor(true,WHITE);
 
     // not expected utf8 and then send as-is
-    printf( str );
+    printf("%s", str);
 
     if(m_colored)
         ResetColor(true);
 
-    printf( "\n" );
+    printf("\n");
     if(logfile)
     {
-        fprintf(logfile, str);
+        fprintf(logfile, "%s", str);
         fprintf(logfile, "\n" );
         fflush(logfile);
     }
@@ -369,7 +370,11 @@ void Log::outString( const char * str, ... )
     if(m_includeTime)
         outTime();
 
-    UTF8PRINTF(stdout,str,);
+    va_list ap;
+
+    va_start(ap, str);
+    vutf8printf(stdout, str, &ap);
+    va_end(ap);
 
     if(m_colored)
         ResetColor(true);
@@ -379,7 +384,6 @@ void Log::outString( const char * str, ... )
     {
         outTimestamp(logfile);
 
-        va_list ap;
         va_start(ap, str);
         vfprintf(logfile, str, ap);
         fprintf(logfile, "\n" );
@@ -401,7 +405,11 @@ void Log::outError( const char * err, ... )
     if(m_includeTime)
         outTime();
 
-    UTF8PRINTF(stderr,err,);
+    va_list ap;
+
+    va_start(ap, err);
+    vutf8printf(stderr, err, &ap);
+    va_end(ap);
 
     if(m_colored)
         ResetColor(false);
@@ -412,7 +420,6 @@ void Log::outError( const char * err, ... )
         outTimestamp(logfile);
         fprintf(logfile, "ERROR:" );
 
-        va_list ap;
         va_start(ap, err);
         vfprintf(logfile, err, ap);
         va_end(ap);
@@ -434,7 +441,11 @@ void Log::outErrorDb( const char * err, ... )
     if(m_includeTime)
         outTime();
 
-    UTF8PRINTF(stderr,err,);
+    va_list ap;
+
+    va_start(ap, err);
+    vutf8printf(stderr, err, &ap);
+    va_end(ap);
 
     if(m_colored)
         ResetColor(false);
@@ -446,7 +457,6 @@ void Log::outErrorDb( const char * err, ... )
         outTimestamp(logfile);
         fprintf(logfile, "ERROR:" );
 
-        va_list ap;
         va_start(ap, err);
         vfprintf(logfile, err, ap);
         va_end(ap);
@@ -483,7 +493,10 @@ void Log::outBasic( const char * str, ... )
         if(m_includeTime)
             outTime();
 
-        UTF8PRINTF(stdout,str,);
+        va_list ap;
+        va_start(ap, str);
+        vutf8printf(stdout, str, &ap);
+        va_end(ap);
 
         if(m_colored)
             ResetColor(true);
@@ -518,7 +531,10 @@ void Log::outDetail( const char * str, ... )
         if(m_includeTime)
             outTime();
 
-        UTF8PRINTF(stdout,str,);
+        va_list ap;
+        va_start(ap, str);
+        vutf8printf(stdout, str, &ap);
+        va_end(ap);
 
         if(m_colored)
             ResetColor(true);
@@ -527,12 +543,14 @@ void Log::outDetail( const char * str, ... )
     }
     if(logfile && m_logFileLevel > 1)
     {
-        va_list ap;
         outTimestamp(logfile);
+
+        va_list ap;
         va_start(ap, str);
         vfprintf(logfile, str, ap);
-        fprintf(logfile, "\n" );
         va_end(ap);
+
+        fprintf(logfile, "\n" );
         fflush(logfile);
     }
 
@@ -548,7 +566,10 @@ void Log::outDebugInLine( const char * str, ... )
         if(m_colored)
             SetColor(true,m_colors[LogDebug]);
 
-        UTF8PRINTF(stdout,str,);
+        va_list ap;
+        va_start(ap, str);
+        vutf8printf(stdout, str, &ap);
+        va_end(ap);
 
         if(m_colored)
             ResetColor(true);
@@ -574,7 +595,10 @@ void Log::outDebug( const char * str, ... )
         if(m_includeTime)
             outTime();
 
-        UTF8PRINTF(stdout,str,);
+        va_list ap;
+        va_start(ap, str);
+        vutf8printf(stdout, str, &ap);
+        va_end(ap);
 
         if(m_colored)
             ResetColor(true);
@@ -609,7 +633,10 @@ void Log::outCommand( uint32 account, const char * str, ... )
         if(m_includeTime)
             outTime();
 
-        UTF8PRINTF(stdout,str,);
+        va_list ap;
+        va_start(ap, str);
+        vutf8printf(stdout, str, &ap);
+        va_end(ap);
 
         if(m_colored)
             ResetColor(true);
@@ -672,6 +699,30 @@ void Log::outChar(const char * str, ... )
     }
 }
 
+void Log::outWorldPacketDump( uint32 socket, uint32 opcode, char const* opcodeName, ByteBuffer const* packet, bool incoming )
+{
+    if (!worldLogfile)
+        return;
+
+    outTimestamp(worldLogfile);
+
+    fprintf(worldLogfile,"\n%s:\nSOCKET: %u\nLENGTH: " SIZEFMTD "\nOPCODE: %s (0x%.4X)\nDATA:\n",
+        incoming ? "CLIENT" : "SERVER",
+        socket, packet->size(), opcodeName, opcode);
+
+    size_t p = 0;
+    while (p < packet->size())
+    {
+        for (size_t j = 0; j < 16 && p < packet->size(); ++j)
+            fprintf(worldLogfile, "%.2X ", (*packet)[p++]);
+
+        fprintf(worldLogfile, "\n");
+    }
+
+    fprintf(worldLogfile, "\n\n");
+    fflush(worldLogfile);
+}
+
 void Log::outCharDump( const char * str, uint32 account_id, uint32 guid, const char * name )
 {
     if(charLogfile)
@@ -691,7 +742,11 @@ void Log::outMenu( const char * str, ... )
     if(m_includeTime)
         outTime();
 
-    UTF8PRINTF(stdout,str,);
+    va_list ap;
+
+    va_start(ap, str);
+    vutf8printf(stdout, str, &ap);
+    va_end(ap);
 
     ResetColor(true);
 
@@ -699,7 +754,6 @@ void Log::outMenu( const char * str, ... )
     {
         outTimestamp(logfile);
 
-        va_list ap;
         va_start(ap, str);
         vfprintf(logfile, str, ap);
         va_end(ap);
@@ -735,10 +789,10 @@ void outstring_log(const char * str, ...)
     char buf[256];
     va_list ap;
     va_start(ap, str);
-    vsnprintf(buf,256, str, ap);
+    vsnprintf(buf, 256, str, ap);
     va_end(ap);
 
-    MaNGOS::Singleton<Log>::Instance().outString(buf);
+    sLog.outString("%s", buf);
 }
 
 void detail_log(const char * str, ...)
@@ -752,7 +806,7 @@ void detail_log(const char * str, ...)
     vsnprintf(buf,256, str, ap);
     va_end(ap);
 
-    MaNGOS::Singleton<Log>::Instance().outDetail(buf);
+    sLog.outDetail("%s", buf);
 }
 
 void debug_log(const char * str, ...)
@@ -766,7 +820,7 @@ void debug_log(const char * str, ...)
     vsnprintf(buf,256, str, ap);
     va_end(ap);
 
-    MaNGOS::Singleton<Log>::Instance().outDebug(buf);
+    sLog.outDebug("%s", buf);
 }
 
 void error_log(const char * str, ...)
@@ -780,7 +834,7 @@ void error_log(const char * str, ...)
     vsnprintf(buf,256, str, ap);
     va_end(ap);
 
-    MaNGOS::Singleton<Log>::Instance().outError(buf);
+    sLog.outError("%s", buf);
 }
 
 void error_db_log(const char * str, ...)
@@ -794,5 +848,5 @@ void error_db_log(const char * str, ...)
     vsnprintf(buf,256, str, ap);
     va_end(ap);
 
-    MaNGOS::Singleton<Log>::Instance().outErrorDb(buf);
+    sLog.outErrorDb("%s", buf);
 }

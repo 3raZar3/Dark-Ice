@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,12 @@
 #include "Player.h"
 #include "UpdateMask.h"
 #include "ObjectAccessor.h"
+#include "ObjectDefines.h"
 #include "Database/DatabaseEnv.h"
 #include "Opcodes.h"
 #include "GossipDef.h"
 #include "World.h"
+#include "ObjectMgr.h"
 
 Corpse::Corpse(CorpseType type) : WorldObject()
 {
@@ -50,7 +52,7 @@ void Corpse::AddToWorld()
 {
     ///- Register the corpse for guid lookup
     if(!IsInWorld())
-        ObjectAccessor::Instance().AddObject(this);
+        sObjectAccessor.AddObject(this);
 
     Object::AddToWorld();
 }
@@ -59,7 +61,7 @@ void Corpse::RemoveFromWorld()
 {
     ///- Remove the corpse from the accessor
     if(IsInWorld())
-        ObjectAccessor::Instance().RemoveObject(this);
+        sObjectAccessor.RemoveObject(this);
 
     Object::RemoveFromWorld();
 }
@@ -126,7 +128,7 @@ void Corpse::SaveToDB()
 void Corpse::DeleteBonesFromWorld()
 {
     assert(GetType() == CORPSE_BONES);
-    Corpse* corpse = ObjectAccessor::GetCorpse(*this, GetGUID());
+    Corpse* corpse = GetMap()->GetCorpse(GetGUID());
 
     if (!corpse)
     {
@@ -227,7 +229,23 @@ bool Corpse::LoadFromDB(uint32 guid, Field *fields)
     return true;
 }
 
-bool Corpse::isVisibleForInState(Player const* u, bool inVisibleList) const
+bool Corpse::isVisibleForInState(Player const* u, WorldObject const* viewPoint, bool inVisibleList) const
 {
-    return IsInWorld() && u->IsInWorld() && IsWithinDistInMap(u, World::GetMaxVisibleDistanceForObject() + (inVisibleList ? World::GetVisibleObjectGreyDistance() : 0.0f), false);
+    return IsInWorld() && u->IsInWorld() && IsWithinDistInMap(viewPoint, World::GetMaxVisibleDistanceForObject() + (inVisibleList ? World::GetVisibleObjectGreyDistance() : 0.0f), false);
+}
+
+bool Corpse::IsHostileTo( Unit const* unit ) const
+{
+    if (Player* owner = sObjectMgr.GetPlayer(GetOwnerGUID()))
+        return owner->IsHostileTo(unit);
+    else
+        return false;
+}
+
+bool Corpse::IsFriendlyTo( Unit const* unit ) const
+{
+    if (Player* owner = sObjectMgr.GetPlayer(GetOwnerGUID()))
+        return owner->IsFriendlyTo(unit);
+    else
+        return true;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 #ifndef _DEFINES_
 #define _DEFINES_
 
@@ -42,7 +42,7 @@ typedef unsigned int     uint32;
 #else
 #include <stdint.h>
 #ifndef uint64_t
-#include <linux/types.h>
+#include <unistd.h>
 #endif
 typedef uint64_t      uint64;
 typedef unsigned int  uint32;
@@ -59,7 +59,7 @@ typedef vector<sField> T_Table;
 typedef vector<string> T_TableList;
 typedef map< string, T_Table > TDataBase;
 
-static 
+static
 void pg_notice(void *arg, const char *message)
 {
     /// Do nothing

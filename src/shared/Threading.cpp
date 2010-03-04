@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2009-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
  */
 
 #include "Threading.h"
+#include "Errors.h"
 #include <ace/OS_NS_unistd.h>
 #include <ace/Sched_Params.h>
 #include <vector>
@@ -94,15 +95,23 @@ int ThreadPriority::getPriority(Priority p) const
     return m_priority[p];
 }
 
-#define THREADFLAG (THR_NEW_LWP | THR_SCHED_DEFAULT| THR_JOINABLE)
+#ifndef __sun__
+# define THREADFLAG (THR_NEW_LWP | THR_JOINABLE | THR_SCHED_DEFAULT)
+#else
+# define THREADFLAG (THR_NEW_LWP | THR_JOINABLE)
+#endif
 
 Thread::Thread() : m_task(0), m_iThreadId(0), m_hThreadHandle(0)
 {
 
 }
 
-Thread::Thread(Runnable& instance) : m_task(&instance), m_iThreadId(0), m_hThreadHandle(0)
+Thread::Thread(Runnable* instance) : m_task(instance), m_iThreadId(0), m_hThreadHandle(0)
 {
+    // register reference to m_task to prevent it deeltion until destructor
+    if (m_task)
+        m_task->incReference();
+
     bool _start = start();
     ASSERT (_start);
 }
@@ -110,6 +119,10 @@ Thread::Thread(Runnable& instance) : m_task(&instance), m_iThreadId(0), m_hThrea
 Thread::~Thread()
 {
     //Wait();
+
+    // deleted runnable object (if no other references)
+    if (m_task)
+        m_task->decReference();
 }
 
 //initialize Thread's class static member
@@ -118,15 +131,20 @@ ThreadPriority Thread::m_TpEnum;
 
 bool Thread::start()
 {
-    if(m_task == 0 || m_iThreadId != 0)
+    if (m_task == 0 || m_iThreadId != 0)
         return false;
 
-    return (ACE_Thread::spawn(&Thread::ThreadTask, (void*)m_task, THREADFLAG, &m_iThreadId, &m_hThreadHandle) == 0);
+    bool res = (ACE_Thread::spawn(&Thread::ThreadTask, (void*)m_task, THREADFLAG, &m_iThreadId, &m_hThreadHandle) == 0);
+
+    if (res)
+        m_task->incReference();
+
+    return res;
 }
 
 bool Thread::wait()
 {
-    if(!m_hThreadHandle || !m_task)
+    if (!m_hThreadHandle || !m_task)
         return false;
 
     ACE_THR_FUNC_RETURN _value = ACE_THR_FUNC_RETURN(-1);
@@ -140,7 +158,17 @@ bool Thread::wait()
 
 void Thread::destroy()
 {
-    ACE_Thread::kill(m_iThreadId, -1);
+    if (!m_iThreadId || !m_task)
+        return;
+
+    if (ACE_Thread::kill(m_iThreadId, -1) != 0)
+        return;
+
+    m_iThreadId = 0;
+    m_hThreadHandle = 0;
+
+    // reference set at ACE_Thread::spawn
+    m_task->decReference();
 }
 
 void Thread::suspend()
@@ -157,6 +185,9 @@ ACE_THR_FUNC_RETURN Thread::ThreadTask(void * param)
 {
     Runnable * _task = (Runnable*)param;
     _task->run();
+
+    // task execution complete, free referecne added at
+    _task->decReference();
 
     return (ACE_THR_FUNC_RETURN)0;
 }
@@ -193,10 +224,12 @@ Thread * Thread::current()
 
 void Thread::setPriority(Priority type)
 {
+#ifndef __sun__
     int _priority = m_TpEnum.getPriority(type);
     int _ok = ACE_Thread::setprio(m_hThreadHandle, _priority);
     //remove this ASSERT in case you don't want to know is thread priority change was successful or not
     ASSERT (_ok == 0);
+#endif
 }
 
 void Thread::Sleep(unsigned long msecs)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 #include "GroupRefManager.h"
 #include "BattleGround.h"
 #include "LootMgr.h"
+#include "DBCEnums.h"
 
 #include <map>
 #include <vector>
@@ -36,8 +37,9 @@ enum RollVote
     PASS              = 0,
     NEED              = 1,
     GREED             = 2,
-    NOT_EMITED_YET    = 3,
-    NOT_VALID         = 4
+    DISENCHANT        = 3,
+    NOT_EMITED_YET    = 4,
+    NOT_VALID         = 5
 };
 
 enum GroupMemberOnlineStatus
@@ -53,10 +55,15 @@ enum GroupMemberOnlineStatus
     MEMBER_STATUS_UNK5      = 0x0080,                       // never seen
 };
 
-enum GroupType
+enum GroupType                                              // group type flags?
 {
-    GROUPTYPE_NORMAL = 0,
-    GROUPTYPE_RAID   = 1
+    GROUPTYPE_NORMAL = 0x00,
+    GROUPTYPE_BG     = 0x01,
+    GROUPTYPE_RAID   = 0x02,
+    GROUPTYPE_BGRAID = GROUPTYPE_BG | GROUPTYPE_RAID,       // mask
+    // 0x04?
+    GROUPTYPE_LFD    = 0x08,
+    // 0x10, leave/change group?, I saw this flag when leaving group and after leaving BG while in group
 };
 
 class BattleGround;
@@ -98,7 +105,7 @@ class Roll : public LootValidatorRef
 {
     public:
         Roll(uint64 _guid, LootItem const& li)
-            : itemGUID(_guid), itemid(li.itemid), itemRandomPropId(li.randomPropertyId), itemRandomSuffix(li.randomSuffix),
+            : itemGUID(_guid), itemid(li.itemid), itemRandomPropId(li.randomPropertyId), itemRandomSuffix(li.randomSuffix), itemCount(li.count),
             totalPlayersRolling(0), totalNeed(0), totalGreed(0), totalPass(0), itemSlot(0) {}
         ~Roll() { }
         void setLoot(Loot *pLoot) { link(pLoot, this); }
@@ -109,6 +116,7 @@ class Roll : public LootValidatorRef
         uint32 itemid;
         int32  itemRandomPropId;
         uint32 itemRandomSuffix;
+        uint8 itemCount;
         typedef std::map<uint64, RollVote> PlayerVote;
         PlayerVote playerVote;                              //vote position correspond with player position (in group)
         uint8 totalPlayersRolling;
@@ -155,7 +163,7 @@ class MANGOS_DLL_SPEC Group
 
         // group manipulation methods
         bool   Create(const uint64 &guid, const char * name);
-        bool   LoadGroupFromDB(const uint64 &leaderGuid, QueryResult *result = NULL, bool loadMembers = true);
+        bool   LoadGroupFromDB(Field *fields);
         bool   LoadMemberFromDB(uint32 guidLow, uint8 subgroup, bool assistant);
         bool   AddInvite(Player *player);
         uint32 RemoveInvite(Player *player);
@@ -172,6 +180,7 @@ class MANGOS_DLL_SPEC Group
         void   Disband(bool hideDestroy=false);
 
         // properties accessories
+        uint32 GetId() const { return m_Id; }
         bool IsFull() const { return (m_groupType==GROUPTYPE_NORMAL) ? (m_memberSlots.size()>=MAXGROUPSIZE) : (m_memberSlots.size()>=MAXRAIDSIZE); }
         bool isRaidGroup() const { return m_groupType==GROUPTYPE_RAID; }
         bool isBGGroup()   const { return m_bgGroup != NULL; }
@@ -249,7 +258,7 @@ class MANGOS_DLL_SPEC Group
         void ConvertToRaid();
 
         void SetBattlegroundGroup(BattleGround *bg) { m_bgGroup = bg; }
-        uint32 CanJoinBattleGroundQueue(BattleGroundTypeId bgTypeId, BattleGroundQueueTypeId bgQueueTypeId, uint32 MinPlayerCount, uint32 MaxPlayerCount, bool isRated, uint32 arenaSlot);
+        uint32 CanJoinBattleGroundQueue(BattleGround const* bgOrTemplate, BattleGroundQueueTypeId bgQueueTypeId, uint32 MinPlayerCount, uint32 MaxPlayerCount, bool isRated, uint32 arenaSlot);
 
         void ChangeMembersGroup(const uint64 &guid, const uint8 &group);
         void ChangeMembersGroup(Player *player, const uint8 &group);
@@ -278,12 +287,16 @@ class MANGOS_DLL_SPEC Group
                 SendUpdate();
         }
 
-        void SetTargetIcon(uint8 id, uint64 guid);
-        void SetDifficulty(uint8 difficulty);
-        uint8 GetDifficulty() { return m_difficulty; }
+        void SetTargetIcon(uint8 id, uint64 whoGuid, uint64 targetGuid);
+
+        Difficulty GetDifficulty(bool isRaid) const { return isRaid ? m_raidDifficulty : m_dungeonDifficulty; }
+        Difficulty GetDungeonDifficulty() const { return m_dungeonDifficulty; }
+        Difficulty GetRaidDifficulty() const { return m_raidDifficulty; }
+        void SetDungeonDifficulty(Difficulty difficulty);
+        void SetRaidDifficulty(Difficulty difficulty);
         uint16 InInstance();
         bool InCombatToInstance(uint32 instanceId);
-        void ResetInstances(uint8 method, Player* SendMsgTo);
+        void ResetInstances(uint8 method, bool isRaid, Player* SendMsgTo);
 
         // -no description-
         //void SendInit(WorldSession *session);
@@ -327,8 +340,9 @@ class MANGOS_DLL_SPEC Group
 
         InstanceGroupBind* BindToInstance(InstanceSave *save, bool permanent, bool load = false);
         void UnbindInstance(uint32 mapid, uint8 difficulty, bool unload = false);
-        InstanceGroupBind* GetBoundInstance(uint32 mapid, uint8 difficulty);
-        BoundInstancesMap& GetBoundInstances(uint8 difficulty) { return m_boundInstances[difficulty]; }
+        InstanceGroupBind* GetBoundInstance(Player* player);
+        InstanceGroupBind* GetBoundInstance(Map* aMap);
+        BoundInstancesMap& GetBoundInstances(Difficulty difficulty) { return m_boundInstances[difficulty]; }
 
     protected:
         bool _addMember(const uint64 &guid, const char* name, bool isAssistant=false);
@@ -389,6 +403,7 @@ class MANGOS_DLL_SPEC Group
                 --m_subGroupsCounts[subgroup];
         }
 
+        uint32              m_Id;                           // 0 for not created or BG groups
         MemberSlotList      m_memberSlots;
         GroupRefManager     m_memberMgr;
         InvitesList         m_invitees;
@@ -397,14 +412,15 @@ class MANGOS_DLL_SPEC Group
         uint64              m_mainTank;
         uint64              m_mainAssistant;
         GroupType           m_groupType;
-        uint8               m_difficulty;
+        Difficulty          m_dungeonDifficulty;
+        Difficulty          m_raidDifficulty;
         BattleGround*       m_bgGroup;
         uint64              m_targetIcons[TARGETICONCOUNT];
         LootMethod          m_lootMethod;
         ItemQualities       m_lootThreshold;
         uint64              m_looterGuid;
         Rolls               RollId;
-        BoundInstancesMap   m_boundInstances[TOTAL_DIFFICULTIES];
+        BoundInstancesMap   m_boundInstances[MAX_DIFFICULTY];
         uint8*              m_subGroupsCounts;
 };
 #endif

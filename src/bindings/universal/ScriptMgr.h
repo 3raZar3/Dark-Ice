@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ class Item;
 class GameObject;
 class SpellCastTargets;
 class Map;
+class Aura;
 
 #define MAX_SCRIPTS 1000
 #define MAX_INSTANCE_SCRIPTS 1000
@@ -42,7 +43,7 @@ struct Script
         pQuestSelect(NULL), pQuestComplete(NULL), pNPCDialogStatus(NULL), pGODialogStatus(NULL), pChooseReward(NULL),
         pItemHello(NULL), pGOHello(NULL), pAreaTrigger(NULL), pItemQuestAccept(NULL), pGOQuestAccept(NULL),
         pGOChooseReward(NULL), pItemUse(NULL), pEffectDummyGameObj(NULL), pEffectDummyCreature(NULL),
-        pEffectDummyItem(NULL), GetAI(NULL)
+        pEffectDummyItem(NULL), pEffectAuraDummy(NULL), GetAI(NULL)
     {}
 
     std::string Name;
@@ -64,9 +65,10 @@ struct Script
     bool (*pGOQuestAccept       )(Player *player, GameObject *_GO, Quest const*_Quest );
     bool (*pGOChooseReward      )(Player *player, GameObject *_GO, Quest const*_Quest, uint32 opt );
     bool (*pItemUse             )(Player *player, Item* _Item, SpellCastTargets const& targets);
-    bool (*pEffectDummyGameObj  )(Unit*, uint32, uint32, GameObject* );
-    bool (*pEffectDummyCreature )(Unit*, uint32, uint32, Creature* );
-    bool (*pEffectDummyItem     )(Unit*, uint32, uint32, Item* );
+    bool (*pEffectDummyGameObj  )(Unit*, uint32, SpellEffectIndex, GameObject* );
+    bool (*pEffectDummyCreature )(Unit*, uint32, SpellEffectIndex, Creature* );
+    bool (*pEffectDummyItem     )(Unit*, uint32, SpellEffectIndex, Item* );
+    bool (*pEffectAuraDummy     )(const Aura*, bool);
 
     CreatureAI* (*GetAI)(Creature *_Creature);
     InstanceData* (*GetInstanceData)(Map*);

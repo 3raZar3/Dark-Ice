@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ Tokens StrSplit(const std::string &src, const std::string &sep);
 
 void stripLineInvisibleChars(std::string &src);
 
-std::string secsToTimeString(uint32 timeInSecs, bool shortText = false, bool hoursOnly = false);
+std::string secsToTimeString(time_t timeInSecs, bool shortText = false, bool hoursOnly = false);
 uint32 TimeStringToSecs(const std::string& timestring);
 std::string TimeToTimestampStr(time_t t);
 
@@ -55,10 +55,14 @@ MANGOS_DLL_SPEC int32 rand32();
  * With an FPU, there is usually no difference in performance between float and double. */
 MANGOS_DLL_SPEC double rand_norm(void);
 
+MANGOS_DLL_SPEC float rand_norm_f(void);
+
 /* Return a random double from 0.0 to 99.9999999999999. Floats support only 7 valid decimal digits.
  * A double supports up to 15 valid decimal digits and is used internaly (RAND32_MAX has 10 digits).
  * With an FPU, there is usually no difference in performance between float and double. */
 MANGOS_DLL_SPEC double rand_chance(void);
+
+MANGOS_DLL_SPEC float rand_chance_f(void);
 
 /* Return true if a random roll fits in the specified chance (range 0-100). */
 inline bool roll_chance_f(float chance)
@@ -283,34 +287,11 @@ std::wstring GetMainPartOfName(std::wstring wname, uint32 declension);
 bool utf8ToConsole(const std::string& utf8str, std::string& conStr);
 bool consoleToUtf8(const std::string& conStr,std::string& utf8str);
 bool Utf8FitTo(const std::string& str, std::wstring search);
-
-#if PLATFORM == PLATFORM_WINDOWS
-#define UTF8PRINTF(OUT,FRM,RESERR)                         \
-{                                                          \
-    char temp_buf[32*1024];                                \
-    va_list ap;                                            \
-    va_start(ap, FRM);                                     \
-    size_t temp_len = vsnprintf(temp_buf,32*1024,FRM,ap);  \
-    va_end(ap);                                            \
-                                                           \
-    wchar_t wtemp_buf[32*1024];                            \
-    size_t wtemp_len = 32*1024-1;                          \
-    if(!Utf8toWStr(temp_buf,temp_len,wtemp_buf,wtemp_len)) \
-        return RESERR;                                     \
-    CharToOemBuffW(&wtemp_buf[0],&temp_buf[0],wtemp_len+1);\
-    fprintf(OUT,temp_buf);                                 \
-}
-#else
-#define UTF8PRINTF(OUT,FRM,RESERR)                      \
-{                                                       \
-    va_list ap;                                         \
-    va_start(ap, FRM);                                  \
-    vfprintf(OUT, FRM, ap );                            \
-    va_end(ap);                                         \
-}
-#endif
+void utf8printf(FILE *out, const char *str, ...);
+void vutf8printf(FILE *out, const char *str, va_list* ap);
 
 bool IsIPAddress(char const* ipaddress);
 uint32 CreatePIDFile(const std::string& filename);
 
+void hexEncodeByteArray(uint8* bytes, uint32 arrayLen, std::string& result);
 #endif

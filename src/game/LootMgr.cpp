@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,27 +25,27 @@
 #include "SharedDefines.h"
 #include "SpellMgr.h"
 
-static Rates const qualityToRate[MAX_ITEM_QUALITY] = {
-    RATE_DROP_ITEM_POOR,                                    // ITEM_QUALITY_POOR
-    RATE_DROP_ITEM_NORMAL,                                  // ITEM_QUALITY_NORMAL
-    RATE_DROP_ITEM_UNCOMMON,                                // ITEM_QUALITY_UNCOMMON
-    RATE_DROP_ITEM_RARE,                                    // ITEM_QUALITY_RARE
-    RATE_DROP_ITEM_EPIC,                                    // ITEM_QUALITY_EPIC
-    RATE_DROP_ITEM_LEGENDARY,                               // ITEM_QUALITY_LEGENDARY
-    RATE_DROP_ITEM_ARTIFACT,                                // ITEM_QUALITY_ARTIFACT
+static eConfigFLoatValues const qualityToRate[MAX_ITEM_QUALITY] = {
+    CONFIG_FLOAT_RATE_DROP_ITEM_POOR,                                    // ITEM_QUALITY_POOR
+    CONFIG_FLOAT_RATE_DROP_ITEM_NORMAL,                                  // ITEM_QUALITY_NORMAL
+    CONFIG_FLOAT_RATE_DROP_ITEM_UNCOMMON,                                // ITEM_QUALITY_UNCOMMON
+    CONFIG_FLOAT_RATE_DROP_ITEM_RARE,                                    // ITEM_QUALITY_RARE
+    CONFIG_FLOAT_RATE_DROP_ITEM_EPIC,                                    // ITEM_QUALITY_EPIC
+    CONFIG_FLOAT_RATE_DROP_ITEM_LEGENDARY,                               // ITEM_QUALITY_LEGENDARY
+    CONFIG_FLOAT_RATE_DROP_ITEM_ARTIFACT,                                // ITEM_QUALITY_ARTIFACT
 };
 
-LootStore LootTemplates_Creature(     "creature_loot_template",     "creature entry",               true);
-LootStore LootTemplates_Disenchant(   "disenchant_loot_template",   "item disenchant id",           true);
-LootStore LootTemplates_Fishing(      "fishing_loot_template",      "area id",                      true);
-LootStore LootTemplates_Gameobject(   "gameobject_loot_template",   "gameobject entry",             true);
-LootStore LootTemplates_Item(         "item_loot_template",         "item entry",                   true);
-LootStore LootTemplates_Milling(      "milling_loot_template",      "item entry (herb)",            true);
-LootStore LootTemplates_Pickpocketing("pickpocketing_loot_template","creature pickpocket lootid",   true);
-LootStore LootTemplates_Prospecting(  "prospecting_loot_template",  "item entry (ore)",             true);
-LootStore LootTemplates_QuestMail(    "quest_mail_loot_template",   "quest id (with mail template)",false);
-LootStore LootTemplates_Reference(    "reference_loot_template",    "reference id",                 false);
-LootStore LootTemplates_Skinning(     "skinning_loot_template",     "creature skinning id",         true);
+LootStore LootTemplates_Creature(     "creature_loot_template",     "creature entry",                 true);
+LootStore LootTemplates_Disenchant(   "disenchant_loot_template",   "item disenchant id",             true);
+LootStore LootTemplates_Fishing(      "fishing_loot_template",      "area id",                        true);
+LootStore LootTemplates_Gameobject(   "gameobject_loot_template",   "gameobject entry",               true);
+LootStore LootTemplates_Item(         "item_loot_template",         "item entry",                     true);
+LootStore LootTemplates_Mail(         "mail_loot_template",         "mail template id",               false);
+LootStore LootTemplates_Milling(      "milling_loot_template",      "item entry (herb)",              true);
+LootStore LootTemplates_Pickpocketing("pickpocketing_loot_template","creature pickpocket lootid",     true);
+LootStore LootTemplates_Prospecting(  "prospecting_loot_template",  "item entry (ore)",               true);
+LootStore LootTemplates_Reference(    "reference_loot_template",    "reference id",                   false);
+LootStore LootTemplates_Skinning(     "skinning_loot_template",     "creature skinning id",           true);
 LootStore LootTemplates_Spell(        "spell_loot_template",        "spell id (random item creating)",false);
 
 class LootTemplate::LootGroup                               // A set of loot definitions for items (refs are not allowed)
@@ -102,7 +102,7 @@ void LootStore::LoadLootTable()
 
     if (result)
     {
-        barGoLink bar(result->GetRowCount());
+        barGoLink bar((int)result->GetRowCount());
 
         do
         {
@@ -133,7 +133,7 @@ void LootStore::LoadLootTable()
             }
 
             // (condition + cond_value1/2) are converted into single conditionId
-            uint16 conditionId = objmgr.GetConditionId(condition, cond_value1, cond_value2);
+            uint16 conditionId = sObjectMgr.GetConditionId(condition, cond_value1, cond_value2);
 
             LootStoreItem storeitem = LootStoreItem(item, chanceOrQuestChance, group, conditionId, mincountOrRef, maxcount);
 
@@ -243,11 +243,11 @@ bool LootStoreItem::Roll(bool rate) const
         return true;
 
     if(mincountOrRef < 0)                                   // reference case
-        return roll_chance_f(chance* (rate ? sWorld.getRate(RATE_DROP_ITEM_REFERENCED) : 1.0f));
+        return roll_chance_f(chance* (rate ? sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_ITEM_REFERENCED) : 1.0f));
 
-    ItemPrototype const *pProto = objmgr.GetItemPrototype(itemid);
+    ItemPrototype const *pProto = ObjectMgr::GetItemPrototype(itemid);
 
-    float qualityModifier = pProto && rate ? sWorld.getRate(qualityToRate[pProto->Quality]) : 1.0f;
+    float qualityModifier = pProto && rate ? sWorld.getConfig(qualityToRate[pProto->Quality]) : 1.0f;
 
     return roll_chance_f(chance*qualityModifier);
 }
@@ -269,7 +269,7 @@ bool LootStoreItem::IsValid(LootStore const& store, uint32 entry) const
 
     if( mincountOrRef > 0 )                                 // item (quest or non-quest) entry, maybe grouped
     {
-        ItemPrototype const *proto = objmgr.GetItemPrototype(itemid);
+        ItemPrototype const *proto = ObjectMgr::GetItemPrototype(itemid);
         if(!proto)
         {
             sLog.outErrorDb("Table '%s' entry %d item %d: item entry not listed in `item_template` - skipped", store.GetName(), entry, itemid);
@@ -319,7 +319,7 @@ LootItem::LootItem(LootStoreItem const& li)
     itemid      = li.itemid;
     conditionId = li.conditionId;
 
-    ItemPrototype const* proto = objmgr.GetItemPrototype(itemid);
+    ItemPrototype const* proto = ObjectMgr::GetItemPrototype(itemid);
     freeforall  = proto && (proto->Flags & ITEM_FLAGS_PARTY_LOOT);
 
     needs_quest = li.needs_quest;
@@ -337,7 +337,7 @@ LootItem::LootItem(LootStoreItem const& li)
 bool LootItem::AllowedForPlayer(Player const * player) const
 {
     // DB conditions check
-    if ( !objmgr.IsPlayerMeetToCondition(player,conditionId) )
+    if ( !sObjectMgr.IsPlayerMeetToCondition(player,conditionId) )
         return false;
 
     if ( needs_quest )
@@ -349,7 +349,7 @@ bool LootItem::AllowedForPlayer(Player const * player) const
     else
     {
         // Not quest only drop (check quest starting items for already accepted non-repeatable quests)
-        ItemPrototype const *pProto = objmgr.GetItemPrototype(itemid);
+        ItemPrototype const *pProto = ObjectMgr::GetItemPrototype(itemid);
         if (pProto && pProto->StartQuest && player->GetQuestStatus(pProto->StartQuest) != QUEST_STATUS_NONE && !player->HasQuestForItem(itemid))
             return false;
     }
@@ -378,7 +378,7 @@ void Loot::AddItem(LootStoreItem const & item)
         // non-ffa conditionals are counted in FillNonQuestNonFFAConditionalLoot()
         if( !item.conditionId )
         {
-            ItemPrototype const* proto = objmgr.GetItemPrototype(item.itemid);
+            ItemPrototype const* proto = ObjectMgr::GetItemPrototype(item.itemid);
             if( !proto || (proto->Flags & ITEM_FLAGS_PARTY_LOOT)==0 )
                 ++unlootedCount;
         }
@@ -386,18 +386,19 @@ void Loot::AddItem(LootStoreItem const & item)
 }
 
 // Calls processor of corresponding LootTemplate (which handles everything including references)
-void Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* loot_owner, bool personal)
+bool Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* loot_owner, bool personal, bool noEmptyError)
 {
     // Must be provided
     if(!loot_owner)
-        return;
+        return false;
 
     LootTemplate const* tab = store.GetLootFor(loot_id);
 
     if (!tab)
     {
-        sLog.outErrorDb("Table '%s' loot id #%u used but it doesn't have records.",store.GetName(),loot_id);
-        return;
+        if (!noEmptyError)
+            sLog.outErrorDb("Table '%s' loot id #%u used but it doesn't have records.",store.GetName(),loot_id);
+        return false;
     }
 
     items.reserve(MAX_NR_LOOT_ITEMS);
@@ -416,6 +417,8 @@ void Loot::FillLoot(uint32 loot_id, LootStore const& store, Player* loot_owner, 
     // ... for personal loot
     else
         FillNotNormalLootFor(loot_owner);
+
+    return true;
 }
 
 void Loot::FillNotNormalLootFor(Player* pl)
@@ -592,11 +595,11 @@ void Loot::generateMoneyLoot( uint32 minAmount, uint32 maxAmount )
     if (maxAmount > 0)
     {
         if (maxAmount <= minAmount)
-            gold = uint32(maxAmount * sWorld.getRate(RATE_DROP_MONEY));
+            gold = uint32(maxAmount * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY));
         else if ((maxAmount - minAmount) < 32700)
-            gold = uint32(urand(minAmount, maxAmount) * sWorld.getRate(RATE_DROP_MONEY));
+            gold = uint32(urand(minAmount, maxAmount) * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY));
         else
-            gold = uint32(urand(minAmount >> 8, maxAmount >> 8) * sWorld.getRate(RATE_DROP_MONEY)) << 8;
+            gold = uint32(urand(minAmount >> 8, maxAmount >> 8) * sWorld.getConfig(CONFIG_FLOAT_RATE_DROP_MONEY)) << 8;
     }
 }
 
@@ -673,7 +676,7 @@ ByteBuffer& operator<<(ByteBuffer& b, LootItem const& li)
 {
     b << uint32(li.itemid);
     b << uint32(li.count);                                  // nr of items of this type
-    b << uint32(objmgr.GetItemPrototype(li.itemid)->DisplayInfoID);
+    b << uint32(ObjectMgr::GetItemPrototype(li.itemid)->DisplayInfoID);
     b << uint32(li.randomSuffix);
     b << uint32(li.randomPropertyId);
     //b << uint8(0);                                        // slot type - will send after this function call
@@ -813,7 +816,7 @@ LootStoreItem const * LootTemplate::LootGroup::Roll() const
 {
     if (!ExplicitlyChanced.empty())                         // First explicitly chanced entries are checked
     {
-        float Roll = rand_chance();
+        float Roll = rand_chance_f();
 
         for (uint32 i=0; i<ExplicitlyChanced.size(); ++i)    //check each explicitly chanced entry in the template and modify its chance based on quality.
         {
@@ -1083,7 +1086,7 @@ void LoadLootTemplates_Creature()
         {
             if(uint32 lootid = cInfo->lootid)
             {
-                if(!ids_set.count(lootid))
+                if (ids_set.find(lootid) == ids_set.end())
                     LootTemplates_Creature.ReportNotExistedId(lootid);
                 else
                     ids_setUsed.insert(lootid);
@@ -1092,6 +1095,10 @@ void LoadLootTemplates_Creature()
     }
     for(LootIdSet::const_iterator itr = ids_setUsed.begin(); itr != ids_setUsed.end(); ++itr)
         ids_set.erase(*itr);
+
+    // for alterac valley we've defined Player-loot inside creature_loot_template id=0
+    // this hack is used, so that we won't need to create an extra table player_loot_template for just one case
+    ids_set.erase(0);
 
     // output error for any still listed (not referenced from appropriate table) ids
     LootTemplates_Creature.ReportUnusedIds(ids_set);
@@ -1109,7 +1116,7 @@ void LoadLootTemplates_Disenchant()
         {
             if(uint32 lootid = proto->DisenchantID)
             {
-                if(!ids_set.count(lootid))
+                if (ids_set.find(lootid) == ids_set.end())
                     LootTemplates_Disenchant.ReportNotExistedId(lootid);
                 else
                     ids_setUsed.insert(lootid);
@@ -1131,7 +1138,7 @@ void LoadLootTemplates_Fishing()
     for(uint32 i = 1; i < sAreaStore.GetNumRows(); ++i )
     {
         if(AreaTableEntry const* areaEntry = sAreaStore.LookupEntry(i))
-            if(ids_set.count(areaEntry->ID))
+            if (ids_set.find(areaEntry->ID) != ids_set.end())
                 ids_set.erase(areaEntry->ID);
     }
 
@@ -1151,7 +1158,7 @@ void LoadLootTemplates_Gameobject()
         {
             if(uint32 lootid = gInfo->GetLootId())
             {
-                if(!ids_set.count(lootid))
+                if (ids_set.find(lootid) == ids_set.end())
                     LootTemplates_Gameobject.ReportNotExistedId(lootid);
                 else
                     ids_setUsed.insert(lootid);
@@ -1173,7 +1180,7 @@ void LoadLootTemplates_Item()
     // remove real entries and check existence loot
     for(uint32 i = 1; i < sItemStorage.MaxEntry; ++i )
         if(ItemPrototype const* proto = sItemStorage.LookupEntry<ItemPrototype>(i))
-            if(ids_set.count(proto->ItemId))
+            if (ids_set.find(proto->ItemId) != ids_set.end())
                 ids_set.erase(proto->ItemId);
 
     // output error for any still listed (not referenced from appropriate table) ids
@@ -1195,7 +1202,7 @@ void LoadLootTemplates_Milling()
         if((proto->BagFamily & BAG_FAMILY_MASK_HERBS)==0)
             continue;
 
-        if(ids_set.count(proto->ItemId))
+        if (ids_set.find(proto->ItemId) != ids_set.end())
             ids_set.erase(proto->ItemId);
     }
 
@@ -1215,7 +1222,7 @@ void LoadLootTemplates_Pickpocketing()
         {
             if(uint32 lootid = cInfo->pickpocketLootId)
             {
-                if(!ids_set.count(lootid))
+                if (ids_set.find(lootid) == ids_set.end())
                     LootTemplates_Pickpocketing.ReportNotExistedId(lootid);
                 else
                     ids_setUsed.insert(lootid);
@@ -1244,7 +1251,7 @@ void LoadLootTemplates_Prospecting()
         if((proto->BagFamily & BAG_FAMILY_MASK_MINING_SUPP)==0)
             continue;
 
-        if(ids_set.count(proto->ItemId))
+        if (ids_set.find(proto->ItemId) != ids_set.end())
             ids_set.erase(proto->ItemId);
     }
 
@@ -1252,28 +1259,19 @@ void LoadLootTemplates_Prospecting()
     LootTemplates_Prospecting.ReportUnusedIds(ids_set);
 }
 
-void LoadLootTemplates_QuestMail()
+void LoadLootTemplates_Mail()
 {
     LootIdSet ids_set;
-    LootTemplates_QuestMail.LoadAndCollectLootIds(ids_set);
+    LootTemplates_Mail.LoadAndCollectLootIds(ids_set);
 
     // remove real entries and check existence loot
-    ObjectMgr::QuestMap const& questMap = objmgr.GetQuestTemplates();
-    for(ObjectMgr::QuestMap::const_iterator itr = questMap.begin(); itr != questMap.end(); ++itr )
-    {
-        if(!itr->second->GetRewMailTemplateId())
-            continue;
-
-        if(ids_set.count(itr->first))
-            ids_set.erase(itr->first);
-        /* disabled reporting: some quest mails not include items
-        else
-            LootTemplates_QuestMail.ReportNotExistedId(itr->first);
-        */
-    }
+    for(uint32 i = 1; i < sMailTemplateStore.GetNumRows(); ++i )
+        if(sMailTemplateStore.LookupEntry(i))
+            if (ids_set.find(i) != ids_set.end())
+                ids_set.erase(i);
 
     // output error for any still listed (not referenced from appropriate table) ids
-    LootTemplates_QuestMail.ReportUnusedIds(ids_set);
+    LootTemplates_Mail.ReportUnusedIds(ids_set);
 }
 
 void LoadLootTemplates_Skinning()
@@ -1288,7 +1286,7 @@ void LoadLootTemplates_Skinning()
         {
             if(uint32 lootid = cInfo->SkinLootId)
             {
-                if(!ids_set.count(lootid))
+                if (ids_set.find(lootid) == ids_set.end())
                     LootTemplates_Skinning.ReportNotExistedId(lootid);
                 else
                     ids_setUsed.insert(lootid);
@@ -1318,11 +1316,11 @@ void LoadLootTemplates_Spell()
         if( !IsLootCraftingSpell(spellInfo))
             continue;
 
-        if(!ids_set.count(spell_id))
+        if (ids_set.find(spell_id) == ids_set.end())
         {
             // not report about not trainable spells (optionally supported by DB)
             // ignore 61756 (Northrend Inscription Research (FAST QA VERSION) for example
-            if (!(spellInfo->Attributes & SPELL_ATTR_NOT_SHAPESHIFT) || (spellInfo->Attributes & SPELL_ATTR_UNK5))
+            if (!(spellInfo->Attributes & SPELL_ATTR_NOT_SHAPESHIFT) || (spellInfo->Attributes & SPELL_ATTR_TRADESPELL))
             {
                 LootTemplates_Spell.ReportNotExistedId(spell_id);
             }
@@ -1350,7 +1348,7 @@ void LoadLootTemplates_Reference()
     LootTemplates_Skinning.CheckLootRefs(&ids_set);
     LootTemplates_Disenchant.CheckLootRefs(&ids_set);
     LootTemplates_Prospecting.CheckLootRefs(&ids_set);
-    LootTemplates_QuestMail.CheckLootRefs(&ids_set);
+    LootTemplates_Mail.CheckLootRefs(&ids_set);
     LootTemplates_Reference.CheckLootRefs(&ids_set);
 
     // output error for any still listed ids (not referenced from any loot table)

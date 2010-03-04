@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,9 +36,9 @@ enum MovementGeneratorType
     RANDOM_MOTION_TYPE    = 1,                              // RandomMovementGenerator.h
     WAYPOINT_MOTION_TYPE  = 2,                              // WaypointMovementGenerator.h
     MAX_DB_MOTION_TYPE    = 3,                              // *** this and below motion types can't be set in DB.
-    ANIMAL_RANDOM_MOTION_TYPE = MAX_DB_MOTION_TYPE,         // AnimalRandomMovementGenerator.h
+    ANIMAL_RANDOM_MOTION_TYPE = MAX_DB_MOTION_TYPE,         // Just a dummy
     CONFUSED_MOTION_TYPE  = 4,                              // ConfusedMovementGenerator.h
-    TARGETED_MOTION_TYPE  = 5,                              // TargetedMovementGenerator.h
+    CHASE_MOTION_TYPE     = 5,                              // TargetedMovementGenerator.h
     HOME_MOTION_TYPE      = 6,                              // HomeMovementGenerator.h
     FLIGHT_MOTION_TYPE    = 7,                              // WaypointMovementGenerator.h
     POINT_MOTION_TYPE     = 8,                              // PointMovementGenerator.h
@@ -47,6 +47,7 @@ enum MovementGeneratorType
     ASSISTANCE_MOTION_TYPE= 11,                             // PointMovementGenerator.h (first part of flee for assistance)
     ASSISTANCE_DISTRACT_MOTION_TYPE = 12,                   // IdleMovementGenerator.h (second part of flee for assistance)
     TIMED_FLEEING_MOTION_TYPE = 13,                         // FleeingMovementGenerator.h (alt.second part of flee for assistance)
+    FOLLOW_MOTION_TYPE    = 14,                             // TargetedMovementGenerator.h
 };
 
 enum MMCleanFlag
@@ -78,29 +79,17 @@ class MANGOS_DLL_SPEC MotionMaster : private std::stack<MovementGenerator *>
         const_iterator end() const { return Impl::c.end(); }
 
         void UpdateMotion(uint32 diff);
-        void Clear(bool reset = true)
+        void Clear(bool reset = true, bool all = false)
         {
             if (m_cleanFlag & MMCF_UPDATE)
-            {
-                if(reset)
-                    m_cleanFlag |= MMCF_RESET;
-                else
-                    m_cleanFlag &= ~MMCF_RESET;
-                DelayedClean();
-            }
+                DelayedClean(reset, all);
             else
-                DirectClean(reset);
+                DirectClean(reset, all);
         }
         void MovementExpired(bool reset = true)
         {
             if (m_cleanFlag & MMCF_UPDATE)
-            {
-                if(reset)
-                    m_cleanFlag |= MMCF_RESET;
-                else
-                    m_cleanFlag &= ~MMCF_RESET;
-                DelayedExpire();
-            }
+                DelayedExpire(reset);
             else
                 DirectExpire(reset);
         }
@@ -121,15 +110,18 @@ class MANGOS_DLL_SPEC MotionMaster : private std::stack<MovementGenerator *>
 
         void propagateSpeedChange();
 
+        // will only work in MMgens where we have a target (TARGETED_MOTION_TYPE)
+        void UpdateFinalDistanceToTarget(float fDistance);
+
         bool GetDestination(float &x, float &y, float &z);
     private:
         void Mutate(MovementGenerator *m);                  // use Move* functions instead
 
-        void DirectClean(bool reset);
-        void DelayedClean();
+        void DirectClean(bool reset, bool all);
+        void DelayedClean(bool reset, bool all);
 
         void DirectExpire(bool reset);
-        void DelayedExpire();
+        void DelayedExpire(bool reset);
 
         Unit       *i_owner;
         ExpireList *m_expList;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,10 +23,10 @@
 #include "Player.h"
 #include "ObjectMgr.h"
 #include "SpellMgr.h"
+#include "CreatureAI.h"
 
-Totem::Totem() : Creature()
+Totem::Totem() : Creature(CREATURE_SUBTYPE_TOTEM)
 {
-    m_isTotem = true;
     m_duration = 0;
     m_type = TOTEM_PASSIVE;
 }
@@ -53,62 +53,57 @@ void Totem::Update( uint32 time )
 
 void Totem::Summon(Unit* owner)
 {
-    sLog.outDebug("AddObject at Totem.cpp line 49");
     owner->GetMap()->Add((Creature*)this);
 
     // select totem model in dependent from owner team
     CreatureInfo const *cinfo = GetCreatureInfo();
-    if(owner->GetTypeId()==TYPEID_PLAYER && cinfo)
+    if(owner->GetTypeId() == TYPEID_PLAYER && cinfo)
     {
-        uint32 display_id = objmgr.ChooseDisplayId(((Player*)owner)->GetTeam(),cinfo);
-        CreatureModelInfo const *minfo = objmgr.GetCreatureModelRandomGender(display_id);
+        uint32 display_id = sObjectMgr.ChooseDisplayId(((Player*)owner)->GetTeam(), cinfo);
+        CreatureModelInfo const *minfo = sObjectMgr.GetCreatureModelRandomGender(display_id);
         if (minfo)
             display_id = minfo->modelid;
         SetDisplayId(display_id);
     }
 
-    WorldPacket data(SMSG_GAMEOBJECT_SPAWN_ANIM_OBSOLETE, 8);
-    data << GetGUID();
-    SendMessageToSet(&data,true);
-
     AIM_Initialize();
+
+    if (owner->GetTypeId() == TYPEID_UNIT && ((Creature*)owner)->AI())
+        ((Creature*)owner)->AI()->JustSummoned((Creature*)this);
+
+    // there are some totems, which exist just for their visual appeareance
+    if (!GetSpell())
+        return;
 
     switch(m_type)
     {
-        case TOTEM_PASSIVE: CastSpell(this, GetSpell(), true); break;
-        case TOTEM_STATUE:  CastSpell(GetOwner(), GetSpell(), true); break;
+        case TOTEM_PASSIVE:
+            CastSpell(this, GetSpell(), true);
+            break;
+        case TOTEM_STATUE:
+            CastSpell(GetOwner(), GetSpell(), true);
+            break;
         default: break;
     }
 }
 
 void Totem::UnSummon()
 {
-    SendObjectDeSpawnAnim(GetGUID());
-
     CombatStop();
     RemoveAurasDueToSpell(GetSpell());
-    Unit *owner = GetOwner();
-    if (owner)
-    {
-        // clear owenr's totem slot
-        for(int i = 0; i < MAX_TOTEM; ++i)
-        {
-            if(owner->m_TotemSlot[i]==GetGUID())
-            {
-                owner->m_TotemSlot[i] = 0;
-                break;
-            }
-        }
 
+    if (Unit *owner = GetOwner())
+    {
+        owner->_RemoveTotem(this);
         owner->RemoveAurasDueToSpell(GetSpell());
 
         //remove aura all party members too
-        Group *pGroup = NULL;
         if (owner->GetTypeId() == TYPEID_PLAYER)
         {
+            ((Player*)owner)->SendAutoRepeatCancel(this);
+
             // Not only the player can summon the totem (scripted AI)
-            pGroup = ((Player*)owner)->GetGroup();
-            if (pGroup)
+            if (Group *pGroup = ((Player*)owner)->GetGroup())
             {
                 for(GroupReference *itr = pGroup->GetFirstMember(); itr != NULL; itr = itr->next())
                 {
@@ -118,6 +113,9 @@ void Totem::UnSummon()
                 }
             }
         }
+
+        if (owner->GetTypeId() == TYPEID_UNIT && ((Creature*)owner)->AI())
+            ((Creature*)owner)->AI()->SummonedCreatureDespawn((Creature*)this);
     }
 
     AddObjectToRemoveList();
@@ -152,19 +150,27 @@ void Totem::SetTypeBySummonSpell(SpellEntry const * spellProto)
         if (GetSpellCastTime(totemSpell))
             m_type = TOTEM_ACTIVE;
     }
-    if(spellProto->SpellIconID==2056)
+    if(spellProto->SpellIconID == 2056)
         m_type = TOTEM_STATUE;                              //Jewelery statue
 }
 
-bool Totem::IsImmunedToSpellEffect(SpellEntry const* spellInfo, uint32 index) const
+bool Totem::IsImmunedToSpellEffect(SpellEntry const* spellInfo, SpellEffectIndex index) const
 {
-    // TODO: possibly all negative auras immuned?
+    // TODO: possibly all negative auras immune?
+    switch(spellInfo->Effect[index])
+    {
+        case SPELL_EFFECT_ATTACK_ME:
+            return true;
+        default:
+            break;
+    }
     switch(spellInfo->EffectApplyAuraName[index])
     {
         case SPELL_AURA_PERIODIC_DAMAGE:
         case SPELL_AURA_PERIODIC_LEECH:
         case SPELL_AURA_MOD_FEAR:
         case SPELL_AURA_TRANSFORM:
+        case SPELL_AURA_MOD_TAUNT:
             return true;
         default:
             break;

@@ -1,4 +1,4 @@
-# Copyright (C) 2005-2009 MaNGOS project <http://getmangos.com/>
+# Copyright (C) 2005-2010 MaNGOS project <http://getmangos.com/>
 #
 # This file is free software; as a special exception the author gives
 # unlimited permission to copy and/or distribute it, with or without
@@ -14,15 +14,18 @@
 
 ## Prelude, basic settings for Autoconf
 #  PACKAGE:            mangos
-#  VERSION:            0.14.0 (trunk)
+#  VERSION:            0.16.0 (trunk)
 #  BUG-REPORT-ADDRESS: mangos-devs@lists.sourceforge.net
-AC_INIT( [mangos], [0.14.0], [mangos-devs@lists.sourceforge.net])
-AC_CONFIG_SRCDIR([src/shared/Base.cpp])
+AC_INIT( [mangos], [0.16.0], [mangos-devs@lists.sourceforge.net])
+AC_CONFIG_SRCDIR([src/shared/Common.h])
+AC_CONFIG_MACRO_DIR([m4])
 
 ## Prelude, basic settings for Automake
 #  Turn on all warnings and error messages, and enforce GNU
 #  standards for the package.
-AM_INIT_AUTOMAKE([-Wall -Werror gnu tar-pax])
+AM_INIT_AUTOMAKE([foreign -Wall -Werror gnu tar-pax])
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+
 AM_MAINTAINER_MODE
 
 ## Prevent the configure script from continuing any further if
@@ -46,7 +49,7 @@ if test "$srcdir" = "." && test "$enable_maintainer_mode" != "yes"; then
           ../configure
           make
 
-      This will create a build space in the directory `objdir' and
+      This will create a build space in the directory 'objdir' and
       start a build in that directory.
 
       If however you realy want to disable this error,
@@ -69,6 +72,7 @@ AC_PROG_CXX
 AM_PROG_CC_C_O
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
+PKG_PROG_PKG_CONFIG
 
 # Check for doxygen
 AC_ARG_ENABLE(doxygen, AC_HELP_STRING([--enable-doxygen], [turn on generating documentation]))
@@ -94,7 +98,7 @@ AC_CHECK_LIB( pthread, pthread_create, [],
     ])
 AC_CHECK_LIB( z, compress, [ZLIB=-lz],[AC_MSG_ERROR([Missing zlib])] )
 AC_CHECK_LIB( compat, ftime, [COMPATLIB=-lcompat] )
-AC_CHECK_LIB( crypto, SHA1_Init, [SSLLIB=-lssl], [AC_MSG_ERROR([Missing openssl])])
+AX_CHECK_OPENSSL([], [AC_MSG_ERROR([Missing OpenSSL])])
 
 AC_ARG_WITH(postgresql,
 [  --with-postgresql       Use PostgreSQL as a backend (default: no)],
@@ -121,7 +125,7 @@ AC_MSG_CHECKING(whether to build/link POSTGRESQL)
 if test "x$DO_POSTGRESQL" = "xyes"; then
 DO_MYSQL=no
 POSTGRE_INCLUDES="-I/usr/include/postgresql $POSTGRE_INCLUDES"
-POSTGRE_LIBS="-L/usr/lib/postresql -lpq -lz -lpthread -lcrypt -lnsl -lm -lpthread -L/usr/lib -lssl -lcrypto $POSTGRE_LIBS "
+POSTGRE_LIBS="-L/usr/lib/postresql -lpq -lz -lpthread -lcrypt -lnsl -lm -lpthread -L/usr/lib $OPENSSL_LIBS $POSTGRE_LIBS "
 CXXFLAGS="-DDO_POSTGRESQL $CXXFLAGS"
 fi
 AC_MSG_RESULT($DO_POSTGRESQL)
@@ -138,10 +142,35 @@ AC_PATH_PROGS(MYSQL_CONFIG, mysql_config, mysql_config, $PATH)
 	    MYSQL_INCLUDES="`$MYSQL_CONFIG --cflags`"
         MYSQL_LIBS="`$MYSQL_CONFIG --libs_r`"
 	CXXFLAGS="-DDO_MYSQL $CXXFLAGS"
+	# Workaround for --as-needed linker flag that comes sometimes from mysql
+	if echo $MYSQL_LIBS|grep "\-Wl,--as-needed" > /dev/null; then
+		MYSQL_LIBS=`echo $MYSQL_LIBS|sed -e "s/-Wl,--as-needed//"`;
+		AC_MSG_WARN([Your mysql libs contains -Wl,--as-needed, this is not good, problem fixed in more recent mysql versions])
+	fi
     fi
 else
 AC_MSG_RESULT($DO_MYSQL)
 fi
+
+## Check for memory allocator
+#  Use libc-malloc or libtbb-malloc?
+AC_MSG_CHECKING(whether to use libc malloc)
+MANGOSD_STD_MALLOC=no
+AC_ARG_WITH(std-malloc,
+[
+Memory allocation options:
+
+  --with-std-malloc       Use standard malloc],
+[
+    if test "$withval" = "yes" ; then
+        CFLAGS="-DUSE_STANDARD_MALLOC $CFLAGS"
+        CXXFLAGS="-DUSE_STANDARD_MALLOC $CXXFLAGS"
+        MANGOSD_STD_MALLOC=yes
+    elif test "$withval" != "no" ; then
+        AC_MSG_ERROR(Please choose yes or no)
+    fi
+])
+AC_MSG_RESULT($MANGOSD_STD_MALLOC)
 
 ## Check for options
 #  Include debug info in library?
@@ -169,7 +198,6 @@ AC_HEADER_DIRENT
 AC_CHECK_HEADERS([ arpa/inet.h fcntl.h limits.h locale.h malloc.h netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h strings.h sys/ioctl.h sys/param.h sys/socket.h sys/timeb.h sys/time.h termios.h unistd.h  ])
 
 AC_CHECK_HEADERS([pthread.h])
-AC_CHECK_HEADERS([openssl/md5.h openssl/rand.h openssl/ssl.h openssl/sha.h openssl/bn.h])
 AC_CHECK_HEADERS([mysql.h mysql/mysql.h])
 AC_CHECK_HEADERS([libpq-fe.h])
 AC_CHECK_HEADERS([zlib.h])
@@ -194,47 +222,39 @@ AC_TYPE_SIGNAL
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([atexit ftime gethostbyaddr gethostbyname gethostname gettimeofday memmove memset pow realpath select socket sqrt strchr strdup strerror strstr])
 
-## Check what to do with ACE library
-AC_LANG_PUSH([C++])
-AC_CHECK_HEADER([ace/Reactor.h], [have_ace_headers=yes], [have_ace_headers=no])
-AC_CHECK_LIB([ACE], [main], [have_ace_lib=yes], [have_ace_lib=no])
-AC_LANG_POP([C++])
 
-AC_MSG_CHECKING([whether to build ACE])
-if test X$have_ace_headers = Xyes -a X$have_ace_lib = Xyes;
-then
-  need_to_build_ace=no
-  AC_MSG_RESULT([no])
-else
-  if test X$have_ace_headers = Xno -a X$have_ace_lib = Xno; then
-    need_to_build_ace=yes
-    AC_MSG_RESULT([yes])
-  else
-    if test X$have_ace_headers = Xyes; then
-       AC_MSG_ERROR([looks like you have ACE headers, but you do not have ACE libs installed])
-    else
-       need_to_build_ace=yes
-       AC_MSG_RESULT([yes, over-install])
-    fi
+# Check for use buildtin ACE sources
+AC_ARG_ENABLE(builtin_ace, AC_HELP_STRING([--enable-builtin-ace], [turn on/off using builtin ACE sources]))
+
+enable_builtin_ace_support=yes
+
+if test "x$enable_builtin_ace" = "xno"; then
+  PKG_CHECK_MODULES(ACE, [ACE >= 5.5.2], [need_builtin_ace=no], [need_builtin_ace=yes])
+  if test X$need_builtin_ace = Xyes ; then
+    AC_MSG_ERROR([You need to install ACE package or use built-in ACE sources])
   fi
+  enable_builtin_ace_support=no
 fi
 
-if test X$need_to_build_ace = Xyes; then
-   MANGOS_INCLUDES="-I\$(top_srcdir)/dep/ACE_wrappers -I\$(top_builddir)/dep/ACE_wrappers $MANGOS_INCLUDES"
-   MANGOS_LIBS="\$(top_builddir)/dep/ACE_wrappers/ace/libACE.la $MANGOS_LIBS"
+if test X$enable_builtin_ace_support = Xno; then
+
+  # old ace versions might not have ace/Stack_Trace.h...
+  AC_LANG_PUSH([C++])
+  AC_CHECK_HEADERS([ace/Stack_Trace.h])
+  AC_LANG_POP
 else
-   MANGOS_LIBS="-lACE $MANGOS_LIBS"
+  # ...but we certainly have it in our included version
+  AC_DEFINE(HAVE_ACE_STACK_TRACE_H)
+  ACE_INCLUDES="-I\$(top_srcdir)/dep/ACE_wrappers -I\$(top_builddir)/dep/ACE_wrappers"
+  ACE_LIBS="\$(top_builddir)/dep/ACE_wrappers/ace/libACE.la"
 fi
 
-AM_CONDITIONAL([MANGOS_BUILD_ACE], [test X$need_to_build_ace = Xyes])
-
-# old ace versions not have ace/Stack_Trace.h
-AC_CHECK_HEADERS([ace/Stack_Trace.h])
+AM_CONDITIONAL([MANGOS_BUILD_ACE], [test X$enable_builtin_ace_support = Xyes])
 
 ## Unify all additional includes/libs in one variable.
 # TODO this looks kinda ugly, but when we add m4 folder I will make it look very pritey ( by Derex ).
-MANGOS_INCLUDES="$POSTGRE_INCLUDES $MYSQL_INCLUDES $MANGOS_INCLUDES"
-MANGOS_LIBS="$POSTGRE_LIBS $MYSQL_LIBS $ZLIB $COMPATLIB $SSLLIB $MANGOS_LIBS"
+MANGOS_INCLUDES="$ACE_INCLUDES $POSTGRE_INCLUDES $MYSQL_INCLUDES $OPENSSL_INCLUDES $MANGOS_INCLUDES"
+MANGOS_LIBS="$ACE_LIBS $POSTGRE_LIBS $MYSQL_LIBS $ZLIB $COMPATLIB $OPENSSL_LIBS $MANGOS_LIBS"
 
 ## Export defined variables
 AC_SUBST(DOXYGEN)
@@ -246,6 +266,16 @@ AC_SUBST(MANGOS_LIBS)
 
 ## Set output files.
 AC_CONFIG_HEADERS([config.h])
+
+AC_SEARCH_LIBS(poll, [poll], [AC_DEFINE(HAVE_POLL, 1, [Define to 1 if the OS is usabl... err, has poll().])])
+
+AH_TOP([
+#ifndef AC_CONFIG_H
+#define AC_CONFIG_H
+])
+
+AH_BOTTOM([#endif /* !AC_CONFIG_H */])
+
 AC_CONFIG_FILES([
    dep/include/Makefile
    dep/lib/Makefile
@@ -253,7 +283,9 @@ AC_CONFIG_FILES([
    dep/src/g3dlite/Makefile
    dep/src/sockets/Makefile
    dep/src/zlib/Makefile
+   dep/src/gsoap/Makefile
    dep/Makefile
+   dep/tbb/Makefile
    doc/Doxyfile
    doc/Makefile
    Makefile
@@ -280,7 +312,7 @@ AC_CONFIG_FILES([
 ])
 
 ## Configure ACE, if needed
-if test X$need_to_build_ace = Xyes; then
+if test X$enable_builtin_ace_support = Xyes; then
   AC_CONFIG_SUBDIRS([dep/ACE_wrappers])
 fi
 

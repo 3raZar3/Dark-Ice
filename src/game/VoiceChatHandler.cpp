@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,8 @@ void WorldSession::HandleVoiceSessionEnableOpcode( WorldPacket & recv_data )
 {
     sLog.outDebug("WORLD: CMSG_VOICE_SESSION_ENABLE");
     // uint8 isVoiceEnabled, uint8 isMicrophoneEnabled
+    recv_data.read_skip<uint8>();
+    recv_data.read_skip<uint8>();
     recv_data.hexlike();
 }
 
@@ -39,6 +41,7 @@ void WorldSession::HandleChannelVoiceOnOpcode( WorldPacket & recv_data )
 void WorldSession::HandleSetActiveVoiceChannel( WorldPacket & recv_data )
 {
     sLog.outDebug("WORLD: CMSG_SET_ACTIVE_VOICE_CHANNEL");
-    // uint32, string
+    recv_data.read_skip<uint32>();
+    recv_data.read_skip<char*>();
     recv_data.hexlike();
 }

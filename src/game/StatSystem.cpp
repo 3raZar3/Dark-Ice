@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -91,17 +91,12 @@ bool Player::UpdateStats(Stats stat)
     return true;
 }
 
-void Player::ApplySpellDamageBonus(int32 amount, bool apply)
+void Player::ApplySpellPowerBonus(int32 amount, bool apply)
 {
-    m_baseSpellDamage+=apply?amount:-amount;
+    m_baseSpellPower+=apply?amount:-amount;
+
     // For speed just update for client
     ApplyModUInt32Value(PLAYER_FIELD_MOD_HEALING_DONE_POS, amount, apply);
-}
-
-void Player::ApplySpellHealingBonus(int32 amount, bool apply)
-{
-    m_baseSpellHealing+=apply?amount:-amount;
-    // For speed just update for client
     for(int i = SPELL_SCHOOL_HOLY; i < MAX_SPELL_SCHOOL; ++i)
         ApplyModUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS+i, amount, apply);;
 }
@@ -133,10 +128,12 @@ bool Player::UpdateAllStats()
     for(int i = POWER_MANA; i < MAX_POWERS; ++i)
         UpdateMaxPower(Powers(i));
 
+    UpdateAllRatings();
     UpdateAllCritPercentages();
     UpdateAllSpellCritChances();
     UpdateDefenseBonusesMod();
     UpdateShieldBlockValue();
+    UpdateArmorPenetration();
     UpdateSpellDamageAndHealingBonus();
     UpdateManaRegen();
     UpdateExpertise(BASE_ATTACK);
@@ -228,9 +225,12 @@ void Player::UpdateMaxPower(Powers power)
 {
     UnitMods unitMod = UnitMods(UNIT_MOD_POWER_START + power);
 
-    float bonusPower = (power == POWER_MANA) ? GetManaBonusFromIntellect() : 0;
+    uint32 create_power = GetCreatePowers(power);
 
-    float value = GetModifierValue(unitMod, BASE_VALUE) + GetCreatePowers(power);
+    // ignore classes without mana
+    float bonusPower = (power == POWER_MANA && create_power > 0) ? GetManaBonusFromIntellect() : 0;
+
+    float value = GetModifierValue(unitMod, BASE_VALUE) + create_power;
     value *= GetModifierValue(unitMod, BASE_PCT);
     value += GetModifierValue(unitMod, TOTAL_VALUE) +  bonusPower;
     value *= GetModifierValue(unitMod, TOTAL_PCT);
@@ -305,7 +305,7 @@ void Player::UpdateAttackPowerAndDamage(bool ranged )
                         for(Unit::AuraList::const_iterator itr = mDummy.begin(); itr != mDummy.end(); ++itr)
                         {
                             // Predatory Strikes (effect 0)
-                            if ((*itr)->GetEffIndex()==0 && (*itr)->GetSpellProto()->SpellIconID == 1563)
+                            if ((*itr)->GetEffIndex() == EFFECT_INDEX_0 && (*itr)->GetSpellProto()->SpellIconID == 1563)
                             {
                                 mLevelMult = (*itr)->GetModifier()->m_amount / 100.0f;
                                 break;
@@ -313,6 +313,7 @@ void Player::UpdateAttackPowerAndDamage(bool ranged )
                         }
                         break;
                     }
+                    default: break;
                 }
 
                 switch(m_form)
@@ -427,8 +428,8 @@ void Player::CalculateMinMaxDamage(WeaponAttackType attType, bool normalized, fl
         uint32 lvl = getLevel();
         if ( lvl > 60 ) lvl = 60;
 
-        weapon_mindamage = lvl*0.85*att_speed;
-        weapon_maxdamage = lvl*1.25*att_speed;
+        weapon_mindamage = lvl*0.85f*att_speed;
+        weapon_maxdamage = lvl*1.25f*att_speed;
     }
     else if(!IsUseEquipedWeapon(attType==BASE_ATTACK))      //check if player not in form but still can't use weapon (broken/etc)
     {
@@ -589,6 +590,8 @@ void Player::UpdateSpellCritChance(uint32 school)
     crit += GetSpellCritFromIntellect();
     // Increase crit from SPELL_AURA_MOD_SPELL_CRIT_CHANCE
     crit += GetTotalAuraModifier(SPELL_AURA_MOD_SPELL_CRIT_CHANCE);
+    // Increase crit from SPELL_AURA_MOD_ALL_CRIT_CHANCE
+    crit += GetTotalAuraModifier(SPELL_AURA_MOD_ALL_CRIT_CHANCE);
     // Increase crit by school from SPELL_AURA_MOD_SPELL_CRIT_CHANCE_SCHOOL
     crit += GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_SPELL_CRIT_CHANCE_SCHOOL, 1<<school);
     // Increase crit from spell crit ratings
@@ -650,6 +653,33 @@ void Player::UpdateExpertise(WeaponAttackType attack)
         case BASE_ATTACK: SetUInt32Value(PLAYER_EXPERTISE, expertise);         break;
         case OFF_ATTACK:  SetUInt32Value(PLAYER_OFFHAND_EXPERTISE, expertise); break;
         default: break;
+    }
+}
+
+void Player::UpdateArmorPenetration()
+{
+    m_armorPenetrationPct = GetRatingBonusValue(CR_ARMOR_PENETRATION);
+
+    AuraList const& armorAuras = GetAurasByType(SPELL_AURA_MOD_TARGET_ARMOR_PCT);
+    for(AuraList::const_iterator itr = armorAuras.begin(); itr != armorAuras.end(); ++itr)
+    {
+        // affects all weapons
+        if((*itr)->GetSpellProto()->EquippedItemClass == -1)
+        {
+            m_armorPenetrationPct += (*itr)->GetModifier()->m_amount;
+            continue;
+        }
+
+        // dependent on weapon class
+        for(uint8 i = 0; i < MAX_ATTACK; ++i)
+        {
+            Item *weapon = GetWeaponForAttack(WeaponAttackType(i));
+            if(weapon && weapon->IsFitToSpellRequirements((*itr)->GetSpellProto()))
+            {
+                m_armorPenetrationPct += (*itr)->GetModifier()->m_amount;
+                break;
+            }
+        }
     }
 }
 
@@ -803,7 +833,9 @@ void Creature::UpdateDamagePhysical(WeaponAttackType attType)
 
     UnitMods unitMod = UNIT_MOD_DAMAGE_MAINHAND;
 
-    float base_value  = GetModifierValue(unitMod, BASE_VALUE) + GetTotalAttackPowerValue(attType);
+    /* difference in AP between current attack power and base value from DB */
+    float att_pwr_change = GetTotalAttackPowerValue(attType) - GetCreatureInfo()->attackpower;
+    float base_value  = GetModifierValue(unitMod, BASE_VALUE) + (att_pwr_change * GetAPMultiplier(attType, false) / 14.0f);
     float base_pct    = GetModifierValue(unitMod, BASE_PCT);
     float total_value = GetModifierValue(unitMod, TOTAL_VALUE);
     float total_pct   = GetModifierValue(unitMod, TOTAL_PCT);
@@ -812,8 +844,8 @@ void Creature::UpdateDamagePhysical(WeaponAttackType attType)
     float weapon_mindamage = GetWeaponDamageRange(BASE_ATTACK, MINDAMAGE);
     float weapon_maxdamage = GetWeaponDamageRange(BASE_ATTACK, MAXDAMAGE);
 
-    float mindamage = ((base_value + weapon_mindamage) * base_pct + total_value) * total_pct * dmg_multiplier;
-    float maxdamage = ((base_value + weapon_maxdamage) * base_pct + total_value) * total_pct * dmg_multiplier;
+    float mindamage = ((base_value + weapon_mindamage) * dmg_multiplier * base_pct + total_value) * total_pct;
+    float maxdamage = ((base_value + weapon_maxdamage) * dmg_multiplier * base_pct + total_value) * total_pct;
 
     SetStatFloatValue(UNIT_FIELD_MINDAMAGE, mindamage);
     SetStatFloatValue(UNIT_FIELD_MAXDAMAGE, maxdamage);
@@ -884,7 +916,7 @@ void Pet::UpdateResistances(uint32 school)
 
         Unit *owner = GetOwner();
         // hunter and warlock pets gain 40% of owner's resistance
-        if(owner && (getPetType() == HUNTER_PET || getPetType() == SUMMON_PET && owner->getClass() == CLASS_WARLOCK))
+        if(owner && (getPetType() == HUNTER_PET || (getPetType() == SUMMON_PET && owner->getClass() == CLASS_WARLOCK)))
             value += float(owner->GetResistance(SpellSchools(school))) * 0.4f;
 
         SetResistance(SpellSchools(school), int32(value));
@@ -901,7 +933,7 @@ void Pet::UpdateArmor()
 
     Unit *owner = GetOwner();
     // hunter and warlock pets gain 35% of owner's armor value
-    if(owner && (getPetType() == HUNTER_PET || getPetType() == SUMMON_PET && owner->getClass() == CLASS_WARLOCK))
+    if(owner && (getPetType() == HUNTER_PET || (getPetType() == SUMMON_PET && owner->getClass() == CLASS_WARLOCK)))
         bonus_armor = 0.35f * float(owner->GetArmor());
 
     value  = GetModifierValue(unitMod, BASE_VALUE);
@@ -1028,16 +1060,16 @@ void Pet::UpdateDamagePhysical(WeaponAttackType attType)
         {
             case HAPPY:
                 // 125% of normal damage
-                mindamage = mindamage * 1.25;
-                maxdamage = maxdamage * 1.25;
+                mindamage = mindamage * 1.25f;
+                maxdamage = maxdamage * 1.25f;
                 break;
             case CONTENT:
                 // 100% of normal damage, nothing to modify
                 break;
             case UNHAPPY:
                 // 75% of normal damage
-                mindamage = mindamage * 0.75;
-                maxdamage = maxdamage * 0.75;
+                mindamage = mindamage * 0.75f;
+                maxdamage = maxdamage * 0.75f;
                 break;
         }
     }

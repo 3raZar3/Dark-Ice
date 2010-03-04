@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,20 +40,13 @@ void
 MotionMaster::Initialize()
 {
     // clear ALL movement generators (including default)
-    while(!empty())
-    {
-        MovementGenerator *curr = top();
-        pop();
-        curr->Finalize(*i_owner);
-        if( !isStatic( curr ) )
-            delete curr;
-    }
+    Clear(false,true);
 
     // set new default movement generator
-    if(i_owner->GetTypeId() == TYPEID_UNIT)
+    if (i_owner->GetTypeId() == TYPEID_UNIT)
     {
         MovementGenerator* movement = FactorySelector::selectMovementGenerator((Creature*)i_owner);
-        push(  movement == NULL ? &si_idleMovement : movement );
+        push(movement == NULL ? &si_idleMovement : movement);
         top()->Initialize(*i_owner);
     }
     else
@@ -63,20 +56,13 @@ MotionMaster::Initialize()
 MotionMaster::~MotionMaster()
 {
     // clear ALL movement generators (including default)
-    while(!empty())
-    {
-        MovementGenerator *curr = top();
-        pop();
-        curr->Finalize(*i_owner);
-        if( !isStatic( curr ) )
-            delete curr;
-    }
+    DirectClean(false,true);
 }
 
 void
 MotionMaster::UpdateMotion(uint32 diff)
 {
-    if( i_owner->hasUnitState(UNIT_STAT_ROOT | UNIT_STAT_STUNNED) )
+    if( i_owner->hasUnitState(UNIT_STAT_CAN_NOT_MOVE) )
         return;
     assert( !empty() );
     m_cleanFlag |= MMCF_UPDATE;
@@ -90,7 +76,7 @@ MotionMaster::UpdateMotion(uint32 diff)
 
     if (m_expList)
     {
-        for (int i = 0; i < m_expList->size(); ++i)
+        for (size_t i = 0; i < m_expList->size(); ++i)
         {
             MovementGenerator* mg = (*m_expList)[i];
             if (!isStatic(mg))
@@ -112,18 +98,18 @@ MotionMaster::UpdateMotion(uint32 diff)
 }
 
 void
-MotionMaster::DirectClean(bool reset)
+MotionMaster::DirectClean(bool reset, bool all)
 {
-    while( !empty() && size() > 1 )
+    while( all ? !empty() : size() > 1 )
     {
         MovementGenerator *curr = top();
         pop();
         curr->Finalize(*i_owner);
-        if( !isStatic( curr ) )
+        if (!isStatic( curr ))
             delete curr;
     }
 
-    if (reset)
+    if (!all && reset)
     {
         assert( !empty() );
         top()->Reset(*i_owner);
@@ -131,20 +117,25 @@ MotionMaster::DirectClean(bool reset)
 }
 
 void
-MotionMaster::DelayedClean()
+MotionMaster::DelayedClean(bool reset, bool all)
 {
-    if (empty() || size() == 1)
+    if(reset)
+        m_cleanFlag |= MMCF_RESET;
+    else
+        m_cleanFlag &= ~MMCF_RESET;
+
+    if (empty() || !all && size() == 1)
         return;
 
-    if(!m_expList)
+    if (!m_expList)
         m_expList = new ExpireList();
 
-    while( !empty() && size() > 1 )
+    while( all ? !empty() : size() > 1 )
     {
         MovementGenerator *curr = top();
         pop();
         curr->Finalize(*i_owner);
-        if( !isStatic( curr ) )
+        if (!isStatic( curr ))
             m_expList->push_back(curr);
     }
 }
@@ -152,14 +143,14 @@ MotionMaster::DelayedClean()
 void
 MotionMaster::DirectExpire(bool reset)
 {
-    if( empty() || size() == 1 )
+    if (empty() || size() == 1)
         return;
 
     MovementGenerator *curr = top();
     pop();
 
     // also drop stored under top() targeted motions
-    while( !empty() && top()->GetMovementGeneratorType() == TARGETED_MOTION_TYPE )
+    while (!empty() && (top()->GetMovementGeneratorType() == CHASE_MOTION_TYPE || top()->GetMovementGeneratorType() == FOLLOW_MOTION_TYPE))
     {
         MovementGenerator *temp = top();
         pop();
@@ -170,29 +161,35 @@ MotionMaster::DirectExpire(bool reset)
     // it can add another motions instead
     curr->Finalize(*i_owner);
 
-    if( !isStatic(curr) )
+    if (!isStatic(curr))
         delete curr;
 
-    if( empty() )
+    if (empty())
         Initialize();
 
-    if (reset) top()->Reset(*i_owner);
+    if (reset)
+        top()->Reset(*i_owner);
 }
 
 void
-MotionMaster::DelayedExpire()
+MotionMaster::DelayedExpire(bool reset)
 {
-    if( empty() || size() == 1 )
+    if (reset)
+        m_cleanFlag |= MMCF_RESET;
+    else
+        m_cleanFlag &= ~MMCF_RESET;
+
+    if (empty() || size() == 1)
         return;
 
     MovementGenerator *curr = top();
     pop();
 
-    if(!m_expList)
+    if (!m_expList)
         m_expList = new ExpireList();
 
     // also drop stored under top() targeted motions
-    while( !empty() && top()->GetMovementGeneratorType() == TARGETED_MOTION_TYPE )
+    while (!empty() && (top()->GetMovementGeneratorType() == CHASE_MOTION_TYPE || top()->GetMovementGeneratorType() == FOLLOW_MOTION_TYPE))
     {
         MovementGenerator *temp = top();
         pop();
@@ -202,14 +199,14 @@ MotionMaster::DelayedExpire()
 
     curr->Finalize(*i_owner);
 
-    if( !isStatic(curr) )
+    if (!isStatic(curr))
         m_expList->push_back(curr);
 }
 
 void MotionMaster::MoveIdle()
 {
-    if( empty() || !isStatic( top() ) )
-        push( &si_idleMovement );
+    if (empty() || !isStatic(top()))
+        push(&si_idleMovement);
 }
 
 void
@@ -232,11 +229,10 @@ MotionMaster::MoveTargetedHome()
         Unit *target = ((Creature*)i_owner)->GetCharmerOrOwner();
         if(target)
         {
-            i_owner->addUnitState(UNIT_STAT_FOLLOW);
             DEBUG_LOG("Following %s (GUID: %u)",
                 target->GetTypeId()==TYPEID_PLAYER ? "player" : "creature",
                 target->GetTypeId()==TYPEID_PLAYER ? target->GetGUIDLow() : ((Creature*)target)->GetDBTableGUIDLow() );
-            Mutate(new TargetedMovementGenerator<Creature>(*target,PET_FOLLOW_DIST,PET_FOLLOW_ANGLE));
+            Mutate(new FollowMovementGenerator<Creature>(*target,PET_FOLLOW_DIST,PET_FOLLOW_ANGLE));
         }
     }
     else
@@ -268,14 +264,13 @@ MotionMaster::MoveChase(Unit* target, float dist, float angle)
     if(!target)
         return;
 
-    i_owner->clearUnitState(UNIT_STAT_FOLLOW);
     if(i_owner->GetTypeId()==TYPEID_PLAYER)
     {
         DEBUG_LOG("Player (GUID: %u) chase to %s (GUID: %u)",
             i_owner->GetGUIDLow(),
             target->GetTypeId()==TYPEID_PLAYER ? "player" : "creature",
             target->GetTypeId()==TYPEID_PLAYER ? i_owner->GetGUIDLow() : ((Creature*)i_owner)->GetDBTableGUIDLow() );
-        Mutate(new TargetedMovementGenerator<Player>(*target,dist,angle));
+        Mutate(new ChaseMovementGenerator<Player>(*target,dist,angle));
     }
     else
     {
@@ -283,7 +278,7 @@ MotionMaster::MoveChase(Unit* target, float dist, float angle)
             i_owner->GetEntry(), i_owner->GetGUIDLow(),
             target->GetTypeId()==TYPEID_PLAYER ? "player" : "creature",
             target->GetTypeId()==TYPEID_PLAYER ? target->GetGUIDLow() : ((Creature*)target)->GetDBTableGUIDLow() );
-        Mutate(new TargetedMovementGenerator<Creature>(*target,dist,angle));
+        Mutate(new ChaseMovementGenerator<Creature>(*target,dist,angle));
     }
 }
 
@@ -296,13 +291,12 @@ MotionMaster::MoveFollow(Unit* target, float dist, float angle)
     if(!target)
         return;
 
-    i_owner->addUnitState(UNIT_STAT_FOLLOW);
     if(i_owner->GetTypeId()==TYPEID_PLAYER)
     {
         DEBUG_LOG("Player (GUID: %u) follow to %s (GUID: %u)", i_owner->GetGUIDLow(),
             target->GetTypeId()==TYPEID_PLAYER ? "player" : "creature",
             target->GetTypeId()==TYPEID_PLAYER ? i_owner->GetGUIDLow() : ((Creature*)i_owner)->GetDBTableGUIDLow() );
-        Mutate(new TargetedMovementGenerator<Player>(*target,dist,angle));
+        Mutate(new FollowMovementGenerator<Player>(*target,dist,angle));
     }
     else
     {
@@ -310,7 +304,7 @@ MotionMaster::MoveFollow(Unit* target, float dist, float angle)
             i_owner->GetEntry(), i_owner->GetGUIDLow(),
             target->GetTypeId()==TYPEID_PLAYER ? "player" : "creature",
             target->GetTypeId()==TYPEID_PLAYER ? target->GetGUIDLow() : ((Creature*)target)->GetDBTableGUIDLow() );
-        Mutate(new TargetedMovementGenerator<Creature>(*target,dist,angle));
+        Mutate(new FollowMovementGenerator<Creature>(*target,dist,angle));
     }
 }
 
@@ -434,6 +428,9 @@ void MotionMaster::Mutate(MovementGenerator *m)
             default:
                 break;
         }
+
+        if (!empty())
+            top()->Interrupt(*i_owner);
     }
     m->Initialize(*i_owner);
     push(m);
@@ -462,4 +459,10 @@ bool MotionMaster::GetDestination(float &x, float &y, float &z)
        return false;
 
    return top()->GetDestination(x,y,z);
+}
+
+void MotionMaster::UpdateFinalDistanceToTarget(float fDistance)
+{
+    if (!empty())
+        top()->UpdateFinalDistance(fDistance);
 }

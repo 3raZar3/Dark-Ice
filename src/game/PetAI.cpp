@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,9 +44,16 @@ PetAI::PetAI(Creature *c) : CreatureAI(c), i_tracker(TIME_INTERVAL_LOOK), inComb
 
 void PetAI::MoveInLineOfSight(Unit *u)
 {
-    if( !m_creature->getVictim() && m_creature->GetCharmInfo() &&
-        m_creature->GetCharmInfo()->HasReactState(REACT_AGGRESSIVE) &&
-        u->isTargetableForAttack() && m_creature->IsHostileTo( u ) &&
+    if (m_creature->getVictim())
+        return;
+
+    if (m_creature->isPet() && ((Pet*)m_creature)->GetModeFlags() & PET_MODE_DISABLE_ACTIONS)
+        return;
+
+    if (!m_creature->GetCharmInfo() || !m_creature->GetCharmInfo()->HasReactState(REACT_AGGRESSIVE))
+        return;
+
+    if (u->isTargetableForAttack() && m_creature->IsHostileTo( u ) &&
         u->isInAccessablePlaceFor(m_creature))
     {
         float attackRadius = m_creature->GetAttackDistance(u);
@@ -68,7 +75,6 @@ void PetAI::AttackStart(Unit *u)
 
     if(m_creature->Attack(u,true))
     {
-        m_creature->clearUnitState(UNIT_STAT_FOLLOW);
         // TMGs call CreatureRelocation which via MoveInLineOfSight can call this function
         // thus with the following clear the original TMG gets invalidated and crash, doh
         // hope it doesn't start to leak memory without this :-/
@@ -101,12 +107,12 @@ void PetAI::_stopAttack()
     inCombat = false;
     if( !m_creature->isAlive() )
     {
-        DEBUG_LOG("Creature stoped attacking cuz his dead [guid=%u]", m_creature->GetGUIDLow());
+        DEBUG_LOG("PetAI (guid = %u) stopped attack, he is dead.", m_creature->GetGUIDLow());
         m_creature->StopMoving();
         m_creature->GetMotionMaster()->Clear();
         m_creature->GetMotionMaster()->MoveIdle();
         m_creature->CombatStop();
-        m_creature->getHostilRefManager().deleteReferences();
+        m_creature->getHostileRefManager().deleteReferences();
 
         return;
     }
@@ -119,8 +125,7 @@ void PetAI::_stopAttack()
     }
     else
     {
-        m_creature->clearUnitState(UNIT_STAT_FOLLOW);
-        m_creature->GetMotionMaster()->Clear();
+        m_creature->GetMotionMaster()->Clear(false);
         m_creature->GetMotionMaster()->MoveIdle();
     }
     m_creature->AttackStop();
@@ -139,7 +144,7 @@ void PetAI::UpdateAI(const uint32 diff)
     else
         m_updateAlliesTimer -= diff;
 
-    if (inCombat && !m_creature->getVictim())
+    if (inCombat && (!m_creature->getVictim() || m_creature->isPet() && ((Pet*)m_creature)->GetModeFlags() & PET_MODE_DISABLE_ACTIONS))
         _stopAttack();
 
     // i_pet.getVictim() can't be used for check in case stop fighting, i_pet.getVictim() clear at Unit death etc.
@@ -147,7 +152,7 @@ void PetAI::UpdateAI(const uint32 diff)
     {
         if (_needToStop())
         {
-            DEBUG_LOG("Pet AI stoped attacking [guid=%u]", m_creature->GetGUIDLow());
+            DEBUG_LOG("PetAI (guid = %u) is stopping attack.", m_creature->GetGUIDLow());
             _stopAttack();
             return;
         }
@@ -156,7 +161,7 @@ void PetAI::UpdateAI(const uint32 diff)
             // required to be stopped cases
             if (m_creature->IsStopped() && m_creature->IsNonMeleeSpellCasted(false))
             {
-                if (m_creature->hasUnitState(UNIT_STAT_FOLLOW))
+                if (m_creature->hasUnitState(UNIT_STAT_FOLLOW_MOVE))
                     m_creature->InterruptNonMeleeSpells(false);
                 else
                     return;
@@ -172,7 +177,7 @@ void PetAI::UpdateAI(const uint32 diff)
                     return;
 
                 //if pet misses its target, it will also be the first in threat list
-                m_creature->getVictim()->AddThreat(m_creature,0.0f);
+                m_creature->getVictim()->AddThreat(m_creature);
 
                 if( _needToStop() )
                     _stopAttack();
@@ -194,9 +199,12 @@ void PetAI::UpdateAI(const uint32 diff)
         }
     }
 
+    // Autocast (casted only in combat or persistent spells in any state)
     if (m_creature->GetGlobalCooldown() == 0 && !m_creature->IsNonMeleeSpellCasted(false))
     {
-        //Autocast
+        typedef std::vector<std::pair<Unit*, Spell*> > TargetSpellList;
+        TargetSpellList targetSpellStore;
+
         for (uint8 i = 0; i < m_creature->GetPetAutoSpellSize(); ++i)
         {
             uint32 spellID = m_creature->GetPetAutoSpellOnPos(i);
@@ -210,11 +218,29 @@ void PetAI::UpdateAI(const uint32 diff)
             // ignore some combinations of combat state and combat/noncombat spells
             if (!inCombat)
             {
+                // ignore attacking spells, and allow only self/around spells
                 if (!IsPositiveSpell(spellInfo->Id))
                     continue;
+
+                // non combat spells allowed
+                // only pet spells have IsNonCombatSpell and not fit this reqs:
+                // Consume Shadows, Lesser Invisibility, so ignore checks for its
+                if (!IsNonCombatSpell(spellInfo))
+                {
+                    // allow only spell without spell cost or with spell cost but not duration limit
+                    int32 duration = GetSpellDuration(spellInfo);
+                    if ((spellInfo->manaCost || spellInfo->ManaCostPercentage || spellInfo->manaPerSecond) && duration > 0)
+                        continue;
+
+                    // allow only spell without cooldown > duration
+                    int32 cooldown = GetSpellRecoveryTime(spellInfo);
+                    if (cooldown >= 0 && duration >= 0 && cooldown > duration)
+                        continue;
+                }
             }
             else
             {
+                // just ignore non-combat spells
                 if (IsNonCombatSpell(spellInfo))
                     continue;
             }
@@ -223,7 +249,7 @@ void PetAI::UpdateAI(const uint32 diff)
 
             if (inCombat && !m_creature->hasUnitState(UNIT_STAT_FOLLOW) && spell->CanAutoCast(m_creature->getVictim()))
             {
-                m_targetSpellStore.push_back(std::make_pair<Unit*, Spell*>(m_creature->getVictim(), spell));
+                targetSpellStore.push_back(std::make_pair<Unit*, Spell*>(m_creature->getVictim(), spell));
                 continue;
             }
             else
@@ -239,7 +265,7 @@ void PetAI::UpdateAI(const uint32 diff)
 
                     if(spell->CanAutoCast(Target))
                     {
-                        m_targetSpellStore.push_back(std::make_pair<Unit*, Spell*>(Target, spell));
+                        targetSpellStore.push_back(std::make_pair<Unit*, Spell*>(Target, spell));
                         spellUsed = true;
                         break;
                     }
@@ -250,44 +276,43 @@ void PetAI::UpdateAI(const uint32 diff)
         }
 
         //found units to cast on to
-        if (!m_targetSpellStore.empty())
+        if (!targetSpellStore.empty())
         {
-            uint32 index = urand(0, m_targetSpellStore.size() - 1);
+            uint32 index = urand(0, targetSpellStore.size() - 1);
 
-            Spell* spell  = m_targetSpellStore[index].second;
-            Unit*  target = m_targetSpellStore[index].first;
+            Spell* spell  = targetSpellStore[index].second;
+            Unit*  target = targetSpellStore[index].first;
 
-            m_targetSpellStore.erase(m_targetSpellStore.begin() + index);
+            targetSpellStore.erase(targetSpellStore.begin() + index);
 
             SpellCastTargets targets;
             targets.setUnitTarget( target );
 
-            if (!m_creature->HasInArc(M_PI, target))
+            if (!m_creature->HasInArc(M_PI_F, target))
             {
                 m_creature->SetInFront(target);
                 if (target->GetTypeId() == TYPEID_PLAYER)
-                    m_creature->SendUpdateToPlayer((Player*)target);
+                    m_creature->SendCreateUpdateToPlayer((Player*)target);
 
                 if (owner && owner->GetTypeId() == TYPEID_PLAYER)
-                    m_creature->SendUpdateToPlayer( (Player*)owner );
+                    m_creature->SendCreateUpdateToPlayer( (Player*)owner );
             }
 
             m_creature->AddCreatureSpellCooldown(spell->m_spellInfo->Id);
 
             spell->prepare(&targets);
         }
-        while (!m_targetSpellStore.empty())
-        {
-            delete m_targetSpellStore.begin()->second;
-            m_targetSpellStore.erase(m_targetSpellStore.begin());
-        }
+
+        // deleted cached Spell objects
+        for(TargetSpellList::const_iterator itr = targetSpellStore.begin(); itr != targetSpellStore.end(); ++itr)
+            delete itr->second;
     }
 }
 
 bool PetAI::_isVisible(Unit *u) const
 {
-    return m_creature->IsWithinDist(u,sWorld.getConfig(CONFIG_SIGHT_GUARDER))
-        && u->isVisibleForOrDetect(m_creature,true);
+    return m_creature->IsWithinDist(u,sWorld.getConfig(CONFIG_FLOAT_SIGHT_GUARDER))
+        && u->isVisibleForOrDetect(m_creature,m_creature,true);
 }
 
 void PetAI::UpdateAllies()

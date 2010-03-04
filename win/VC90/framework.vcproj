@@ -532,6 +532,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\framework\Policies\MemoryManagement.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\framework\Policies\ObjectLifeTime.cpp"
 				>
 			</File>
@@ -584,22 +588,6 @@
 				>
 			</File>
 			<Filter
-				Name="CountedReference"
-				>
-				<File
-					RelativePath="..\..\src\framework\Utilities\CountedReference\Reference.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\src\framework\Utilities\CountedReference\ReferenceHolder.h"
-					>
-				</File>
-				<File
-					RelativePath="..\..\src\framework\Utilities\CountedReference\ReferenceImpl.h"
-					>
-				</File>
-			</Filter>
-			<Filter
 				Name="LinkedReference"
 				>
 				<File
@@ -621,14 +609,6 @@
 			</File>
 			<File
 				RelativePath="..\..\src\framework\Dynamic\ObjectRegistry.h"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="Network"
-			>
-			<File
-				RelativePath="..\..\src\framework\Network\SocketDefines.h"
 				>
 			</File>
 		</Filter>

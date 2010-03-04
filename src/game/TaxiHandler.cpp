@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,12 +29,8 @@
 #include "WaypointMovementGenerator.h"
 #include "DestinationHolderImp.h"
 
-#include <cassert>
-
 void WorldSession::HandleTaxiNodeStatusQueryOpcode( WorldPacket & recv_data )
 {
-    CHECK_PACKET_SIZE(recv_data,8);
-
     sLog.outDebug( "WORLD: Received CMSG_TAXINODE_STATUS_QUERY" );
 
     uint64 guid;
@@ -53,7 +49,7 @@ void WorldSession::SendTaxiStatus( uint64 guid )
         return;
     }
 
-    uint32 curloc = objmgr.GetNearestTaxiNode(unit->GetPositionX(),unit->GetPositionY(),unit->GetPositionZ(),unit->GetMapId(),GetPlayer( )->GetTeam());
+    uint32 curloc = sObjectMgr.GetNearestTaxiNode(unit->GetPositionX(),unit->GetPositionY(),unit->GetPositionZ(),unit->GetMapId(),GetPlayer( )->GetTeam());
 
     // not found nearest
     if(curloc == 0)
@@ -70,8 +66,6 @@ void WorldSession::SendTaxiStatus( uint64 guid )
 
 void WorldSession::HandleTaxiQueryAvailableNodes( WorldPacket & recv_data )
 {
-    CHECK_PACKET_SIZE(recv_data,8);
-
     sLog.outDebug( "WORLD: Received CMSG_TAXIQUERYAVAILABLENODES" );
 
     uint64 guid;
@@ -100,7 +94,7 @@ void WorldSession::HandleTaxiQueryAvailableNodes( WorldPacket & recv_data )
 void WorldSession::SendTaxiMenu( Creature* unit )
 {
     // find current node
-    uint32 curloc = objmgr.GetNearestTaxiNode(unit->GetPositionX(),unit->GetPositionY(),unit->GetPositionZ(),unit->GetMapId(),GetPlayer( )->GetTeam());
+    uint32 curloc = sObjectMgr.GetNearestTaxiNode(unit->GetPositionX(),unit->GetPositionY(),unit->GetPositionZ(),unit->GetMapId(),GetPlayer( )->GetTeam());
 
     if ( curloc == 0 )
         return;
@@ -135,7 +129,7 @@ void WorldSession::SendDoFlight( uint32 mountDisplayId, uint32 path, uint32 path
 bool WorldSession::SendLearnNewTaxiNode( Creature* unit )
 {
     // find current node
-    uint32 curloc = objmgr.GetNearestTaxiNode(unit->GetPositionX(),unit->GetPositionY(),unit->GetPositionZ(),unit->GetMapId(),GetPlayer( )->GetTeam());
+    uint32 curloc = sObjectMgr.GetNearestTaxiNode(unit->GetPositionX(),unit->GetPositionY(),unit->GetPositionZ(),unit->GetMapId(),GetPlayer( )->GetTeam());
 
     if ( curloc == 0 )
         return true;                                        // `true` send to avoid WorldSession::SendTaxiMenu call with one more curlock seartch with same false result.
@@ -158,14 +152,12 @@ bool WorldSession::SendLearnNewTaxiNode( Creature* unit )
 
 void WorldSession::HandleActivateTaxiExpressOpcode ( WorldPacket & recv_data )
 {
-    CHECK_PACKET_SIZE(recv_data,8+4+4);
-
     sLog.outDebug( "WORLD: Received CMSG_ACTIVATETAXIEXPRESS" );
 
     uint64 guid;
-    uint32 node_count, _totalcost;
+    uint32 node_count;
 
-    recv_data >> guid >> _totalcost >> node_count;
+    recv_data >> guid >> node_count;
 
     Creature *npc = GetPlayer()->GetNPCIfCanInteractWith(guid, UNIT_NPC_FLAG_FLIGHTMASTER);
     if (!npc)
@@ -173,9 +165,6 @@ void WorldSession::HandleActivateTaxiExpressOpcode ( WorldPacket & recv_data )
         sLog.outDebug( "WORLD: HandleActivateTaxiExpressOpcode - Unit (GUID: %u) not found or you can't interact with it.", uint32(GUID_LOPART(guid)) );
         return;
     }
-    // recheck
-    CHECK_PACKET_SIZE(recv_data,8+4+4+node_count*4);
-
     std::vector<uint32> nodes;
 
     for(uint32 i = 0; i < node_count; ++i)
@@ -193,14 +182,23 @@ void WorldSession::HandleActivateTaxiExpressOpcode ( WorldPacket & recv_data )
     GetPlayer()->ActivateTaxiPathTo(nodes, npc);
 }
 
-void WorldSession::HandleMoveSplineDoneOpcode(WorldPacket& /*recv_data*/)
+void WorldSession::HandleMoveSplineDoneOpcode(WorldPacket& recv_data)
 {
     sLog.outDebug( "WORLD: Received CMSG_MOVE_SPLINE_DONE" );
 
+    uint64 guid;                                            // used only for proper packet read
+    if(!recv_data.readPackGUID(guid))
+        return;
+
+    MovementInfo movementInfo(recv_data);                   // used only for proper packet read
+
+    recv_data.read_skip<uint32>();                          // unk
+
+
     // in taxi flight packet received in 2 case:
     // 1) end taxi path in far (multi-node) flight
-    // 2) switch from one map to other in case multim-map taxi path
-    // we need proccess only (1)
+    // 2) switch from one map to other in case multi-map taxi path
+    // we need process only (1)
     uint32 curDest = GetPlayer()->m_taxi.GetTaxiDestination();
     if(!curDest)
         return;
@@ -214,6 +212,8 @@ void WorldSession::HandleMoveSplineDoneOpcode(WorldPacket& /*recv_data*/)
         {
             // short preparations to continue flight
             FlightPathMovementGenerator* flight = (FlightPathMovementGenerator*)(GetPlayer()->GetMotionMaster()->top());
+
+            flight->Interrupt(*GetPlayer());                // will reset at map landing
 
             flight->SetCurrentNodeAfterTeleport();
             Path::PathNode const& node = flight->GetPath()[flight->GetCurrentNode()];
@@ -242,10 +242,10 @@ void WorldSession::HandleMoveSplineDoneOpcode(WorldPacket& /*recv_data*/)
 
         sLog.outDebug( "WORLD: Taxi has to go from %u to %u", sourcenode, destinationnode );
 
-        uint32 mountDisplayId = objmgr.GetTaxiMountDisplayId(sourcenode, GetPlayer()->GetTeam());
+        uint32 mountDisplayId = sObjectMgr.GetTaxiMountDisplayId(sourcenode, GetPlayer()->GetTeam());
 
         uint32 path, cost;
-        objmgr.GetTaxiPath( sourcenode, destinationnode, path, cost);
+        sObjectMgr.GetTaxiPath( sourcenode, destinationnode, path, cost);
 
         if(path && mountDisplayId)
             SendDoFlight( mountDisplayId, path, 1 );        // skip start fly node
@@ -258,8 +258,6 @@ void WorldSession::HandleMoveSplineDoneOpcode(WorldPacket& /*recv_data*/)
 
 void WorldSession::HandleActivateTaxiOpcode( WorldPacket & recv_data )
 {
-    CHECK_PACKET_SIZE(recv_data,8+4+4);
-
     sLog.outDebug( "WORLD: Received CMSG_ACTIVATETAXI" );
 
     uint64 guid;

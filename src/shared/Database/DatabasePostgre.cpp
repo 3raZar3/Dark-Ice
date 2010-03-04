@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,14 +26,6 @@
 #include "Database/PGSQLDelayThread.h"
 #include "Database/SqlOperations.h"
 #include "Timer.h"
-
-void DatabasePostgre::ThreadStart()
-{
-}
-
-void DatabasePostgre::ThreadEnd()
-{
-}
 
 size_t DatabasePostgre::db_count = 0;
 
@@ -364,8 +356,8 @@ void DatabasePostgre::InitDelayThread()
     assert(!m_delayThread);
 
     //New delay thread for delay execute
-    m_threadBody = new PGSQLDelayThread(this);
-    m_delayThread = new ACE_Based::Thread(*m_threadBody);
+    m_threadBody = new PGSQLDelayThread(this);             // Will be deleted on m_delayThread delete
+    m_delayThread = new ACE_Based::Thread(m_threadBody);
 }
 
 void DatabasePostgre::HaltDelayThread()

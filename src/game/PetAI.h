@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,8 +52,5 @@ class MANGOS_DLL_DECL PetAI : public CreatureAI
         bool inCombat;
         std::set<uint64> m_AllySet;
         uint32 m_updateAlliesTimer;
-
-        typedef std::pair<Unit*, Spell*> TargetSpellPair;
-        std::vector<TargetSpellPair> m_targetSpellStore;
 };
 #endif

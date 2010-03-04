@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -241,7 +241,7 @@ namespace VMAP
 
         char destnamebuffer[500];
         char fullnamedestnamebuffer[500];
-        
+
         if(nameCollection.iMainFiles.size() >0)
         {
             sprintf(destnamebuffer,"%03u_%i_%i.vmap",pMapId, pYPos, pXPos); // flip it here too

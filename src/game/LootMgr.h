@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,8 +30,12 @@ enum RollType
 {
     ROLL_PASS         = 0,
     ROLL_NEED         = 1,
-    ROLL_GREED        = 2
+    ROLL_GREED        = 2,
+    ROLL_DISENCHANT   = 3,
+    MAX_ROLL_TYPE     = 4
 };
+
+#define ALL_ROLL_TYPE_MASK 0x0F
 
 #define MAX_NR_LOOT_ITEMS 16
 // note: the client cannot show more than 16 items total
@@ -85,7 +89,7 @@ struct LootStoreItem
 
     // Constructor, converting ChanceOrQuestChance -> (chance, needs_quest)
     // displayid is filled in IsValid() which must be called after
-    LootStoreItem(uint32 _itemid, float _chanceOrQuestChance, int8 _group, uint8 _conditionId, int32 _mincountOrRef, uint8 _maxcount)
+    LootStoreItem(uint32 _itemid, float _chanceOrQuestChance, int8 _group, uint16 _conditionId, int32 _mincountOrRef, uint8 _maxcount)
         : itemid(_itemid), chance(fabs(_chanceOrQuestChance)), mincountOrRef(_mincountOrRef),
         group(_group), needs_quest(_chanceOrQuestChance < 0), maxcount(_maxcount), conditionId(_conditionId)
          {}
@@ -283,7 +287,7 @@ struct Loot
     void RemoveLooter(uint64 GUID) { PlayersLooting.erase(GUID); }
 
     void generateMoneyLoot(uint32 minAmount, uint32 maxAmount);
-    void FillLoot(uint32 loot_id, LootStore const& store, Player* loot_owner, bool personal);
+    bool FillLoot(uint32 loot_id, LootStore const& store, Player* loot_owner, bool personal, bool noEmptyError = false);
 
     // Inserts the item into the loot (called by LootTemplate processors)
     void AddItem(LootStoreItem const & item);
@@ -320,24 +324,24 @@ extern LootStore LootTemplates_Creature;
 extern LootStore LootTemplates_Fishing;
 extern LootStore LootTemplates_Gameobject;
 extern LootStore LootTemplates_Item;
+extern LootStore LootTemplates_Mail;
 extern LootStore LootTemplates_Milling;
 extern LootStore LootTemplates_Pickpocketing;
 extern LootStore LootTemplates_Skinning;
 extern LootStore LootTemplates_Disenchant;
 extern LootStore LootTemplates_Prospecting;
-extern LootStore LootTemplates_QuestMail;
 extern LootStore LootTemplates_Spell;
 
 void LoadLootTemplates_Creature();
 void LoadLootTemplates_Fishing();
 void LoadLootTemplates_Gameobject();
 void LoadLootTemplates_Item();
+void LoadLootTemplates_Mail();
 void LoadLootTemplates_Milling();
 void LoadLootTemplates_Pickpocketing();
 void LoadLootTemplates_Skinning();
 void LoadLootTemplates_Disenchant();
 void LoadLootTemplates_Prospecting();
-void LoadLootTemplates_QuestMail();
 
 void LoadLootTemplates_Spell();
 void LoadLootTemplates_Reference();
@@ -348,12 +352,12 @@ inline void LoadLootTables()
     LoadLootTemplates_Fishing();
     LoadLootTemplates_Gameobject();
     LoadLootTemplates_Item();
+    LoadLootTemplates_Mail();
     LoadLootTemplates_Milling();
     LoadLootTemplates_Pickpocketing();
     LoadLootTemplates_Skinning();
     LoadLootTemplates_Disenchant();
     LoadLootTemplates_Prospecting();
-    LoadLootTemplates_QuestMail();
     LoadLootTemplates_Spell();
 
     LoadLootTemplates_Reference();

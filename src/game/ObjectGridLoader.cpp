@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -102,17 +102,18 @@ template<> void addUnitState(Creature *obj, CellPair const& cell_pair)
     Cell cell(cell_pair);
 
     obj->SetCurrentCell(cell);
-    if(obj->isSpiritService())
-        obj->setDeathState(DEAD);
 }
 
 template <class T>
 void LoadHelper(CellGuidSet const& guid_set, CellPair &cell, GridRefManager<T> &m, uint32 &count, Map* map)
 {
+    BattleGround* bg = map->IsBattleGroundOrArena() ? ((BattleGroundMap*)map)->GetBG() : NULL;
+
     for(CellGuidSet::const_iterator i_guid = guid_set.begin(); i_guid != guid_set.end(); ++i_guid)
     {
-        T* obj = new T;
         uint32 guid = *i_guid;
+
+        T* obj = new T;
         //sLog.outString("DEBUG: LoadHelper from table: %s for (guid: %u) Loading",table,guid);
         if(!obj->LoadFromDB(guid, map))
         {
@@ -127,9 +128,10 @@ void LoadHelper(CellGuidSet const& guid_set, CellPair &cell, GridRefManager<T> &
         obj->AddToWorld();
         if(obj->isActiveObject())
             map->AddToActive(obj);
+        if (bg)
+            bg->OnObjectDBLoad(obj);
 
         ++count;
-
     }
 }
 
@@ -145,7 +147,7 @@ void LoadHelper(CellCorpseSet const& cell_corpses, CellPair &cell, CorpseMapType
 
         uint32 player_guid = itr->first;
 
-        Corpse *obj = ObjectAccessor::Instance().GetCorpseForPlayerGUID(player_guid);
+        Corpse *obj = sObjectAccessor.GetCorpseForPlayerGUID(player_guid);
         if(!obj)
             continue;
 
@@ -169,7 +171,7 @@ ObjectGridLoader::Visit(GameObjectMapType &m)
     CellPair cell_pair(x,y);
     uint32 cell_id = (cell_pair.y_coord*TOTAL_NUMBER_OF_CELLS_PER_MAP) + cell_pair.x_coord;
 
-    CellObjectGuids const& cell_guids = objmgr.GetCellObjectGuids(i_map->GetId(), i_map->GetSpawnMode(), cell_id);
+    CellObjectGuids const& cell_guids = sObjectMgr.GetCellObjectGuids(i_map->GetId(), i_map->GetSpawnMode(), cell_id);
 
     LoadHelper(cell_guids.gameobjects, cell_pair, m, i_gameObjects, i_map);
 }
@@ -182,7 +184,7 @@ ObjectGridLoader::Visit(CreatureMapType &m)
     CellPair cell_pair(x,y);
     uint32 cell_id = (cell_pair.y_coord*TOTAL_NUMBER_OF_CELLS_PER_MAP) + cell_pair.x_coord;
 
-    CellObjectGuids const& cell_guids = objmgr.GetCellObjectGuids(i_map->GetId(), i_map->GetSpawnMode(), cell_id);
+    CellObjectGuids const& cell_guids = sObjectMgr.GetCellObjectGuids(i_map->GetId(), i_map->GetSpawnMode(), cell_id);
 
     LoadHelper(cell_guids.creatures, cell_pair, m, i_creatures, i_map);
 }
@@ -196,7 +198,7 @@ ObjectWorldLoader::Visit(CorpseMapType &m)
     uint32 cell_id = (cell_pair.y_coord*TOTAL_NUMBER_OF_CELLS_PER_MAP) + cell_pair.x_coord;
 
     // corpses are always added to spawn mode 0 and they are spawned by their instance id
-    CellObjectGuids const& cell_guids = objmgr.GetCellObjectGuids(i_map->GetId(), 0, cell_id);
+    CellObjectGuids const& cell_guids = sObjectMgr.GetCellObjectGuids(i_map->GetId(), 0, cell_id);
     LoadHelper(cell_guids.corpses, cell_pair, m, i_corpses, i_map);
 }
 
@@ -264,7 +266,7 @@ ObjectGridUnloader::Visit(GridRefManager<T> &m)
     {
         T *obj = m.getFirst()->getSource();
         // if option set then object already saved at this moment
-        if(!sWorld.getConfig(CONFIG_SAVE_RESPAWN_TIME_IMMEDIATLY))
+        if(!sWorld.getConfig(CONFIG_BOOL_SAVE_RESPAWN_TIME_IMMEDIATLY))
             obj->SaveRespawnTime();
         ///- object must be out of world before delete
         obj->RemoveFromWorld();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -424,8 +424,8 @@ void DatabaseMysql::InitDelayThread()
     assert(!m_delayThread);
 
     //New delay thread for delay execute
-    m_threadBody = new MySQLDelayThread(this);
-    m_delayThread = new ACE_Based::Thread(*m_threadBody);
+    m_threadBody = new MySQLDelayThread(this);              // will deleted at m_delayThread delete
+    m_delayThread = new ACE_Based::Thread(m_threadBody);
 }
 
 void DatabaseMysql::HaltDelayThread()
