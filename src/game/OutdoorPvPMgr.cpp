@@ -52,17 +52,14 @@ void OutdoorPvPMgr::InitOutdoorPvP()
     // respawn, init variables
     if(!pOP->SetupOutdoorPvP())
     {
-        sLog.outString();
         sLog.outError("OutdoorPvP : HP init failed.");
-        sLog.outString();
         delete pOP;
     }
     else
     {
         m_OutdoorPvPSet.push_back(pOP);
         sLog.outString();
-        sLog.outError("OutdoorPvP : HP successfully initiated.");
-        sLog.outString();
+        sLog.outString("OutdoorPvP : HP successfully initiated.");
     }
 
     pOP = new OutdoorPvPNA;
@@ -75,7 +72,8 @@ void OutdoorPvPMgr::InitOutdoorPvP()
     else
     {
         m_OutdoorPvPSet.push_back(pOP);
-        sLog.outDebug("OutdoorPvP : NA successfully initiated.");
+        sLog.outString();
+        sLog.outString("OutdoorPvP : NA successfully initiated.");
     }
 
     pOP = new OutdoorPvPTF;
@@ -88,7 +86,8 @@ void OutdoorPvPMgr::InitOutdoorPvP()
     else
     {
         m_OutdoorPvPSet.push_back(pOP);
-        sLog.outDebug("OutdoorPvP : TF successfully initiated.");
+        sLog.outString();
+        sLog.outString("OutdoorPvP : TF successfully initiated.");
     }
 
     pOP = new OutdoorPvPZM;
@@ -101,7 +100,8 @@ void OutdoorPvPMgr::InitOutdoorPvP()
     else
     {
         m_OutdoorPvPSet.push_back(pOP);
-        sLog.outDebug("OutdoorPvP : ZM successfully initiated.");
+        sLog.outString();
+        sLog.outString("OutdoorPvP : ZM successfully initiated.");
     }
 
     pOP = new OutdoorPvPSI;
@@ -114,7 +114,8 @@ void OutdoorPvPMgr::InitOutdoorPvP()
     else
     {
         m_OutdoorPvPSet.push_back(pOP);
-        sLog.outDebug("OutdoorPvP : SI successfully initiated.");
+        sLog.outString();
+        sLog.outString("OutdoorPvP : SI successfully initiated.");
     }
 
     pOP = new OutdoorPvPEP;
@@ -127,7 +128,9 @@ void OutdoorPvPMgr::InitOutdoorPvP()
     else
     {
         m_OutdoorPvPSet.push_back(pOP);
-        sLog.outDebug("OutdoorPvP : EP successfully initiated.");
+        sLog.outString();
+        sLog.outString("OutdoorPvP : EP successfully initiated.");
+        sLog.outString();
     }
 }
 

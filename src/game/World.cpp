@@ -1375,7 +1375,7 @@ void World::SetInitialWorldSettings()
     sBattleGroundMgr.InitAutomaticArenaPointDistribution();
 
     ///- Initialize outdoor pvp
-    sLog.outString("Starting Outdoor PvP System");
+    sLog.outString( "Starting Outdoor PvP System" );
     sOutdoorPvPMgr.InitOutdoorPvP();
 
     //Not sure if this can be moved up in the sequence (with static data loading) as it uses MapManager

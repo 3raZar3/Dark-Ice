@@ -240,7 +240,6 @@ protected:
 
     void AddCapturePoint(OPvPCapturePoint* cp)
     {
-        sLog.outError("void AddCapturePoint");
         m_capturePoints[cp->m_capturePointGUID] = cp;
     }
 
