@@ -334,7 +334,8 @@ void GameObject::Update(uint32 /*p_time*/)
                         Unit *caster =  owner ? owner : ok;
 
                         caster->CastSpell(ok, goInfo->trap.spellId, true, NULL, NULL, GetGUID());
-                        m_cooldownTime = time(NULL) + 4;        // 4 seconds
+                        // use template cooldown if provided
+                        m_cooldownTime = time(NULL) + (goInfo->trap.cooldown ? goInfo->trap.cooldown : uint32(4));
 
                         // count charges
                         if(goInfo->trap.charges > 0)
@@ -929,8 +930,12 @@ void GameObject::Use(Unit* user)
 
             Player* player = (Player*)user;
 
-            player->PrepareGossipMenu(this, GetGOInfo()->questgiver.gossipID);
-            player->SendPreparedGossip(this);
+            if (!Script->GOGossipHello(player, this))
+            {
+                player->PrepareGossipMenu(this, GetGOInfo()->questgiver.gossipID);
+                player->SendPreparedGossip(this);
+            }
+
             return;
         }
         case GAMEOBJECT_TYPE_CHEST:
@@ -1036,8 +1041,11 @@ void GameObject::Use(Unit* user)
                 }
                 else if (info->goober.gossipID)             // ...or gossip, if page does not exist
                 {
-                    player->PrepareGossipMenu(this, info->goober.gossipID);
-                    player->SendPreparedGossip(this);
+                    if (!Script->GOGossipHello(player, this))
+                    {
+                        player->PrepareGossipMenu(this, info->goober.gossipID);
+                        player->SendPreparedGossip(this);
+                    }
                 }
 
                 if (info->goober.eventId)
