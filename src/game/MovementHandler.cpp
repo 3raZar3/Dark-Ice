@@ -494,7 +494,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         {
             plMover->m_anti_BeginFallZ=INVALID_HEIGHT;
         }
-	    }
+    }
 
     // ---- anti-cheat features -->>>
     uint32 Anti_TeleTimeDiff=plMover ? time(NULL) - plMover->Anti__GetLastTeleTime() : time(NULL);
@@ -578,7 +578,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
            GetPlayer()->GetBaseMap()->IsUnderWater(movementInfo.GetPos()->x, movementInfo.GetPos()->y, movementInfo.GetPos()->z-6.0f) &&
            !(GetPlayer()->HasAuraType(SPELL_AURA_WATER_WALK) || GetPlayer()->HasAuraType(SPELL_AURA_GHOST)))
         {
-            Anti__CheatOccurred(CurTime,"Water walking",0.0f,NULL,0.0f/*,(uint32)(movementInfo.GetMovementFlags())*/);
+            Anti__CheatOccurred(CurTime,"Water walking",0.0f,NULL,0.0f,(uint32)(movementInfo.GetMovementFlags()));
         }
          
         // Check for walking upwards a mountain while not beeing able to do that
