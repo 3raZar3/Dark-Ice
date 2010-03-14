@@ -30,6 +30,7 @@ struct ItemPrototype;
 struct AuctionEntry;
 struct DeclinedName;
 
+class ObjectGuid;
 class Creature;
 class Item;
 class Object;
@@ -243,7 +244,6 @@ class MANGOS_DLL_SPEC WorldSession
         // Guild/Arena Team
         void SendGuildCommandResult(uint32 typecmd, const std::string& str, uint32 cmdresult);
         void SendArenaTeamCommandResult(uint32 team_action, const std::string& team, const std::string& player, uint32 error_id);
-        void BuildArenaTeamEventPacket(WorldPacket *data, uint8 eventid, uint8 str_count, const std::string& str1, const std::string& str2, const std::string& str3);
         void SendNotInArenaTeamPacket(uint8 type);
         void SendPetitionShowList( uint64 guid );
         void SendSaveGuildEmblem( uint32 msg );
@@ -256,7 +256,7 @@ class MANGOS_DLL_SPEC WorldSession
 
         void BuildPartyMemberStatsChangedPacket(Player *player, WorldPacket *data);
 
-        void DoLootRelease( uint64 lguid );
+        void DoLootRelease(ObjectGuid lguid);
 
         // Account mute time
         time_t m_muteTime;
@@ -397,7 +397,6 @@ class MANGOS_DLL_SPEC WorldSession
         void HandleBattleMasterHelloOpcode(WorldPacket &recv_data);
 
         void HandleGroupInviteOpcode(WorldPacket& recvPacket);
-        //void HandleGroupCancelOpcode(WorldPacket& recvPacket);
         void HandleGroupAcceptOpcode(WorldPacket& recvPacket);
         void HandleGroupDeclineOpcode(WorldPacket& recvPacket);
         void HandleGroupUninviteOpcode(WorldPacket& recvPacket);
@@ -643,10 +642,10 @@ class MANGOS_DLL_SPEC WorldSession
         void HandleSetDungeonDifficultyOpcode(WorldPacket& recv_data);
         void HandleSetRaidDifficultyOpcode(WorldPacket& recv_data);
         void HandleMoveSetCanFlyAckOpcode(WorldPacket& recv_data);
-        void HandleLfgSetAutoJoinOpcode(WorldPacket& recv_data);
-        void HandleLfgClearAutoJoinOpcode(WorldPacket& recv_data);
-        void HandleLfmSetAutoFillOpcode(WorldPacket& recv_data);
-        void HandleLfmClearAutoFillOpcode(WorldPacket& recv_data);
+        void HandleLfgJoinOpcode(WorldPacket& recv_data);
+        void HandleLfgLeaveOpcode(WorldPacket& recv_data);
+        void HandleSearchLfgJoinOpcode(WorldPacket& recv_data);
+        void HandleSearchLfgLeaveOpcode(WorldPacket& recv_data);
         void HandleLfgClearOpcode(WorldPacket& recv_data);
         void HandleLfmClearOpcode(WorldPacket& recv_data);
         void HandleSetLfmOpcode(WorldPacket& recv_data);
@@ -657,6 +656,7 @@ class MANGOS_DLL_SPEC WorldSession
         void HandleTimeSyncResp(WorldPacket& recv_data);
         void HandleWhoisOpcode(WorldPacket& recv_data);
         void HandleResetInstancesOpcode(WorldPacket& recv_data);
+        void HandleHearthandResurrect(WorldPacket & recv_data);
 
         // Arena Team
         void HandleInspectArenaTeamsOpcode(WorldPacket& recv_data);

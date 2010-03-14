@@ -256,11 +256,7 @@ void GameObject::Update(uint32 /*p_time*/)
                                 return;
                             }
                                                             // respawn timer
-                            uint16 poolid = GetDBTableGUIDLow() ? sPoolMgr.IsPartOfAPool<GameObject>(GetDBTableGUIDLow()) : 0;
-                            if (poolid)
-                                sPoolMgr.UpdatePool<GameObject>(poolid, GetDBTableGUIDLow());
-                            else
-                                GetMap()->Add(this);
+                            GetMap()->Add(this);
                             break;
                     }
                 }
@@ -277,22 +273,23 @@ void GameObject::Update(uint32 /*p_time*/)
 
                     // traps
                     Unit* owner = GetOwner();
-                    Unit* ok = NULL;                            // pointer to appropriate target if found any
+                    Unit* ok = NULL;                        // pointer to appropriate target if found any
 
                     bool IsBattleGroundTrap = false;
                     //FIXME: this is activation radius (in different casting radius that must be selected from spell data)
                     //TODO: move activated state code (cast itself) to GO_ACTIVATED, in this place only check activating and set state
-                    float radius = goInfo->trap.radius;
+                    float radius = float(goInfo->trap.radius);
                     if(!radius)
                     {
-                        if(goInfo->trap.cooldown != 3)            // cast in other case (at some triggering/linked go/etc explicit call)
+                        if(goInfo->trap.cooldown != 3)      // cast in other case (at some triggering/linked go/etc explicit call)
                             return;
                         else
                         {
                             if(m_respawnTime > 0)
                                 break;
 
-                            radius = goInfo->trap.cooldown;       // battlegrounds gameobjects has data2 == 0 && data5 == 3
+                            // battlegrounds gameobjects has data2 == 0 && data5 == 3
+                            radius = float(goInfo->trap.cooldown);
                             IsBattleGroundTrap = true;
                         }
                     }
@@ -337,7 +334,8 @@ void GameObject::Update(uint32 /*p_time*/)
                         Unit *caster =  owner ? owner : ok;
 
                         caster->CastSpell(ok, goInfo->trap.spellId, true, NULL, NULL, GetGUID());
-                        m_cooldownTime = time(NULL) + 4;        // 4 seconds
+                        // use template cooldown if provided
+                        m_cooldownTime = time(NULL) + (goInfo->trap.cooldown ? goInfo->trap.cooldown : uint32(4));
 
                         // count charges
                         if(goInfo->trap.charges > 0)
@@ -444,13 +442,20 @@ void GameObject::Update(uint32 /*p_time*/)
                 return;
             }
 
+            // since pool system can fail to roll unspawned object, this one can remain spawned, so must set respawn nevertheless
             m_respawnTime = time(NULL) + m_respawnDelayTime;
 
             // if option not set then object will be saved at grid unload
-            if(sWorld.getConfig(CONFIG_SAVE_RESPAWN_TIME_IMMEDIATLY))
+            if(sWorld.getConfig(CONFIG_BOOL_SAVE_RESPAWN_TIME_IMMEDIATLY))
                 SaveRespawnTime();
 
-            UpdateObjectVisibility();
+            // if part of pool, let pool system schedule new spawn instead of just scheduling respawn
+            if(uint16 poolid = GetDBTableGUIDLow() ? sPoolMgr.IsPartOfAPool<GameObject>(GetDBTableGUIDLow()) : 0)
+                sPoolMgr.UpdatePool<GameObject>(poolid, GetDBTableGUIDLow());
+
+            // can be not in world at pool despawn
+            if (IsInWorld())
+                UpdateObjectVisibility();
 
             break;
         }
@@ -538,7 +543,7 @@ void GameObject::SaveToDB(uint32 mapid, uint8 spawnMask, uint32 phaseMask)
     data.rotation1 = GetFloatValue(GAMEOBJECT_PARENTROTATION+1);
     data.rotation2 = GetFloatValue(GAMEOBJECT_PARENTROTATION+2);
     data.rotation3 = GetFloatValue(GAMEOBJECT_PARENTROTATION+3);
-    data.spawntimesecs = m_spawnedByDefault ? m_respawnDelayTime : -(int32)m_respawnDelayTime;
+    data.spawntimesecs = m_spawnedByDefault ? (int32)m_respawnDelayTime : -(int32)m_respawnDelayTime;
     data.animprogress = GetGoAnimProgress();
     data.go_state = GetGoState();
     data.spawnMask = spawnMask;
@@ -925,8 +930,12 @@ void GameObject::Use(Unit* user)
 
             Player* player = (Player*)user;
 
-            player->PrepareGossipMenu(this, GetGOInfo()->questgiver.gossipID);
-            player->SendPreparedGossip(this);
+            if (!Script->GOGossipHello(player, this))
+            {
+                player->PrepareGossipMenu(this, GetGOInfo()->questgiver.gossipID);
+                player->SendPreparedGossip(this);
+            }
+
             return;
         }
         case GAMEOBJECT_TYPE_CHEST:
@@ -970,7 +979,7 @@ void GameObject::Use(Unit* user)
 
                 // the object orientation + 1/2 pi
                 // every slot will be on that straight line
-                float orthogonalOrientation = GetOrientation()+M_PI*0.5f;
+                float orthogonalOrientation = GetOrientation()+M_PI_F*0.5f;
                 // find nearest slot
                 for(uint32 i=0; i<info->chair.slots; ++i)
                 {
@@ -1032,8 +1041,11 @@ void GameObject::Use(Unit* user)
                 }
                 else if (info->goober.gossipID)             // ...or gossip, if page does not exist
                 {
-                    player->PrepareGossipMenu(this, info->goober.gossipID);
-                    player->SendPreparedGossip(this);
+                    if (!Script->GOGossipHello(player, this))
+                    {
+                        player->PrepareGossipMenu(this, info->goober.gossipID);
+                        player->SendPreparedGossip(this);
+                    }
                 }
 
                 if (info->goober.eventId)
@@ -1071,6 +1083,16 @@ void GameObject::Use(Unit* user)
 
             // cast this spell later if provided
             spellId = info->goober.spellId;
+
+            // database may contain a dummy spell, so it need replacement by actually existing
+            switch(spellId)
+            {
+                case 34448: spellId = 26566; break;
+                case 34452: spellId = 26572; break;
+                case 37639: spellId = 36326; break;
+                case 45367: spellId = 45371; break;
+                case 45370: spellId = 45368; break;
+            }
 
             break;
         }
@@ -1427,10 +1449,97 @@ void GameObject::UpdateRotationFields(float rotation2 /*=0.0f*/, float rotation3
 
     if(rotation2==0.0f && rotation3==0.0f)
     {
-        rotation2 = f_rot1;
-        rotation3 = f_rot2;
+        rotation2 = (float)f_rot1;
+        rotation3 = (float)f_rot2;
     }
 
     SetFloatValue(GAMEOBJECT_PARENTROTATION+2, rotation2);
     SetFloatValue(GAMEOBJECT_PARENTROTATION+3, rotation3);
 }
+
+bool GameObject::IsHostileTo(Unit const* unit) const
+{
+    // always non-hostile to GM in GM mode
+    if(unit->GetTypeId()==TYPEID_PLAYER && ((Player const*)unit)->isGameMaster())
+        return false;
+
+    // test owner instead if have
+    if (Unit const* owner = GetOwner())
+        return owner->IsHostileTo(unit);
+
+    if (Unit const* targetOwner = unit->GetCharmerOrOwner())
+        return IsHostileTo(targetOwner);
+
+    // for not set faction case (wild object) use hostile case
+    if(!GetGOInfo()->faction)
+        return true;
+
+    // faction base cases
+    FactionTemplateEntry const*tester_faction = sFactionTemplateStore.LookupEntry(GetGOInfo()->faction);
+    FactionTemplateEntry const*target_faction = unit->getFactionTemplateEntry();
+    if(!tester_faction || !target_faction)
+        return false;
+
+    // GvP forced reaction and reputation case
+    if(unit->GetTypeId()==TYPEID_PLAYER)
+    {
+        // forced reaction
+        if(tester_faction->faction)
+        {
+            if(ReputationRank const* force = ((Player*)unit)->GetReputationMgr().GetForcedRankIfAny(tester_faction))
+                return *force <= REP_HOSTILE;
+
+            // apply reputation state
+            FactionEntry const* raw_tester_faction = sFactionStore.LookupEntry(tester_faction->faction);
+            if(raw_tester_faction && raw_tester_faction->reputationListID >=0 )
+                return ((Player const*)unit)->GetReputationMgr().GetRank(raw_tester_faction) <= REP_HOSTILE;
+        }
+    }
+
+    // common faction based case (GvC,GvP)
+    return tester_faction->IsHostileTo(*target_faction);
+}
+
+bool GameObject::IsFriendlyTo(Unit const* unit) const
+{
+    // always friendly to GM in GM mode
+    if(unit->GetTypeId()==TYPEID_PLAYER && ((Player const*)unit)->isGameMaster())
+        return true;
+
+    // test owner instead if have
+    if (Unit const* owner = GetOwner())
+        return owner->IsFriendlyTo(unit);
+
+    if (Unit const* targetOwner = unit->GetCharmerOrOwner())
+        return IsFriendlyTo(targetOwner);
+
+    // for not set faction case (wild object) use hostile case
+    if(!GetGOInfo()->faction)
+        return false;
+
+    // faction base cases
+    FactionTemplateEntry const*tester_faction = sFactionTemplateStore.LookupEntry(GetGOInfo()->faction);
+    FactionTemplateEntry const*target_faction = unit->getFactionTemplateEntry();
+    if(!tester_faction || !target_faction)
+        return false;
+
+    // GvP forced reaction and reputation case
+    if(unit->GetTypeId()==TYPEID_PLAYER)
+    {
+        // forced reaction
+        if(tester_faction->faction)
+        {
+            if(ReputationRank const* force =((Player*)unit)->GetReputationMgr().GetForcedRankIfAny(tester_faction))
+                return *force >= REP_FRIENDLY;
+
+            // apply reputation state
+            if(FactionEntry const* raw_tester_faction = sFactionStore.LookupEntry(tester_faction->faction))
+                if(raw_tester_faction->reputationListID >=0 )
+                    return ((Player const*)unit)->GetReputationMgr().GetRank(raw_tester_faction) >= REP_FRIENDLY;
+        }
+    }
+
+    // common faction based case (GvC,GvP)
+    return tester_faction->IsFriendlyTo(*target_faction);
+}
+

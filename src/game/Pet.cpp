@@ -231,7 +231,7 @@ bool Pet::LoadPetFromDB( Player* owner, uint32 petentry, uint32 petnumber, bool 
     InitStatsForLevel(petlevel);
     InitTalentForLevel();                                   // set original talents points before spell loading
 
-    SetUInt32Value(UNIT_FIELD_PET_NAME_TIMESTAMP, time(NULL));
+    SetUInt32Value(UNIT_FIELD_PET_NAME_TIMESTAMP, uint32(time(NULL)));
     SetUInt32Value(UNIT_FIELD_PETEXPERIENCE, fields[5].GetUInt32());
     SetCreatorGUID(owner->GetGUID());
 
@@ -259,7 +259,7 @@ bool Pet::LoadPetFromDB( Player* owner, uint32 petentry, uint32 petnumber, bool 
         m_charmInfo->LoadPetActionBar(fields[13].GetCppString());
 
     // since last save (in seconds)
-    uint32 timediff = (time(NULL) - fields[14].GetUInt32());
+    uint32 timediff = uint32(time(NULL) - fields[14].GetUInt64());
 
     m_resetTalentsCost = fields[15].GetUInt32();
     m_resetTalentsTime = fields[16].GetUInt64();
@@ -579,7 +579,7 @@ void Pet::Regenerate(Powers power)
         case POWER_FOCUS:
         {
             // For hunter pets.
-            addvalue = 24 * sWorld.getRate(RATE_POWER_FOCUS);
+            addvalue = 24 * sWorld.getConfig(CONFIG_FLOAT_RATE_POWER_FOCUS);
             break;
         }
         case POWER_ENERGY:
@@ -696,7 +696,7 @@ void Pet::GivePetXP(uint32 xp)
     uint32 level = getLevel();
 
     // XP to money conversion processed in Player::RewardQuest
-    if(level >= sWorld.getConfig(CONFIG_MAX_PLAYER_LEVEL))
+    if(level >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
         return;
 
     uint32 curXP = GetUInt32Value(UNIT_FIELD_PETEXPERIENCE);
@@ -709,7 +709,7 @@ void Pet::GivePetXP(uint32 xp)
         return;
     }
 
-    while( newXP >= nextLvlXP && level < sWorld.getConfig(CONFIG_MAX_PLAYER_LEVEL) )
+    while( newXP >= nextLvlXP && level < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL) )
     {
         newXP -= nextLvlXP;
 
@@ -873,7 +873,7 @@ bool Pet::InitStatsForLevel(uint32 petlevel, Unit* owner)
                     case CLASS_MAGE:
                     {
                                                             //40% damage bonus of mage's frost damage
-                        float val = owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + SPELL_SCHOOL_FROST) * 0.4;
+                        float val = owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + SPELL_SCHOOL_FROST) * 0.4f;
                         if(val < 0)
                             val = 0;
                         SetBonusDamage( int32(val));
@@ -1032,7 +1032,7 @@ void Pet::_LoadSpellCooldowns()
     {
         time_t curTime = time(NULL);
 
-        WorldPacket data(SMSG_SPELL_COOLDOWN, (8+1+result->GetRowCount()*8));
+        WorldPacket data(SMSG_SPELL_COOLDOWN, (8+1+size_t(result->GetRowCount())*8));
         data << GetGUID();
         data << uint8(0x0);                                 // flags (0x1, 0x2)
 
@@ -1152,7 +1152,7 @@ void Pet::_LoadAuras(uint32 timediff)
             Field *fields = result->Fetch();
             uint64 caster_guid = fields[0].GetUInt64();
             uint32 spellid = fields[1].GetUInt32();
-            uint32 effindex = fields[2].GetUInt32();
+            SpellEffectIndex effindex = SpellEffectIndex(fields[2].GetUInt32());
             uint32 stackcount= fields[3].GetUInt32();
             int32 damage     = (int32)fields[4].GetUInt32();
             int32 maxduration = (int32)fields[5].GetUInt32();
@@ -1166,7 +1166,7 @@ void Pet::_LoadAuras(uint32 timediff)
                 continue;
             }
 
-            if(effindex >= 3)
+            if(effindex >= MAX_EFFECT_INDEX)
             {
                 sLog.outError("Invalid effect index (spellid %u, effindex %u), ignore.",spellid,effindex);
                 continue;
@@ -1194,7 +1194,7 @@ void Pet::_LoadAuras(uint32 timediff)
             if (caster_guid != GetGUID() && IsSingleTargetSpell(spellproto))
                 continue;
 
-            for(uint32 i=0; i<stackcount; ++i)
+            for(uint32 i=0; i < stackcount; ++i)
             {
                 Aura* aura = CreateAura(spellproto, effindex, NULL, this, NULL);
 
@@ -1236,7 +1236,7 @@ void Pet::_SaveAuras()
                 {
                     // skip all auras from spell that apply at cast SPELL_AURA_MOD_SHAPESHIFT or pet area auras.
                     uint8 i;
-                    for (i = 0; i < 3; ++i)
+                    for (i = 0; i < MAX_EFFECT_INDEX; ++i)
                         if (spellInfo->EffectApplyAuraName[i] == SPELL_AURA_MOD_STEALTH ||
                             spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AREA_AURA_OWNER ||
                             spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AREA_AURA_PET )
@@ -1372,7 +1372,7 @@ bool Pet::addSpell(uint32 spell_id,ActiveStates active /*= ACT_DECIDE*/, PetSpel
     if (IsPassiveSpell(spell_id))
         CastSpell(this, spell_id, true);
     else
-        m_charmInfo->AddSpellToActionBar(spell_id);
+        m_charmInfo->AddSpellToActionBar(spell_id, ActiveStates(newspell.active));
 
     if(newspell.active == ACT_ENABLED)
         ToggleAutocast(spell_id, true);
@@ -1742,7 +1742,7 @@ void Pet::InitTalentForLevel()
 
 uint32 Pet::resetTalentsCost() const
 {
-    uint32 days = (sWorld.GetGameTime() - m_resetTalentsTime)/DAY;
+    uint32 days = uint32(sWorld.GetGameTime() - m_resetTalentsTime)/DAY;
 
     // The first time reset costs 10 silver; after 1 day cost is reset to 10 silver
     if(m_resetTalentsCost < 10*SILVER || days > 0)

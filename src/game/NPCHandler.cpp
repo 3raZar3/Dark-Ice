@@ -288,7 +288,7 @@ void WorldSession::HandleGossipSelectOptionOpcode( WorldPacket & recv_data )
 
     uint32 gossipListId;
     uint32 menuId;
-    uint64 guid;
+    ObjectGuid guid;
     std::string code = "";
 
     recv_data >> guid >> menuId >> gossipListId;
@@ -304,16 +304,14 @@ void WorldSession::HandleGossipSelectOptionOpcode( WorldPacket & recv_data )
     if (GetPlayer()->hasUnitState(UNIT_STAT_DIED))
         GetPlayer()->RemoveSpellsCausingAura(SPELL_AURA_FEIGN_DEATH);
 
-    // TODO: determine if scriptCall is needed for GO and also if scriptCall can be same as current, with modified argument WorldObject*
-
     // can vehicle have gossip? If so, need check for this also.
-    if (IS_CREATURE_OR_PET_GUID(guid))
+    if (guid.IsCreatureOrPet())
     {
         Creature *pCreature = GetPlayer()->GetNPCIfCanInteractWith(guid, UNIT_NPC_FLAG_NONE);
 
         if (!pCreature)
         {
-            sLog.outDebug("WORLD: HandleGossipSelectOptionOpcode - Creature (GUID: %u) not found or you can't interact with it.", uint32(GUID_LOPART(guid)));
+            sLog.outDebug("WORLD: HandleGossipSelectOptionOpcode - %s not found or you can't interact with it.", guid.GetString().c_str());
             return;
         }
 
@@ -328,17 +326,26 @@ void WorldSession::HandleGossipSelectOptionOpcode( WorldPacket & recv_data )
                 _player->OnGossipSelect(pCreature, gossipListId, menuId);
         }
     }
-    else if (IS_GAMEOBJECT_GUID(guid))
+    else if (guid.IsGameobject())
     {
         GameObject *pGo = GetPlayer()->GetGameObjectIfCanInteractWith(guid);
 
         if (!pGo)
         {
-            sLog.outDebug("WORLD: HandleGossipSelectOptionOpcode - GameObject (GUID: %u) not found or you can't interact with it.", uint32(GUID_LOPART(guid)));
+            sLog.outDebug("WORLD: HandleGossipSelectOptionOpcode - %s not found or you can't interact with it.", guid.GetString().c_str());
             return;
         }
 
-        _player->OnGossipSelect(pGo, gossipListId, menuId);
+        if (!code.empty())
+        {
+            if (!Script->GOGossipSelectWithCode(_player, pGo, _player->PlayerTalkClass->GossipOptionSender(gossipListId), _player->PlayerTalkClass->GossipOptionAction(gossipListId), code.c_str()))
+                _player->OnGossipSelect(pGo, gossipListId, menuId);
+        }
+        else
+        {
+            if (!Script->GOGossipSelect(_player, pGo, _player->PlayerTalkClass->GossipOptionSender(gossipListId), _player->PlayerTalkClass->GossipOptionAction(gossipListId)))
+                _player->OnGossipSelect(pGo, gossipListId, menuId);
+        }
     }
 }
 
@@ -425,38 +432,12 @@ void WorldSession::SendBindPoint(Creature *npc)
     if(GetPlayer()->GetMap()->Instanceable())
         return;
 
-    uint32 bindspell = 3286;
-    uint32 zone_id = _player->GetZoneId();
-
-    _player->SetHomebindToCurrentPos();
-
     // send spell for bind 3286 bind magic
-    npc->CastSpell(_player, bindspell, true);
+    npc->CastSpell(_player, 3286, true);                    // Bind
 
     WorldPacket data( SMSG_TRAINER_BUY_SUCCEEDED, (8+4));
-    data << npc->GetGUID();
-    data << bindspell;
-    SendPacket( &data );
-
-    // binding
-    data.Initialize( SMSG_BINDPOINTUPDATE, (4+4+4+4+4) );
-    data << float(_player->GetPositionX());
-    data << float(_player->GetPositionY());
-    data << float(_player->GetPositionZ());
-    data << uint32(_player->GetMapId());
-    data << uint32(zone_id);
-    SendPacket( &data );
-
-    DEBUG_LOG("New Home Position X is %f",_player->GetPositionX());
-    DEBUG_LOG("New Home Position Y is %f",_player->GetPositionY());
-    DEBUG_LOG("New Home Position Z is %f",_player->GetPositionZ());
-    DEBUG_LOG("New Home MapId is %u",_player->GetMapId());
-    DEBUG_LOG("New Home ZoneId is %u",zone_id);
-
-    // zone update
-    data.Initialize( SMSG_PLAYERBOUND, 8+4 );
-    data << uint64(_player->GetGUID());
-    data << uint32(zone_id);
+    data << uint64(npc->GetGUID());
+    data << uint32(3286);                                   // Bind
     SendPacket( &data );
 
     _player->PlayerTalkClass->CloseGossip();

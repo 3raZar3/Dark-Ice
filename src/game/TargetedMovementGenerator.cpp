@@ -78,13 +78,13 @@ void TargetedMovementGeneratorMedium<T,D>::_setTargetLocation(T &owner)
 }
 
 template<>
-void TargetedMovementGeneratorMedium<Player,ChaseMovementGenerator<Player> >::UpdateFinalDistance(float fDistance)
+void TargetedMovementGeneratorMedium<Player,ChaseMovementGenerator<Player> >::UpdateFinalDistance(float /*fDistance*/)
 {
     // nothing to do for Player
 }
 
 template<>
-void TargetedMovementGeneratorMedium<Player,FollowMovementGenerator<Player> >::UpdateFinalDistance(float fDistance)
+void TargetedMovementGeneratorMedium<Player,FollowMovementGenerator<Player> >::UpdateFinalDistance(float /*fDistance*/)
 {
     // nothing to do for Player
 }
@@ -149,11 +149,14 @@ bool TargetedMovementGeneratorMedium<T,D>::Update(T &owner, const uint32 & time_
 
     if (i_destinationHolder.UpdateTraveller(traveller, time_diff, false))
     {
+        if (!IsActive(owner))                               // force stop processing (movement can move out active zone with cleanup movegens list)
+            return true;                                    // not expire now, but already lost
+
         // put targeted movement generators on a higher priority
         if (owner.GetObjectSize())
             i_destinationHolder.ResetUpdate(50);
 
-        float dist = i_target->GetObjectSize() + owner.GetObjectSize() + sWorld.getRate(RATE_TARGET_POS_RECALCULATION_RANGE);
+        float dist = i_target->GetObjectSize() + owner.GetObjectSize() + sWorld.getConfig(CONFIG_FLOAT_RATE_TARGET_POS_RECALCULATION_RANGE);
 
         //More distance let have better performance, less distance let have more sensitive reaction at target move.
 
@@ -239,7 +242,7 @@ void FollowMovementGenerator<Player>::_updateWalkMode(Player &)
 }
 
 template<>
-void FollowMovementGenerator<Player>::_updateSpeed(Player &u)
+void FollowMovementGenerator<Player>::_updateSpeed(Player &/*u*/)
 {
     // nothing to do for Player
 }

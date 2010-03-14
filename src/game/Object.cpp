@@ -27,7 +27,7 @@
 #include "Player.h"
 #include "Vehicle.h"
 #include "ObjectMgr.h"
-#include "ObjectDefines.h"
+#include "ObjectGuid.h"
 #include "UpdateData.h"
 #include "UpdateMask.h"
 #include "Util.h"
@@ -60,10 +60,10 @@ uint32 GuidHigh2TypeId(uint32 guid_hi)
         case HIGHGUID_MO_TRANSPORT: return TYPEID_GAMEOBJECT;
         case HIGHGUID_VEHICLE:      return TYPEID_UNIT;
     }
-    return NUM_CLIENT_OBJECT_TYPES;                         // unknown
+    return TYPEID_OBJECT;                                   // unknown
 }
 
-Object::Object( ) : m_PackGUID(sizeof(uint64)+1)
+Object::Object( )
 {
     m_objectTypeId      = TYPEID_OBJECT;
     m_objectType        = TYPEMASK_OBJECT;
@@ -74,8 +74,6 @@ Object::Object( ) : m_PackGUID(sizeof(uint64)+1)
 
     m_inWorld           = false;
     m_objectUpdated     = false;
-
-    m_PackGUID.appendPackGUID(0);
 }
 
 Object::~Object( )
@@ -121,8 +119,7 @@ void Object::_Create( uint32 guidlow, uint32 entry, HighGuid guidhigh )
     uint64 guid = MAKE_NEW_GUID(guidlow, entry, guidhigh);
     SetUInt64Value(OBJECT_FIELD_GUID, guid);
     SetUInt32Value(OBJECT_FIELD_TYPE, m_objectType);
-    m_PackGUID.wpos(0);
-    m_PackGUID.appendPackGUID(GetGUID());
+    m_PackGUID.Set(guid);
 }
 
 void Object::BuildMovementUpdateBlock(UpdateData * data, uint16 flags ) const
@@ -130,7 +127,7 @@ void Object::BuildMovementUpdateBlock(UpdateData * data, uint16 flags ) const
     ByteBuffer buf(500);
 
     buf << uint8(UPDATETYPE_MOVEMENT);
-    buf.append(GetPackGUID());
+    buf << GetPackGUID();
 
     BuildMovementUpdate(&buf, flags);
 
@@ -189,7 +186,7 @@ void Object::BuildCreateUpdateBlockForPlayer(UpdateData *data, Player *target) c
 
     ByteBuffer buf(500);
     buf << uint8(updatetype);
-    buf.append(GetPackGUID());
+    buf << GetPackGUID();
     buf << uint8(m_objectTypeId);
 
     BuildMovementUpdate(&buf, updateFlags);
@@ -217,7 +214,7 @@ void Object::BuildValuesUpdateBlockForPlayer(UpdateData *data, Player *target) c
     ByteBuffer buf(500);
 
     buf << uint8(UPDATETYPE_VALUES);
-    buf.append(GetPackGUID());
+    buf << GetPackGUID();
 
     UpdateMask updateMask;
     updateMask.SetCount(m_valuesCount);
@@ -489,7 +486,7 @@ void Object::BuildMovementUpdate(ByteBuffer * data, uint16 updateFlags) const
             case TYPEID_GAMEOBJECT:
             case TYPEID_DYNAMICOBJECT:
             case TYPEID_CORPSE:
-                *data << uint32(GetGUIDHigh());             // GetGUIDHigh()
+                *data << uint32(GetObjectGuid().GetHigh()); // GetGUIDHigh()
                 break;
             case TYPEID_UNIT:
                 *data << uint32(0x0000000B);                // unk, can be 0xB or 0xC
@@ -510,7 +507,7 @@ void Object::BuildMovementUpdate(ByteBuffer * data, uint16 updateFlags) const
     if(updateFlags & UPDATEFLAG_HAS_ATTACKING_TARGET)       // packed guid (current target guid)
     {
         if (((Unit*)this)->getVictim())
-            data->append(((Unit*)this)->getVictim()->GetPackGUID());
+            *data << ((Unit*)this)->getVictim()->GetPackGUID();
         else
             data->appendPackGUID(0);
     }
@@ -525,7 +522,7 @@ void Object::BuildMovementUpdate(ByteBuffer * data, uint16 updateFlags) const
     if(updateFlags & UPDATEFLAG_VEHICLE)                    // unused for now
     {
         *data << uint32(((Vehicle*)this)->GetVehicleId());  // vehicle id
-        *data << float(0);                                  // facing adjustment
+        *data << float(((WorldObject*)this)->GetOrientation());
     }
 
     // 0x200
@@ -637,6 +634,7 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer * data, UpdateMask *
                     // convert from float to uint32 and send
                     *data << uint32(m_floatValues[ index ] < 0 ? 0 : m_floatValues[ index ]);
                 }
+
                 // there are some float values which may be negative or can't get negative due to other checks
                 else if ((index >= UNIT_FIELD_NEGSTAT0   && index <= UNIT_FIELD_NEGSTAT4) ||
                     (index >= UNIT_FIELD_RESISTANCEBUFFMODSPOSITIVE  && index <= (UNIT_FIELD_RESISTANCEBUFFMODSPOSITIVE + 6)) ||
@@ -645,6 +643,7 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer * data, UpdateMask *
                 {
                     *data << uint32(m_floatValues[ index ]);
                 }
+
                 // Gamemasters should be always able to select units - remove not selectable flag
                 else if(index == UNIT_FIELD_FLAGS && target->isGameMaster())
                 {
@@ -1078,7 +1077,7 @@ void Object::RemoveFromClientUpdateList()
     ASSERT(false);
 }
 
-void Object::BuildUpdateData( UpdateDataMapType& update_players )
+void Object::BuildUpdateData( UpdateDataMapType& /*update_players */)
 {
     sLog.outError("Unexpected call of Object::BuildUpdateData for object (TypeId: %u Update fields: %u)",GetTypeId(), m_valuesCount);
     ASSERT(false);
@@ -1412,8 +1411,8 @@ void WorldObject::GetRandomPoint( float x, float y, float z, float distance, flo
     }
 
     // angle to face `obj` to `this`
-    float angle = rand_norm()*2*M_PI_F;
-    float new_dist = rand_norm()*distance;
+    float angle = rand_norm_f()*2*M_PI_F;
+    float new_dist = rand_norm_f()*distance;
 
     rand_x = x + new_dist * cos(angle);
     rand_y = y + new_dist * sin(angle);
@@ -1440,21 +1439,21 @@ void WorldObject::MonsterSay(const char* text, uint32 language, uint64 TargetGui
 {
     WorldPacket data(SMSG_MESSAGECHAT, 200);
     BuildMonsterChat(&data,CHAT_MSG_MONSTER_SAY,text,language,GetName(),TargetGuid);
-    SendMessageToSetInRange(&data,sWorld.getConfig(CONFIG_LISTEN_RANGE_SAY),true);
+    SendMessageToSetInRange(&data,sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_SAY),true);
 }
 
 void WorldObject::MonsterYell(const char* text, uint32 language, uint64 TargetGuid)
 {
     WorldPacket data(SMSG_MESSAGECHAT, 200);
     BuildMonsterChat(&data,CHAT_MSG_MONSTER_YELL,text,language,GetName(),TargetGuid);
-    SendMessageToSetInRange(&data,sWorld.getConfig(CONFIG_LISTEN_RANGE_YELL),true);
+    SendMessageToSetInRange(&data,sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_YELL),true);
 }
 
 void WorldObject::MonsterTextEmote(const char* text, uint64 TargetGuid, bool IsBossEmote)
 {
     WorldPacket data(SMSG_MESSAGECHAT, 200);
     BuildMonsterChat(&data,IsBossEmote ? CHAT_MSG_RAID_BOSS_EMOTE : CHAT_MSG_MONSTER_EMOTE,text,LANG_UNIVERSAL,GetName(),TargetGuid);
-    SendMessageToSetInRange(&data,sWorld.getConfig(IsBossEmote ? CONFIG_LISTEN_RANGE_YELL : CONFIG_LISTEN_RANGE_TEXTEMOTE),true);
+    SendMessageToSetInRange(&data,sWorld.getConfig(IsBossEmote ? CONFIG_FLOAT_LISTEN_RANGE_YELL : CONFIG_FLOAT_LISTEN_RANGE_TEXTEMOTE),true);
 }
 
 void WorldObject::MonsterWhisper(const char* text, uint64 receiver, bool IsBossWhisper)
@@ -1503,9 +1502,9 @@ void WorldObject::MonsterSay(int32 textId, uint32 language, uint64 TargetGuid)
 
     MaNGOS::MonsterChatBuilder say_build(*this, CHAT_MSG_MONSTER_SAY, textId,language,TargetGuid);
     MaNGOS::LocalizedPacketDo<MaNGOS::MonsterChatBuilder> say_do(say_build);
-    MaNGOS::PlayerDistWorker<MaNGOS::LocalizedPacketDo<MaNGOS::MonsterChatBuilder> > say_worker(this,sWorld.getConfig(CONFIG_LISTEN_RANGE_SAY),say_do);
+    MaNGOS::PlayerDistWorker<MaNGOS::LocalizedPacketDo<MaNGOS::MonsterChatBuilder> > say_worker(this,sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_SAY),say_do);
     TypeContainerVisitor<MaNGOS::PlayerDistWorker<MaNGOS::LocalizedPacketDo<MaNGOS::MonsterChatBuilder> >, WorldTypeMapContainer > message(say_worker);
-    cell.Visit(p, message, *GetMap(), *this, sWorld.getConfig(CONFIG_LISTEN_RANGE_SAY));
+    cell.Visit(p, message, *GetMap(), *this, sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_SAY));
 }
 
 void WorldObject::MonsterYell(int32 textId, uint32 language, uint64 TargetGuid)
@@ -1516,7 +1515,7 @@ void WorldObject::MonsterYell(int32 textId, uint32 language, uint64 TargetGuid)
     cell.data.Part.reserved = ALL_DISTRICT;
     cell.SetNoCreate();
 
-    float range = sWorld.getConfig(CONFIG_LISTEN_RANGE_YELL);
+    float range = sWorld.getConfig(CONFIG_FLOAT_LISTEN_RANGE_YELL);
 
     MaNGOS::MonsterChatBuilder say_build(*this, CHAT_MSG_MONSTER_YELL, textId,language,TargetGuid);
     MaNGOS::LocalizedPacketDo<MaNGOS::MonsterChatBuilder> say_do(say_build);
@@ -1546,7 +1545,7 @@ void WorldObject::MonsterTextEmote(int32 textId, uint64 TargetGuid, bool IsBossE
     cell.data.Part.reserved = ALL_DISTRICT;
     cell.SetNoCreate();
 
-    float range = sWorld.getConfig(IsBossEmote ? CONFIG_LISTEN_RANGE_YELL : CONFIG_LISTEN_RANGE_TEXTEMOTE);
+    float range = sWorld.getConfig(IsBossEmote ? CONFIG_FLOAT_LISTEN_RANGE_YELL : CONFIG_FLOAT_LISTEN_RANGE_TEXTEMOTE);
 
     MaNGOS::MonsterChatBuilder say_build(*this, IsBossEmote ? CHAT_MSG_RAID_BOSS_EMOTE : CHAT_MSG_MONSTER_EMOTE, textId,LANG_UNIVERSAL,TargetGuid);
     MaNGOS::LocalizedPacketDo<MaNGOS::MonsterChatBuilder> say_do(say_build);
@@ -1764,7 +1763,7 @@ void WorldObject::GetNearPoint(WorldObject const* searcher, float &x, float &y, 
     z = GetPositionZ();
 
     // if detection disabled, return first point
-    if(!sWorld.getConfig(CONFIG_DETECT_POS_COLLISION))
+    if(!sWorld.getConfig(CONFIG_BOOL_DETECT_POS_COLLISION))
     {
         UpdateGroundPositionZ(x,y,z);                       // update to LOS height if available
         return;
@@ -1955,4 +1954,22 @@ void WorldObject::BuildUpdateData( UpdateDataMapType & update_players)
     cell.Visit(p, player_notifier, *aMap, *this, aMap->GetVisibilityDistance());
 
     ClearUpdateMask(false);
+}
+
+bool WorldObject::IsControlledByPlayer() const
+{
+    switch (GetTypeId())
+    {
+        case TYPEID_GAMEOBJECT:
+            return IS_PLAYER_GUID(((GameObject*)this)->GetOwnerGUID());
+        case TYPEID_UNIT:
+        case TYPEID_PLAYER:
+            return ((Unit*)this)->IsCharmerOrOwnerPlayerOrPlayerItself();
+        case TYPEID_DYNAMICOBJECT:
+            return IS_PLAYER_GUID(((DynamicObject*)this)->GetCasterGUID());
+        case TYPEID_CORPSE:
+            return true;
+        default:
+            return false;
+    }
 }
