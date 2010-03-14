@@ -298,7 +298,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
             if(obj)
                 plMover->m_anti_TransportGUID = obj->GetDBTableGUIDLow();
             else
-                plMover->m_anti_TransportGUID = GUID_LOPART(movementInfo.t_guid);
+                plMover->m_anti_TransportGUID = GUID_LOPART(movementInfo.t_guid.GetRawValue());
             //end movement anticheat
         }
     }
