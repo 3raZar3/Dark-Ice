@@ -27,7 +27,7 @@
 #include "ArenaTeam.h"
 #include "World.h"
 #include "Group.h"
-#include "ObjectDefines.h"
+#include "ObjectGuid.h"
 #include "ObjectMgr.h"
 #include "WorldPacket.h"
 #include "Util.h"
@@ -201,14 +201,13 @@ template<class Do>
 void BattleGround::BroadcastWorker(Do& _do)
 {
     for(BattleGroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
-        if (Player *plr = ObjectAccessor::FindPlayer(MAKE_NEW_GUID(itr->first, 0, HIGHGUID_PLAYER)))
+        if (Player *plr = ObjectAccessor::FindPlayer(ObjectGuid(HIGHGUID_PLAYER, itr->first)))
             _do(plr);
 }
 
 BattleGround::BattleGround()
 {
     m_TypeID            = BattleGroundTypeId(0);
-    m_InstanceID        = 0;
     m_Status            = STATUS_NONE;
     m_ClientInstanceID  = 0;
     m_EndTime           = 0;
@@ -226,7 +225,6 @@ BattleGround::BattleGround()
     m_LevelMin          = 0;
     m_LevelMax          = 0;
     m_InBGFreeSlotQueue = false;
-    m_SetDeleteThis     = false;
 
     m_MaxPlayersPerTeam = 0;
     m_MaxPlayers        = 0;
@@ -297,6 +295,7 @@ BattleGround::~BattleGround()
     }
 
     sBattleGroundMgr.RemoveBattleGround(GetInstanceID(), GetTypeID());
+    sBattleGroundMgr.DeleteClientVisibleInstanceId(GetTypeID(), GetBracketId(), GetClientInstanceID());
 
     // unload map
     // map can be null at bg destruction
@@ -325,7 +324,8 @@ void BattleGround::Update(uint32 diff)
         // ]]
         // BattleGround Template instance cannot be updated, because it would be deleted
         if (!GetInvitedCount(HORDE) && !GetInvitedCount(ALLIANCE))
-            m_SetDeleteThis = true;
+            delete this;
+
         return;
     }
 
@@ -797,6 +797,7 @@ void BattleGround::EndBattleGround(uint32 winner)
         {
             RewardMark(plr,ITEM_WINNER_COUNT);
             RewardQuestComplete(plr);
+            plr->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_WIN_BG, 1);
         }
         else
             RewardMark(plr,ITEM_LOSER_COUNT);
@@ -1325,10 +1326,9 @@ void BattleGround::RemoveFromBGFreeSlotQueue()
 {
     // set to be able to re-add if needed
     m_InBGFreeSlotQueue = false;
-    // uncomment this code when battlegrounds will work like instances
     for (BGFreeSlotQueueType::iterator itr = sBattleGroundMgr.BGFreeSlotQueue[m_TypeID].begin(); itr != sBattleGroundMgr.BGFreeSlotQueue[m_TypeID].end(); ++itr)
     {
-        if ((*itr)->GetInstanceID() == m_InstanceID)
+        if ((*itr)->GetInstanceID() == GetInstanceID())
         {
             sBattleGroundMgr.BGFreeSlotQueue[m_TypeID].erase(itr);
             return;

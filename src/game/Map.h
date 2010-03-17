@@ -395,14 +395,14 @@ class MANGOS_DLL_SPEC Map : public GridRefManager<NGridType>, public MaNGOS::Obj
 
         void RemoveFromActive(Creature* obj);
 
-        Creature* GetCreature(uint64 guid);
-        Vehicle* GetVehicle(uint64 guid);
-        Pet* GetPet(uint64 guid);
-        Unit* GetCreatureOrPet(uint64 guid);
-        GameObject* GetGameObject(uint64 guid);
-        DynamicObject* GetDynamicObject(uint64 guid);
-        Corpse* GetCorpse(uint64 guid);
-        WorldObject* GetWorldObject(uint64 guid);
+        Creature* GetCreature(ObjectGuid guid);
+        Vehicle* GetVehicle(ObjectGuid guid);
+        Pet* GetPet(ObjectGuid guid);
+        Creature* GetCreatureOrPetOrVehicle(ObjectGuid guid);
+        GameObject* GetGameObject(ObjectGuid guid);
+        DynamicObject* GetDynamicObject(ObjectGuid guid);
+        Corpse* GetCorpse(ObjectGuid guid);
+        WorldObject* GetWorldObject(ObjectGuid guid);
 
         TypeUnorderedMapContainer<AllMapStoredObjectTypes>& GetObjectsStore() { return m_objectsStore; }
 
@@ -494,8 +494,9 @@ class MANGOS_DLL_SPEC Map : public GridRefManager<NGridType>, public MaNGOS::Obj
         std::multimap<time_t, ScriptAction> m_scriptSchedule;
 
         // Map local low guid counters
-        uint32 m_hiDynObjectGuid;
-        uint32 m_hiPetGuid;
+        ObjectGuidGenerator<HIGHGUID_DYNAMICOBJECT> m_DynObjectGuids;
+        ObjectGuidGenerator<HIGHGUID_PET> m_PetGuids;
+        ObjectGuidGenerator<HIGHGUID_VEHICLE> m_VehicleGuids;
 
         // Type specific code for add/remove to/from grid
         template<class T>
@@ -574,6 +575,7 @@ class MANGOS_DLL_SPEC BattleGroundMap : public Map
         BattleGroundMap(uint32 id, time_t, uint32 InstanceId, Map* _parent, uint8 spawnMode);
         ~BattleGroundMap();
 
+        void Update(const uint32&);
         bool Add(Player *);
         void Remove(Player *, bool);
         bool CanEnter(Player* player);
