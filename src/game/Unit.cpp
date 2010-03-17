@@ -13503,8 +13503,8 @@ void Unit::EnterVehicle(Vehicle *vehicle, int8 seat_id, bool force)
         ((Player*)this)->SendEnterVehicle(v);
 
     WorldPacket data(SMSG_MONSTER_MOVE_TRANSPORT, 60);
-    data.append(GetPackGUID());
-    data.append(v->GetPackGUID());
+    data << GetPackGUID();
+    data << v->GetPackGUID();
     data << uint8(m_SeatData.seat);
     data << uint8(0);                                       // new in 3.1
     data << v->GetPositionX() << v->GetPositionY() << v->GetPositionZ();
@@ -13572,7 +13572,7 @@ void Unit::BuildVehicleInfo(Unit *target)
 
     uint32 veh_time = getMSTimeDiff(target->m_SeatData.c_time,getMSTime());
     WorldPacket data(MSG_MOVE_HEARTBEAT, 100);
-    data.append(target->GetPackGUID());
+    data << target->GetPackGUID();
     data << uint32(MOVEFLAG_ONTRANSPORT | MOVEFLAG_ROOT);
     data << uint16(0);
     data << uint32(getMSTime());

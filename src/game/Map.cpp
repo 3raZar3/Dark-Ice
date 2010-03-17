@@ -3644,7 +3644,7 @@ uint32 Map::GenerateLocalLowGuid(HighGuid guidhigh)
             return m_DynObjectGuids.Generate();
         case HIGHGUID_PET:
             return m_PetGuids.Generate();
-        /*case HIGHGUID_VEHICLE:
+        case HIGHGUID_VEHICLE:
             return m_VehicleGuids.Generate();
         default:
             ASSERT(0);

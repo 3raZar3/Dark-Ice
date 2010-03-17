@@ -1250,7 +1250,7 @@ void Aura::SendAuraUpdate(bool remove)
     if(!(auraFlags & AFLAG_NOT_CASTER))
     {
         if(GetCaster())
-            data.append(GetCaster()->GetPackGUID());
+            data << GetCaster()->GetPackGUID();
         else
             data << uint8(0);
     }

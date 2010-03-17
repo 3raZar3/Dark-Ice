@@ -100,7 +100,7 @@ class MANGOS_DLL_DECL ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, 
 
         // possible local search for specific object map
         static Unit* GetUnit(WorldObject const &, ObjectGuid guid);
-        static Creature* GetCreatureOrPetOrVehicle(WorldObject const &, uint64);
+        static Creature* GetCreatureOrPetOrVehicle(WorldObject const &, ObjectGuid guid);
         //static Player* GetPlayer(Unit const &, uint64 guid) { return FindPlayer(guid); }
         //static Corpse* GetCorpse(WorldObject const &u, uint64 guid);
         //static Pet* GetPet(uint64 guid) { return GetObjectInWorld(guid, (Pet*)NULL); }
