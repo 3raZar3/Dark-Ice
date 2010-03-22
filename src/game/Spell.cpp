@@ -5050,6 +5050,14 @@ SpellCastResult Spell::CheckCast(bool strict)
 
                 break;
             }
+			case SPELL_AURA_MOD_INCREASE_SPEED:
+            {
+                // Dash in Cat Form check
+                if (m_spellInfo->SpellFamilyName == SPELLFAMILY_DRUID && m_spellInfo->SpellIconID == 959)
+                    if ( m_caster->m_form != FORM_CAT)
+                        return SPELL_FAILED_ONLY_SHAPESHIFT;
+                break;
+            }
             default:
                 break;
         }
