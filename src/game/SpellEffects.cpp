@@ -2589,6 +2589,12 @@ void Spell::EffectTriggerSpell(SpellEffectIndex effIndex)
                 pet->CastSpell(pet, 28305, true);
             return;
         }
+		// Empower Rune Weapon
+        case 53258:
+        {
+            m_caster->ModifyPower(POWER_RUNIC_POWER, 25);
+            return;
+        }
     }
 
     // normal case
