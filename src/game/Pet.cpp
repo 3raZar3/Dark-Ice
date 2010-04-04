@@ -138,7 +138,7 @@ bool Pet::LoadPetFromDB( Player* owner, uint32 petentry, uint32 petnumber, bool 
     if(pet_type == HUNTER_PET)
     {
         CreatureInfo const* creatureInfo = ObjectMgr::GetCreatureTemplate(petentry);
-        if(!creatureInfo || !creatureInfo->isTameable(owner->CanTameExoticPets()))
+        if(!creatureInfo || !creatureInfo->isTameable(owner->CanTameExoticPets(), true))
         {
             delete result;
             return false;
@@ -833,12 +833,24 @@ bool Pet::InitStatsForLevel(uint32 petlevel, Unit* owner)
     if(cFamily && cFamily->minScale > 0.0f && getPetType()==HUNTER_PET)
     {
         float scale;
-        if (getLevel() >= cFamily->maxScaleLevel)
-            scale = cFamily->maxScale;
-        else if (getLevel() <= cFamily->minScaleLevel)
-            scale = cFamily->minScale;
-        else
-            scale = cFamily->minScale + float(getLevel() - cFamily->minScaleLevel) / cFamily->maxScaleLevel * (cFamily->maxScale - cFamily->minScale);
+        if (cFamily->ID == 45 || cFamily->ID == 39 || cFamily->ID == 43 || cFamily->ID == 38) // 45- Core Hound, 39- Devilsaur, 43- Rhino, 38- Chimaera
+       {
+           if (getLevel() >= cFamily->maxScaleLevel)
+               scale = cFamily->maxScale * 1.8;
+           else if (getLevel() <= cFamily->minScaleLevel)
+               scale = cFamily->minScale * 1.8;
+           else
+               scale = (cFamily->minScale + float(getLevel() - cFamily->minScaleLevel) / cFamily->maxScaleLevel * (cFamily->maxScale - cFamily->minScale)) * 1.8;
+       }
+       else
+       {
+           if (getLevel() >= cFamily->maxScaleLevel)
+               scale = cFamily->maxScale;
+           else if (getLevel() <= cFamily->minScaleLevel)
+               scale = cFamily->minScale;
+           else
+               scale = cFamily->minScale + float(getLevel() - cFamily->minScaleLevel) / cFamily->maxScaleLevel * (cFamily->maxScale - cFamily->minScale);
+       }
 
         SetFloatValue(OBJECT_FIELD_SCALE_X, scale);
     }
