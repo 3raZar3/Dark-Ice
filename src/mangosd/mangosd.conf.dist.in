@@ -1700,3 +1700,14 @@ PvPToken.Enable = 1
 PvPToken.ItemID = 29434
 PvPToken.ItemCount = 1
 PvPToken.MapRestriction = 4
+
+###################################################################################################################
+#
+#     Custom.AllowFlyingMountsEverywhere
+#         Set it to 1 to enable flying mounts everywhere
+#         If you do it, mounts are now used as item...
+#     Default : 0
+#
+###################################################################################################################
+
+Custom.AllowFlyingMountsEverywhere = 0
