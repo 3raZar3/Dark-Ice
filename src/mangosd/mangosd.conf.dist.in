@@ -1589,3 +1589,26 @@ SOAP.Enabled = 0
 SOAP.IP = 127.0.0.1
 SOAP.Port = 7878
 
+###################################################################################################################
+# Automatic Broadcaster
+#
+#    Broadcast.Enabled
+#        Enable/Disable the broadcaster
+#        Default: 0 - off
+#                 1 - on
+#
+#    Broadcast.Position
+#        Where to display the message (Just add the values for multiple)
+#        Default: 1 - In the in-game chat window
+#                 2 - In the top-middle of the screen
+#                 4 - In the announcements IRC channel (if mangchat is installed)
+#
+#    Broadcast.Interval
+#        Interval at which to broadcast messages
+#
+###################################################################################################################
+
+Broadcast.Enabled = 1
+Broadcast.Position = 2
+Broadcast.Interval = 30000
+
