@@ -2835,8 +2835,8 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                     else
                         m_target->m_AuraFlags |= ~UNIT_AURAFLAG_ALIVE_INVISIBLE;
                     return;
-				case 71342: //Big Love Rocket - there is no spell for mount speeds
-                    if(m_target->GetTypeId() != TYPEID_PLAYER || !Real)
+                case 71342: //Big Love Rocket - there is no spell for mount speeds
+                    if(m_target->GetTypeId() != TYPEID_PLAYER)
                         return;
 
                     uint32 skill = ((Player*)m_target)->GetSkillValue(762);
@@ -2849,7 +2849,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                             data.Initialize(SMSG_MOVE_SET_CAN_FLY, 12);
                         else
                             data.Initialize(SMSG_MOVE_UNSET_CAN_FLY, 12);
-                        data.append(m_target->GetPackGUID());
+                        data << m_target->GetPackGUID();
                         data << uint32(0);                                      // unknown
                         m_target->SendMessageToSet(&data, true);
 
@@ -2859,7 +2859,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                         if(skill == 225 && apply)
                             m_target->SetSpeedRate(MOVE_FLIGHT, 1.5f, true);
                         else if(skill == 300 && apply)
-                            m_target->SetSpeedRate(MOVE_FLIGHT, 2.8f, true);
+                            m_target->SetSpeedRate(MOVE_FLIGHT, 3.1f, true);
                         else if(!apply)
                             m_target->SetSpeedRate(MOVE_FLIGHT, 1.0f, true);
                     }
