@@ -77,8 +77,8 @@ enum WorldTimers
     WUPDATE_UPTIME      = 4,
     WUPDATE_CORPSES     = 5,
     WUPDATE_EVENTS      = 6,
-    WUPDATE_BROADCAST   = 7,
-    WUPDATE_COUNT       = 8
+    WUPDATE_AUTOBROADCAST = 7,
+    WUPDATE_COUNT         = 8
 };
 
 /// Configuration elements
@@ -182,8 +182,6 @@ enum eConfigUInt32Values
     CONFIG_UINT32_AHBOT_ITEMS_CYCLE,
     /* End AHBot*/
 
-    CONFIG_UINT32_BROADCAST_INTERVAL,  // Broadcaster
-    CONFIG_UINT32_BROADCAST_POSITION,  // Broadcaster
     CONFIG_UINT32_VALUE_COUNT
 };
 
@@ -413,13 +411,6 @@ enum RealmZone
     REALM_ZONE_CN5_8         = 37                           // basic-Latin at create, any at login
 };
 
-enum BroadcastLocation
-{
-    BROADCAST_LOCATION_CHAT = 1,
-    BROADCAST_LOCATION_TOP = 2,
-    BROADCAST_LOCATION_IRC = 4,
-};
-
 // DB scripting commands
 #define SCRIPT_COMMAND_TALK                  0              // source = unit, target=any, datalong ( 0=say, 1=whisper, 2=yell, 3=emote text)
 #define SCRIPT_COMMAND_EMOTE                 1              // source = unit, datalong = anim_id
@@ -476,6 +467,7 @@ class World
 
         WorldSession* FindSession(uint32 id) const;
         void AddSession(WorldSession *s);
+        void SendBroadcast();
         bool RemoveSession(uint32 id);
         /// Get the number of current active sessions
         void UpdateMaxSessionCounters();
@@ -727,10 +719,6 @@ class World
         std::string m_DBVersion;
         std::string m_CreatureEventAIVersion;
         std::string m_ScriptsVersion;
-
-        //Broadcaster
-        uint32 m_nextId;
-        void SendBroadcast();
 };
 
 extern uint32 realmID;

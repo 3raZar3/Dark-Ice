@@ -175,7 +175,7 @@ class MANGOS_DLL_SPEC Group
         void   ChangeLeader(const uint64 &guid);
         void   SetLootMethod(LootMethod method) { m_lootMethod = method; }
         void   SetLooterGuid(const uint64 &guid) { m_looterGuid = guid; }
-        void   UpdateLooterGuid( WorldObject* object, bool ifneed = false );
+        void   UpdateLooterGuid( Creature* creature, bool ifneed = false );
         void   SetLootThreshold(ItemQualities threshold) { m_lootThreshold = threshold; }
         void   Disband(bool hideDestroy=false);
 
@@ -316,9 +316,9 @@ class MANGOS_DLL_SPEC Group
         void SendLootRoll(ObjectGuid const& targetGuid, uint8 rollNumber, uint8 rollType, const Roll &r);
         void SendLootRollWon(ObjectGuid const& targetGuid, uint8 rollNumber, uint8 rollType, const Roll &r);
         void SendLootAllPassed(const Roll &r);
-        void GroupLoot(ObjectGuid const& playerGUID, Loot *loot, WorldObject* object);
-        void NeedBeforeGreed(ObjectGuid const& playerGUID, Loot *loot, WorldObject* object);
-        void MasterLoot(ObjectGuid const& playerGUID, Loot *loot, WorldObject* object);
+        void GroupLoot(ObjectGuid const& playerGUID, Loot *loot, Creature *creature);
+        void NeedBeforeGreed(ObjectGuid const& playerGUID, Loot *loot, Creature *creature);
+        void MasterLoot(ObjectGuid const& playerGUID, Loot *loot, Creature *creature);
         void CountRollVote(ObjectGuid const& playerGUID, ObjectGuid const& lootedTarget, uint32 itemSlot, uint8 choise);
         void EndRoll();
 
@@ -330,9 +330,6 @@ class MANGOS_DLL_SPEC Group
         InstanceGroupBind* GetBoundInstance(Player* player);
         InstanceGroupBind* GetBoundInstance(Map* aMap, Difficulty difficulty);
         BoundInstancesMap& GetBoundInstances(Difficulty difficulty) { return m_boundInstances[difficulty]; }
-
-		//Horde & Ally Group hack
-    void BroadcastGroupUpdate(void);
 
     protected:
         bool _addMember(const uint64 &guid, const char* name, bool isAssistant=false);

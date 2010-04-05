@@ -457,28 +457,9 @@ void BattleGround::Update(uint32 diff)
             {
                 //TODO : add arena sound PlaySoundToAll(SOUND_ARENA_START);
 
-				Group *groupOne = NULL;
                 for(BattleGroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
                     if (Player *plr = sObjectMgr.GetPlayer(itr->first))
-                        {
                         plr->RemoveAurasDueToSpell(SPELL_ARENA_PREPARATION);
-                         if(plr->GetGroup())
-                        {
-                            if(!groupOne)
-                             {
-                                groupOne = plr->GetGroup();
-                                 plr->SetUInt32Value(PLAYER_DUEL_TEAM, 1);
-                             }
-                             else if(plr->GetGroup() == groupOne)
-                             {
-                                 plr->SetUInt32Value(PLAYER_DUEL_TEAM, 1);
-                             }
-                             else
-                             {
-                                 plr->SetUInt32Value(PLAYER_DUEL_TEAM, 2);
-                             }
-                         }
-                    }
 
                 CheckArenaWinConditions();
             }
@@ -647,8 +628,7 @@ void BattleGround::RewardHonorToTeam(uint32 Honor, uint32 TeamID)
         if(!team) team = plr->GetTeam();
 
         if (team == TeamID)
-            if (plr->RewardHonor(NULL, 1, (float)Honor))
-                UpdatePlayerScore(plr, SCORE_BONUS_HONOR, Honor);
+            UpdatePlayerScore(plr, SCORE_BONUS_HONOR, Honor);
     }
 }
 
@@ -1390,7 +1370,11 @@ void BattleGround::UpdatePlayerScore(Player *Source, uint32 type, uint32 value)
         case SCORE_BONUS_HONOR:                             // Honor bonus
             // do not add honor in arenas
             if (isBattleGround())
-                itr->second->BonusHonor += value;
+            {
+                // reward honor instantly
+                if (Source->RewardHonor(NULL, 1, (float)value))
+                    itr->second->BonusHonor += value;
+            }
             break;
             //used only in EY, but in MSG_PVP_LOG_DATA opcode
         case SCORE_DAMAGE_DONE:                             // Damage Done

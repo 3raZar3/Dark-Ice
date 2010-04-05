@@ -918,7 +918,7 @@ uint32 Player::EnvironmentalDamage(EnviromentalDamage type, uint32 damage)
     data << uint32(resist);
     SendMessageToSet(&data, true);
 
-    uint32 final_damage = DealDamage(this, damage, NULL, SELF_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false, absorb);
+    uint32 final_damage = DealDamage(this, damage, NULL, SELF_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
 
     if(!isAlive())
     {
@@ -2210,10 +2210,6 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
     // some basic checks
     if (guid.IsEmpty() || !IsInWorld() || isInFlight())
         return NULL;
-
-    //needed for call stabled pet
-    if (GetGUID() == guid.GetRawValue())
-        return ((Creature*)this);
 
     // exist (we need look pets also for some interaction (quest/etc)
     Creature *unit = GetMap()->GetCreatureOrPetOrVehicle(guid);
@@ -6379,8 +6375,8 @@ bool Player::RewardHonor(Unit *uVictim, uint32 groupsize, float honor)
 
             int32 v_rank =1;                                //need more info
 
-            honor = ((f * diff_level * (190 + v_rank*10))/4);
-            honor *= ((float)k_level) / 64.5f;              //factor of dependence on levels of the killer
+            honor = ((f * diff_level * (190 + v_rank*10))/6);
+            honor *= ((float)k_level) / 70.0f;              //factor of dependence on levels of the killer
 
             // count the number of playerkills in one day
             ApplyModUInt32Value(PLAYER_FIELD_KILLS, 1, true);
@@ -6410,8 +6406,7 @@ bool Player::RewardHonor(Unit *uVictim, uint32 groupsize, float honor)
         if(groupsize > 1)
             honor /= groupsize;
 
-        //now should be honor recieved constant
-        //honor *= (((float)urand(8,12))/10);                 // approx honor: 80% - 120% of real honor
+        honor *= (((float)urand(8,12))/10);                 // approx honor: 80% - 120% of real honor
     }
 
     // honor - for show honor points in log
@@ -6428,11 +6423,6 @@ bool Player::RewardHonor(Unit *uVictim, uint32 groupsize, float honor)
 
     // add honor points
     ModifyHonorPoints(int32(honor));
-
-    // battleground update players honor in bg statistics
-    if(InBattleGround())
-        if(BattleGround *bg = GetBattleGround())
-            bg->UpdatePlayerScore(this, SCORE_BONUS_HONOR, honor);
 
     ApplyModUInt32Value(PLAYER_FIELD_TODAY_CONTRIBUTION, uint32(honor), true);
     return true;
@@ -7107,7 +7097,7 @@ void Player::_ApplyItemBonuses(ItemPrototype const *proto, uint8 slot, bool appl
             ApplyFeralAPBonus(feral_bonus, apply);
     }
 
-    if(!IsUseEquipedWeapon(attType))
+    if(!IsUseEquipedWeapon(slot==EQUIPMENT_SLOT_MAINHAND))
         return;
 
     if (proto->Delay)
@@ -7740,63 +7730,12 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
                     sLog.outDebug("       if(lootid)");
                     loot->clear();
                     loot->FillLoot(lootid, LootTemplates_Gameobject, this, false);
-                    if(go->GetGoType() == GAMEOBJECT_TYPE_CHEST && go->GetGOInfo()->chest.groupLootRules)
-                    {
-                        if(Group* group = GetGroup())
-                        {
-                            group->UpdateLooterGuid(go,true);
-
-                            switch (group->GetLootMethod())
-                            {
-                                case GROUP_LOOT:
-                                    // GroupLoot delete items over threshold (threshold even not implemented), and roll them. Items with quality<threshold, round robin
-                                    group->GroupLoot(GetObjectGuid(), loot, go);
-                                    permission = GROUP_PERMISSION;
-                                    break;
-                                case NEED_BEFORE_GREED:
-                                    group->NeedBeforeGreed(GetObjectGuid(), loot, go);
-                                    permission = GROUP_PERMISSION;
-                                    break;
-                                case MASTER_LOOT:
-                                    group->MasterLoot(GetObjectGuid(), loot, go);
-                                    permission = MASTER_PERMISSION;
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-                    }
                 }
 
                 if (loot_type == LOOT_FISHING)
                     go->getFishLoot(loot,this);
 
                 go->SetLootState(GO_ACTIVATED);
-            }
-            if ((go->getLootState() == GO_ACTIVATED) && (go->GetGoType() == GAMEOBJECT_TYPE_CHEST))
-            {
-                if (go->GetGOInfo()->chest.groupLootRules == 1)
-                {
-                    if(Group* group = GetGroup())
-                    {
-                        if (group == this->GetGroup())
-                        {
-                            if (group->GetLootMethod() == FREE_FOR_ALL)
-                                permission = ALL_PERMISSION;
-                            else if (group->GetLooterGuid() == GetGUID())
-                            {
-                                if (group->GetLootMethod() == MASTER_LOOT)
-                                    permission = MASTER_PERMISSION;
-                                else
-                                    permission = ALL_PERMISSION;
-                            }
-                            else
-                                permission = GROUP_PERMISSION;
-                        }
-                        else
-                            permission = NONE_PERMISSION;
-                    }
-                }
             }
             break;
         }
@@ -8963,7 +8902,7 @@ Item* Player::GetWeaponForAttack(WeaponAttackType attackType, bool nonbroken, bo
     if (!item || item->GetProto()->Class != ITEM_CLASS_WEAPON)
         return NULL;
 
-    if (useable && !IsUseEquipedWeapon(attackType))
+    if (useable && !IsUseEquipedWeapon(attackType==BASE_ATTACK))
         return NULL;
 
     if (nonbroken && item->IsBroken())
@@ -8981,7 +8920,7 @@ Item* Player::GetShield(bool useable) const
     if(!useable)
         return item;
 
-    if( item->IsBroken() || !IsUseEquipedWeapon(OFF_ATTACK))
+    if( item->IsBroken())
         return NULL;
 
     return item;
@@ -12323,6 +12262,15 @@ void Player::ApplyEnchantment(Item *item, EnchantmentSlot slot, bool apply, bool
 
     if (!ignore_condition && pEnchant->EnchantmentCondition && !((Player*)this)->EnchantmentFitsRequirements(pEnchant->EnchantmentCondition, -1))
         return;
+
+    if ((pEnchant->requiredLevel) > ((Player*)this)->getLevel())
+        return;
+
+    if ((pEnchant->requiredSkill) > 0)
+    {
+       if ((pEnchant->requiredSkillValue) > (((Player*)this)->GetSkillValue(pEnchant->requiredSkill)))
+        return;
+    }
 
     if (!item->IsBroken())
     {
@@ -18847,7 +18795,7 @@ bool Player::EnchantmentFitsRequirements(uint32 enchantmentcondition, int8 slot)
         if(i == slot)
             continue;
         Item *pItem2 = GetItemByPos( INVENTORY_SLOT_BAG_0, i );
-        if(pItem2 && pItem2->GetProto()->Socket[0].Color)
+        if(pItem2 && !pItem2->IsBroken() && pItem2->GetProto()->Socket[0].Color)
         {
             for(uint32 enchant_slot = SOCK_ENCHANTMENT_SLOT; enchant_slot < SOCK_ENCHANTMENT_SLOT+3; ++enchant_slot)
             {
@@ -19466,25 +19414,6 @@ void Player::SendInitialPacketsAfterAddToMap()
     SendAurasForTarget(this);
     SendEnchantmentDurations();                             // must be after add to map
     SendItemDurations();                                    // must be after add to map
-	
-	// Juggernaut & Warbringer both need special packet
-    // for alowing charge in combat and Warbringer
-    // for alowing charge in different stances, too
-    if(HasAura(64976) || HasAura(57499))
-    {
-        WorldPacket aura_update(SMSG_AURA_UPDATE);
-        aura_update << GetPackGUID();
-        aura_update << uint8(255);
-        if(HasAura(64976))
-            aura_update << uint32(64976);
-        if(HasAura(57499))
-            aura_update << uint32(57499);
-        aura_update << uint8(19);
-        aura_update << uint8(getLevel());
-        aura_update << uint8(1);
-        aura_update << uint8(0);
-        GetSession()->SendPacket(&aura_update);
-    }
 }
 
 void Player::SendUpdateToOutOfRangeGroupMembers()
@@ -21908,9 +21837,11 @@ void Player::ActivateSpec(uint8 specNum)
         // remove any talent rank if talent not listed in temp spec
         if (iterTempSpec == tempSpec.end() || iterTempSpec->second.state == PLAYERSPELL_REMOVED)
         {
+            TalentEntry const *talentInfo = talent.m_talentEntry;
+
             for(int r = 0; r < MAX_TALENT_RANK; ++r)
-                if (talent.m_talentEntry->RankID[r])
-                    removeSpell(talent.m_talentEntry->RankID[r],!IsPassiveSpell(talent.m_talentEntry->RankID[r]),false);
+                if (talentInfo->RankID[r])
+                    removeSpell(talentInfo->RankID[r],!IsPassiveSpell(talentInfo->RankID[r]),false);
 
             specIter = m_talents[m_activeSpec].begin();
         }

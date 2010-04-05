@@ -1416,7 +1416,7 @@ struct SpellEntry
     int32     EquippedItemInventoryTypeMask;                // 70       m_equippedItemInvTypes (mask)
     uint32    Effect[MAX_EFFECT_INDEX];                     // 71-73    m_effect
     int32     EffectDieSides[MAX_EFFECT_INDEX];             // 74-76    m_effectDieSides
-    uint32    EffectBaseDice[MAX_EFFECT_INDEX];             // 77-79    m_effectBaseDice
+    //uint32    EffectBaseDice[MAX_EFFECT_INDEX];             // 77-79    m_effectBaseDice
     //float     EffectDicePerLevel[MAX_EFFECT_INDEX];         // 80-82    m_effectDicePerLevel
     float     EffectRealPointsPerLevel[MAX_EFFECT_INDEX];   // 83-85    m_effectRealPointsPerLevel
     int32     EffectBasePoints[MAX_EFFECT_INDEX];           // 86-88    m_effectBasePoints (don't must be used in spell/auras explicitly, must be used cached Spell::m_currentBasePoints)
@@ -1568,9 +1568,9 @@ struct SpellItemEnchantmentEntry
     uint32      slot;                                       // 32       m_flags
     uint32      GemID;                                      // 33       m_src_itemID
     uint32      EnchantmentCondition;                       // 34       m_condition_id
-    //uint32      requiredSkill;                            // 35       m_requiredSkillID
-    //uint32      requiredSkillValue;                       // 36       m_requiredSkillRank
-                                                            // 37       new in 3.1
+    uint32      requiredSkill;                              // 35       m_requiredSkillID
+    uint32      requiredSkillValue;                         // 36       m_requiredSkillRank
+    uint32      requiredLevel;                              // 37       m_requiredLevel
 };
 
 struct SpellItemEnchantmentConditionEntry

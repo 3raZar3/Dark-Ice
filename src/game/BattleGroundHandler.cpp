@@ -485,7 +485,6 @@ void WorldSession::HandleLeaveBattlefieldOpcode( WorldPacket& recv_data )
             if (bg->GetStatus() != STATUS_WAIT_LEAVE)
                 return;
 
-	_player->SetUInt32Value(PLAYER_DUEL_TEAM, 0);
     _player->LeaveBattleground();
 }
 

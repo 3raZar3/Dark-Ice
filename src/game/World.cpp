@@ -62,7 +62,6 @@
 #include "GMTicketMgr.h"
 #include "Util.h"
 #include "AuctionHouseBot.h"
-#include "Language.h"
 
 INSTANTIATE_SINGLETON_1( World );
 
@@ -118,14 +117,12 @@ World::World()
 
     m_defaultDbcLocale = LOCALE_enUS;
     m_availableDbcLocaleMask = 0;
-	
-	// Initialize broadcaster nextId
-    m_nextId = 0;
 
     for(int i = 0; i < CONFIG_UINT32_VALUE_COUNT; ++i)
         m_configUint32Values[i] = 0;
 
     for(int i = 0; i < CONFIG_INT32_VALUE_COUNT; ++i)
+        m_configInt32Values[i] = 0;
 
     for(int i = 0; i < CONFIG_FLOAT_VALUE_COUNT; ++i)
         m_configFloatValues[i] = 0.0f;
@@ -943,11 +940,6 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_BOOL_AHBOT_BUYPRICE_BUYER  , "AuctionHouseBot.BuyPrice.Buyer"  , false);
 
     setConfig(CONFIG_UINT32_AHBOT_ITEMS_CYCLE   , "AuctionHouseBot.ItemsPerCycle"   , 200);
-
-    // Broadcaster
-    setConfig(CONFIG_BOOL_BROADCAST_ENABLED     , "Broadcast.Enabled"   , false);
-    setConfig(CONFIG_UINT32_BROADCAST_INTERVAL  , "Broadcast.Interval"  , 60000);
-    setConfig(CONFIG_UINT32_BROADCAST_POSITION    , "Broadcast.Position"  , 1);
 }
 
 /// Initialize the World
@@ -1058,14 +1050,6 @@ void World::SetInitialWorldSettings()
 
     sLog.outString( "Loading Spell Bonus Data..." );
     sSpellMgr.LoadSpellBonusess();
-
-    // DEVELOPER CODE START 
-    sLog.outString( "Loading Spell Stack Data..." ); 
-    sSpellMgr.LoadSpellStack(); 
- 
-    sLog.outString( "Loading Spell Stack Class Data..." ); 
-    sSpellMgr.LoadSpellStackClass(); 
-    // DEVELOPER CODE END 
 
     sLog.outString( "Loading Spell Proc Item Enchant..." );
     sSpellMgr.LoadSpellProcItemEnchant();                    // must be after LoadSpellChains
@@ -1347,6 +1331,7 @@ void World::SetInitialWorldSettings()
     m_timers[WUPDATE_UPTIME].SetInterval(m_configUint32Values[CONFIG_UINT32_UPTIME_UPDATE]*MINUTE*IN_MILLISECONDS);
                                                             //Update "uptime" table based on configuration entry in minutes.
     m_timers[WUPDATE_CORPSES].SetInterval(3*HOUR*IN_MILLISECONDS);
+    m_timers[WUPDATE_AUTOBROADCAST].SetInterval(abtimer);
     //to set mailtimer to return mails every day between 4 and 5 am
     //mailtimer is increased when updating auctions
     //one second is 1000 -(tested on win system)
@@ -1385,11 +1370,8 @@ void World::SetInitialWorldSettings()
     uint32 nextGameEvent = sGameEventMgr.Initialize();
     m_timers[WUPDATE_EVENTS].SetInterval(nextGameEvent);    //depend on next event
 
-    sLog.outString("Starting AuctionHouseBot system...");
+    sLog.outString("Starting AuctionHouseBot System...");
     auctionbot.Initialize();
-
-    sLog.outString("Starting Autobroadcast system..." );
-    m_timers[WUPDATE_BROADCAST].SetInterval(m_configUint32Values[CONFIG_UINT32_BROADCAST_INTERVAL]);
 
     sLog.outString( "WORLD: World initialized" );
 
@@ -1546,12 +1528,15 @@ void World::Update(uint32 diff)
         m_timers[WUPDATE_EVENTS].SetInterval(nextGameEvent);
         m_timers[WUPDATE_EVENTS].Reset();
     }
-
-    ///- Process autobroadcaster
-    if(getConfig(CONFIG_BOOL_BROADCAST_ENABLED) && m_timers[WUPDATE_BROADCAST].Passed())
+    static uint32 autobroadcaston = 0;
+    autobroadcaston = sConfig.GetIntDefault("AutoBroadcast.On", 0);
+    if(autobroadcaston == 1)
     {
-        m_timers[WUPDATE_BROADCAST].Reset();
-        SendBroadcast();
+        if (m_timers[WUPDATE_AUTOBROADCAST].Passed())
+        {
+            m_timers[WUPDATE_AUTOBROADCAST].Reset();
+            SendBroadcast();
+        }
     }
 
     /// </ul>
@@ -1967,6 +1952,57 @@ void World::ProcessCliCommands()
     }
 }
 
+void World::SendBroadcast()
+{
+    std::string msg;
+    static int nextid;
+
+    QueryResult *result;
+    if(nextid != 0)
+    {
+        result = loginDatabase.PQuery("SELECT `text`, `next` FROM `autobroadcast` WHERE `id` = %u", nextid);
+    }
+    else
+    {
+        result = loginDatabase.PQuery("SELECT `text`, `next` FROM `autobroadcast` ORDER BY RAND() LIMIT 1");
+    }
+
+    if(!result)
+        return;
+
+    Field *fields = result->Fetch();
+    nextid  = fields[1].GetUInt32();
+    msg = fields[0].GetString();
+    delete result;
+
+    static uint32 abcenter = 0;
+    abcenter = sConfig.GetIntDefault("AutoBroadcast.Center", 0);
+    if(abcenter == 0)
+    {
+        sWorld.SendWorldText(LANG_AUTO_BROADCAST, msg.c_str());
+
+        sLog.outString("AutoBroadcast: '%s'",msg.c_str());
+    }
+    if(abcenter == 1)
+    {
+        WorldPacket data(SMSG_NOTIFICATION, (msg.size()+1));
+        data << msg;
+        sWorld.SendGlobalMessage(&data);
+
+        sLog.outString("AutoBroadcast: '%s'",msg.c_str());
+    }
+    if(abcenter == 2)
+    {
+        sWorld.SendWorldText(LANG_AUTO_BROADCAST, msg.c_str());
+
+        WorldPacket data(SMSG_NOTIFICATION, (msg.size()+1));
+        data << msg;
+        sWorld.SendGlobalMessage(&data);
+
+        sLog.outString("AutoBroadcast: '%s'",msg.c_str());
+   }
+}
+
 void World::InitResultQueue()
 {
     m_resultQueue = new SqlResultQueue;
@@ -2247,43 +2283,4 @@ bool World::configNoReload(bool reload, eConfigBoolValues index, char const* fie
         sLog.outError("%s option can't be changed at mangosd.conf reload, using current value (%s).", fieldname, getConfig(index) ? "'true'" : "'false'");
 
     return false;
-}
-
-// Broadcast a message
-void World::SendBroadcast()
-{
-    std::string message;
-
-    QueryResult *result;
-    if(m_nextId > 0)
-        result = loginDatabase.PQuery("SELECT `text`, `next` FROM `broadcast_strings` WHERE `id` = %u;", m_nextId);
-    else
-        result = loginDatabase.PQuery("SELECT `text`, `next` FROM `broadcast_strings` ORDER BY RAND();", m_nextId);
-
-    if(!result)
-        return;
-
-    Field *fields = result->Fetch();
-    m_nextId  = fields[1].GetUInt32();
-    message = fields[0].GetString();
-
-    delete result, fields;
-
-    if((getConfig(CONFIG_UINT32_BROADCAST_POSITION) & BROADCAST_LOCATION_CHAT) == BROADCAST_LOCATION_CHAT)
-        sWorld.SendWorldText(LANG_AUTO_BROADCAST, message.c_str());
-    if((getConfig(CONFIG_UINT32_BROADCAST_POSITION) & BROADCAST_LOCATION_TOP) == BROADCAST_LOCATION_TOP)
-    {
-        WorldPacket data(SMSG_NOTIFICATION, (message.size()+1));
-        data << message;
-        sWorld.SendGlobalMessage(&data);
-    }
-
-    if((getConfig(CONFIG_UINT32_BROADCAST_POSITION) & BROADCAST_LOCATION_IRC) == BROADCAST_LOCATION_IRC)
-#ifdef MANGCHAT_INSTALLED
-        sIRC.Send_IRC_Channel(sIRC._irc_chan[sIRC.anchn].c_str(), "\00311[Server]: " + message);
-#else
-        sLog.outError("AutoBroadcaster: You have IRC broadcasting enabled but we couldn't detect mangchat");
-#endif
-
-    sLog.outString("AutoBroadcast: '%s'",message.c_str());
 }

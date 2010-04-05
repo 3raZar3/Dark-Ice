@@ -1590,27 +1590,28 @@ SOAP.IP = 127.0.0.1
 SOAP.Port = 7878
 
 ###################################################################################################################
-# Automatic Broadcaster
+# MOVEMENT ANTICHEAT
 #
-#    Broadcast.Enabled
-#        Enable/Disable the broadcaster
-#        Default: 0 - off
-#                 1 - on
+#    Anticheat.Movement.Enable
+#        Enable Movement Anticheat
+#        Default: 1 - on
+#                 0 - off
 #
-#    Broadcast.Position
-#        Where to display the message (Just add the values for multiple)
-#        Default: 1 - In the in-game chat window
-#                 2 - In the top-middle of the screen
-#                 4 - In the announcements IRC channel (if mangchat is installed)
+#    Anticheat.Movement.TeleportToPlaneAlarms
+#        maximum alarms before player will be kicked (default 50, allowed 20 - 100)
 #
-#    Broadcast.Interval
-#        Interval at which to broadcast messages
+#    Anticheat.Movement.MistimingDelta
+#        mistiming intelval between client and serverside (default 10000 ms, allowed 1000 - 15000 ms)
+#
+#    Anticheat.Movement.MistimingAlarms
+#        mistiming alarms before player will be kicked (default 20, allowed 10 - 50)
 #
 ###################################################################################################################
 
-Broadcast.Enabled = 1
-Broadcast.Position = 2
-Broadcast.Interval = 30000
+Anticheat.Movement.Enable = 1
+Anticheat.Movement.TeleportToPlaneAlarms = 50
+Anticheat.Movement.MistimingDelta = 10000
+Anticheat.Movement.MistimingAlarms = 20
 
 ###################################################################################################################
 # PLAYERBOTAI CONFIGURATION

@@ -1532,13 +1532,6 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     m_caster->CastSpell(m_caster, 54586, true);
                     return;
                 }
-                case 54171:                                 // Divine Storm 
-                { 
-                    // split between targets 
-                    int32 bp = damage / m_UniqueTargetInfo.size(); 
-                    m_caster->CastCustomSpell(unitTarget, 54172, &bp, NULL, NULL, true); 
-                    return; 
-                }
                 case 55004:                                 // Nitro Boosts
                 {
                     if (!m_CastItem)
@@ -1989,11 +1982,6 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     m_caster->CastSpell(m_caster, 63848, true);
                     return;
                 }
-                case 51690:                                 // Killing Spree - second effect
-                {
-                    m_caster->CastSpell(m_caster, 61851, true);
-                    return;
-                }
             }
             break;
         }
@@ -2088,8 +2076,6 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     if (!pet || !unitTarget)
                         return;
 
-                    // prevent pet's Master Call fail when pet rooted 
-                    pet->RemoveAurasAtMechanicImmunity(IMMUNE_TO_ROOT_AND_SNARE_MASK, 62305, true);
                     pet->CastSpell(unitTarget, m_spellInfo->CalculateSimpleValue(eff_idx), true);
                     return;
                 }
@@ -2603,14 +2589,6 @@ void Spell::EffectTriggerSpell(SpellEffectIndex effIndex)
             m_caster->ModifyPower(POWER_RUNIC_POWER, 25);
             return;
         }
-		// Mirror Image
-		case 58832:
-		{
-			// Glyph of Mirror Image
-			if (m_caster->HasAura(63093))
-				m_caster->CastSpell(m_caster, 65047, true); // Mirror Image
-			break;
-		}
     }
 
     // normal case
@@ -3084,7 +3062,6 @@ void Spell::EffectHeal(SpellEffectIndex /*eff_idx*/)
             int32 holy = caster->SpellBaseHealingBonus(GetSpellSchoolMask(m_spellInfo)) +
                          caster->SpellBaseHealingBonusForVictim(GetSpellSchoolMask(m_spellInfo), unitTarget);
             addhealth += int32(ap * 0.15) + int32(holy * 15 / 100);
-            addhealth = caster->SpellHealingBonus(unitTarget, m_spellInfo, addhealth, HEAL);
         }
         // Vessel of the Naaru (Vial of the Sunwell trinket)
         else if (m_spellInfo->Id == 45064)
@@ -3099,14 +3076,10 @@ void Spell::EffectHeal(SpellEffectIndex /*eff_idx*/)
                 m_caster->RemoveAurasDueToSpell(45062);
 
             addhealth += damageAmount;
-            addhealth = caster->SpellHealingBonus(unitTarget, m_spellInfo, addhealth, HEAL);
         }
         // Death Pact (percent heal)
         else if (m_spellInfo->Id==48743)
-        {
             addhealth = addhealth * unitTarget->GetMaxHealth() / 100;
-            addhealth = caster->SpellHealingBonus(unitTarget, m_spellInfo, addhealth, HEAL);
-        }
         // Swiftmend - consumes Regrowth or Rejuvenation
         else if (m_spellInfo->TargetAuraState == AURA_STATE_SWIFTMEND && unitTarget->HasAuraState(AURA_STATE_SWIFTMEND))
         {
@@ -3176,8 +3149,8 @@ void Spell::EffectHealPct(SpellEffectIndex /*eff_idx*/)
             return;
 
         uint32 addhealth = unitTarget->GetMaxHealth() * damage / 100;
-
-        addhealth = caster->SpellHealingBonus(unitTarget, m_spellInfo, addhealth, HEAL);
+        if (Player* modOwner = m_caster->GetSpellModOwner())
+            modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_DAMAGE, addhealth, this);
 
         int32 gain = caster->DealHeal(unitTarget, addhealth, m_spellInfo);
         unitTarget->getHostileRefManager().threatAssist(m_caster, float(gain) * 0.5f, m_spellInfo);
@@ -6123,9 +6096,8 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                         // Serpent Sting - Instantly deals 40% of the damage done by your Serpent Sting.
                         if ((familyFlag & UI64LIT(0x0000000000004000)) && aura->GetEffIndex() == EFFECT_INDEX_0)
                         {
-                            // m_amount does not include RAP bonus - must be calculated 
-                            basePoint = m_caster->MeleeDamageBonus(target, aura->GetModifier()->m_amount, RANGED_ATTACK, aura->GetSpellProto(), DOT, aura->GetStackAmount());
-                            basePoint = basePoint * (aura->GetAuraMaxDuration() / aura->GetModifier()->periodictime) * 40 / 100;
+                            // m_amount already include RAP bonus
+                            basePoint = aura->GetModifier()->m_amount * 5 * 40 / 100;
                             spellId = 53353;                // Chimera Shot - Serpent
                         }
 
@@ -7375,7 +7347,7 @@ void Spell::EffectTransmitted(SpellEffectIndex eff_idx)
 
     if(goinfo->type==GAMEOBJECT_TYPE_FISHINGNODE)
     {
-        if ( !cMap->IsInWater(fx, fy, fz-0.5f, 0.5f))             // Hack to prevent fishing bobber from failing to land on fishing hole
+        if ( !cMap->IsInWater(fx, fy, fz-0.5f))             // Hack to prevent fishing bobber from failing to land on fishing hole
         { // but this is not proper, we really need to ignore not materialized objects
             SendCastResult(SPELL_FAILED_NOT_HERE);
             SendChannelUpdate(0);
@@ -7555,34 +7527,29 @@ void Spell::EffectStealBeneficialBuff(SpellEffectIndex eff_idx)
     // Ok if exist some buffs for dispel try dispel it
     if (!steal_list.empty())
     {
-        std::list < std::pair<uint32,uint64> > success_list;// (spell_id,casterGuid)
-        std::list < uint32 > fail_list;                     // spell_id
-
-        for (int32 count=0; count < damage && !steal_list.empty(); ++count)
+        std::list < std::pair<uint32,uint64> > success_list;
+        int32 list_size = steal_list.size();
+        // Dispell N = damage buffs (or while exist buffs for dispel)
+        for (int32 count=0; count < damage && list_size > 0; ++count)
         {
             // Random select buff for dispel
-            std::vector<Aura*>::iterator steal_itr = steal_list.begin();
-            std::advance(steal_itr,urand(0, steal_list.size()-1));
-
-            Aura *aur = *steal_itr;
+            Aura *aur = steal_list[urand(0, list_size-1)];
+            // Not use chance for steal
+            // TODO possible need do it
+            success_list.push_back( std::pair<uint32,uint64>(aur->GetId(),aur->GetCasterGUID()));
 
             // Remove buff from list for prevent doubles
-            steal_list.erase(steal_itr);
-
-            SpellEntry const* spellInfo = aur->GetSpellProto(); 
-            // Base dispel chance
-            int32 miss_chance = 0;
-            // Apply dispel mod from aura caster
-            if (Unit *caster = aur->GetCaster())
+            for (std::vector<Aura *>::iterator j = steal_list.begin(); j != steal_list.end(); )
             {
-                if ( Player* modOwner = caster->GetSpellModOwner() )
-                    modOwner->ApplySpellMod(spellInfo->Id, SPELLMOD_RESIST_DISPEL_CHANCE, miss_chance, this);
+                Aura *stealed = *j;
+                if (stealed->GetId() == aur->GetId() && stealed->GetCasterGUID() == aur->GetCasterGUID())
+                {
+                    j = steal_list.erase(j);
+                    --list_size;
+                }
+                else
+                    ++j;
             }
-            // Try steal
-            if (roll_chance_i(miss_chance))
-                fail_list.push_back(spellInfo->Id);
-            else
-                success_list.push_back(std::pair<uint32,uint64>(aur->GetId(),aur->GetCasterGUID()));
         }
         // Really try steal and send log
         if (!success_list.empty())
@@ -7601,18 +7568,6 @@ void Spell::EffectStealBeneficialBuff(SpellEffectIndex eff_idx)
                 data << uint8(0);                    // 0 - steals !=0 transfers
                 unitTarget->RemoveAurasDueToSpellBySteal(spellInfo->Id, j->second, m_caster);
             }
-            m_caster->SendMessageToSet(&data, true);
-        }
-        // Send fail log to client
-        if (!fail_list.empty())
-        {
-            // Failed to dispell
-            WorldPacket data(SMSG_DISPEL_FAILED, 8+8+4+4*fail_list.size());
-            data << uint64(m_caster->GetGUID());            // Caster GUID
-            data << uint64(unitTarget->GetGUID());          // Victim GUID
-            data << uint32(m_spellInfo->Id);                // Dispell spell id
-            for (std::list< uint32 >::iterator j = fail_list.begin(); j != fail_list.end(); ++j)
-                data << uint32(*j);                         // Spell Id
             m_caster->SendMessageToSet(&data, true);
         }
     }
