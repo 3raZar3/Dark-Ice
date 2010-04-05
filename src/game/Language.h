@@ -832,6 +832,7 @@ enum MangosStrings
 
     // Use for not-in-offcial-sources patches
     //                                    10000-10999
+	LANG_YOU_RECEIVE_TOKEN        		= 11050,
 
     // Use for custom patches             11000-11999
     // Broadcaster

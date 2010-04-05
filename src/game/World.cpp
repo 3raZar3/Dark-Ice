@@ -85,6 +85,22 @@ uint32 World::m_TeleportToPlaneAlarms = 50;
 uint32 World::m_MistimingAlarms = 20;
 uint32 World::m_MistimingDelta = 2000;
 
+const uint16 BGEvent[6] = {41, 42, 43, 44, 45, 46};
+
+///PVP Announcer
+void World::SendPvPAnnounce(Player* killer, Player* killed)
+{
+  std::ostringstream msg;
+  std::ostringstream KillerName;
+  std::ostringstream KilledName;
+
+  KillerName << killer->GetName();
+  KilledName << killed->GetName();
+
+  msg << "|CFFFFFF01[" << KillerName.str().c_str() << "]" << "|CFF0042FF Has Killed " << "|CFFFFFF01[" << KilledName.str().c_str() << "]" << "|CFFE55BB0 in " << "|CFFFE8A0E[" << killer->GetBaseMap()->GetMapName() << "]";
+  SendWorldText(LANG_SYSTEMMESSAGE, msg.str().c_str());
+}
+
 /// World constructor
 World::World()
 {
@@ -797,6 +813,15 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_UINT32_TIMERBAR_FIRE_GMLEVEL,    "TimerBar.Fire.GMLevel", SEC_CONSOLE);
     setConfig(CONFIG_UINT32_TIMERBAR_FIRE_MAX,        "TimerBar.Fire.Max", 1);
 
+	/* PvP Token System */
+	setConfig(CONFIG_PVP_TOKEN_ENABLE,"PvPToken.Enable", true);
+    setConfig(CONFIG_PVP_TOKEN_ITEMID,"PvPToken.ItemID", 29434);
+    setConfig(CONFIG_PVP_TOKEN_ITEMCOUNT,"PvPToken.ItemCount", 1);
+    setConfig(CONFIG_PVP_TOKEN_RESTRICTION,"PvPToken.MapRestriction", 4);
+
+    if(getConfig(CONFIG_PVP_TOKEN_ITEMCOUNT) < 1)
+    setConfig(CONFIG_PVP_TOKEN_ITEMCOUNT,"PvPToken.ItemCount",1);
+	
     m_VisibleUnitGreyDistance = sConfig.GetFloatDefault("Visibility.Distance.Grey.Unit", 1);
     if(m_VisibleUnitGreyDistance >  MAX_VISIBILITY_DISTANCE)
     {
