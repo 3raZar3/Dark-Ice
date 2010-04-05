@@ -57,7 +57,8 @@ enum BG_WS_WorldStates
     BG_WS_FLAG_CAPTURES_HORDE     = 1582,
     BG_WS_FLAG_CAPTURES_MAX       = 1601,
     BG_WS_FLAG_STATE_HORDE        = 2338,
-    BG_WS_FLAG_STATE_ALLIANCE     = 2339
+    BG_WS_FLAG_STATE_ALLIANCE     = 2339,
+	BG_WS_TIME_REMAINING          = 4248
 };
 
 enum BG_WS_FlagState
@@ -145,13 +146,15 @@ class BattleGroundWS : public BattleGround
         void AddPoint(uint32 TeamID, uint32 Points = 1)     { m_TeamScores[GetTeamIndexByTeamId(TeamID)] += Points; }
         void SetTeamPoint(uint32 TeamID, uint32 Points = 0) { m_TeamScores[GetTeamIndexByTeamId(TeamID)] = Points; }
         void RemovePoint(uint32 TeamID, uint32 Points = 1)  { m_TeamScores[GetTeamIndexByTeamId(TeamID)] -= Points; }
-    private:
+		uint32 GetEndTimeMinutes() { return ceil(float(m_EndTimer / MINUTE / IN_MILLISECONDS)); }
+	private:
         uint64 m_FlagKeepers[BG_TEAMS_COUNT];
 
         uint64 m_DroppedFlagGUID[BG_TEAMS_COUNT];
         uint8 m_FlagState[BG_TEAMS_COUNT];
         int32 m_FlagsTimer[BG_TEAMS_COUNT];
         int32 m_FlagsDropTimer[BG_TEAMS_COUNT];
+		int32 m_EndTimer;
 
         uint32 m_ReputationCapture;
         uint32 m_HonorWinKills;

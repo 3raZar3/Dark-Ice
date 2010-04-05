@@ -577,6 +577,7 @@ enum UnitFlags2
     UNIT_FLAG2_FEIGN_DEATH      = 0x00000001,
     UNIT_FLAG2_UNK1             = 0x00000002,               // Hide unit model (show only player equip)
     UNIT_FLAG2_COMPREHEND_LANG  = 0x00000008,
+	UNIT_FLAG2_UNK2             = 0x00000010,
     UNIT_FLAG2_FORCE_MOVE       = 0x00000040,
     UNIT_FLAG2_DISARMED_OFFHAND = 0x00000080,
     UNIT_FLAG2_DISARMED_RANGED  = 0x00000400,
@@ -1354,6 +1355,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         bool IsPolymorphed() const;
 
         bool isFrozen() const;
+		bool isIgnoreUnitState(SpellEntry const *spell);
 
         void RemoveSpellbyDamageTaken(AuraType auraType, uint32 damage);
 
@@ -1831,6 +1833,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
 
         // Movement info
         MovementInfo m_movementInfo;
+		uint32 GetModelForForm(ShapeshiftForm form);
 
     protected:
         explicit Unit ();
@@ -1880,6 +1883,12 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         uint32 m_reactiveTimer[MAX_REACTIVE];
         uint32 m_regenTimer;
         uint32 m_lastManaUseTimer;
+
+		float m_lastAuraProcRoll;
+        uint64  m_auraUpdateMask;
+        uint64 m_vehicleGUID;
+
+        uint64 m_InteractionObject;
 
     private:
         void CleanupDeletedAuras();

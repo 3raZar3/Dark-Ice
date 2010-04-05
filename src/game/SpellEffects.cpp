@@ -2603,6 +2603,14 @@ void Spell::EffectTriggerSpell(SpellEffectIndex effIndex)
             m_caster->ModifyPower(POWER_RUNIC_POWER, 25);
             return;
         }
+		// Mirror Image
+		case 58832:
+		{
+			// Glyph of Mirror Image
+			if (m_caster->HasAura(63093))
+				m_caster->CastSpell(m_caster, 65047, true); // Mirror Image
+			break;
+		}
     }
 
     // normal case
