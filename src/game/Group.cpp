@@ -1525,18 +1525,16 @@ GroupJoinBattlegroundResult Group::CanJoinBattleGroundQueue(BattleGround const* 
             return ERR_BATTLEGROUND_TOO_MANY_QUEUES;        // not blizz-like
         ++allowedPlayerCount;
     }
-	return GroupJoinBattlegroundResult(bgOrTemplate->GetTypeID());
-
+	
     if(bgOrTemplate->GetTypeID() == BATTLEGROUND_AA)
     {
         if(allowedPlayerCount < MinPlayerCount)
-            return BG_JOIN_ERR_GROUP_NOT_ENOUGH;
+            return ERR_ARENA_TEAM_PARTY_SIZE;
 
         if(allowedPlayerCount > MaxPlayerCount)
-            return BG_JOIN_ERR_GROUP_TOO_MANY;
+            return ERR_ARENA_TEAM_PARTY_SIZE;
     }
-
-    return BG_JOIN_ERR_OK;
+	return GroupJoinBattlegroundResult(bgOrTemplate->GetTypeID());
 }
 
 //===================================================
