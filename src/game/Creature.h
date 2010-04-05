@@ -186,7 +186,7 @@ struct EquipmentInfo
 // from `creature` table
 struct CreatureData
 {
-    uint32 id;                                              // entry in creature_template
+    uint32 id;                                            // entry in creature_template
     uint16 mapid;
     uint16 phaseMask;
     uint32 displayid;

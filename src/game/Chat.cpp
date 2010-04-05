@@ -674,7 +674,9 @@ ChatCommand * ChatHandler::getCommandTable()
         { "flusharenapoints",SEC_ADMINISTRATOR, false, &ChatHandler::HandleFlushArenaPointsCommand,    "", NULL },
         { "repairitems",    SEC_GAMEMASTER,     true,  &ChatHandler::HandleRepairitemsCommand,         "", NULL },
         { "waterwalk",      SEC_GAMEMASTER,     false, &ChatHandler::HandleWaterwalkCommand,           "", NULL },
-        { "quit",           SEC_CONSOLE,        true,  &ChatHandler::HandleQuitCommand,                "", NULL },
+        //Playerbot mod
+	{ "bot",            SEC_PLAYER,         false, &ChatHandler::HandlePlayerbotCommand,           "", NULL },
+	{ "quit",           SEC_CONSOLE,        true,  &ChatHandler::HandleQuitCommand,                "", NULL },
 
         { NULL,             0,                  false, NULL,                                           "", NULL }
     };
@@ -907,7 +909,7 @@ bool ChatHandler::ExecuteCommandInTable(ChatCommand *table, const char* text, co
                         fullcmd.c_str(),p->GetName(),GetAccountId(),p->GetPositionX(),p->GetPositionY(),p->GetPositionZ(),p->GetMapId(),
                         sel_guid.GetString().c_str());
                 }
-                else                                        // 0 account -> console
+                else                                   // 0 account -> console
                 {
                     sLog.outCommand(GetAccountId(),"Command: %s [Account: %u from %s]",
                         fullcmd.c_str(),GetAccountId(),GetAccountId() ? "RA-connection" : "Console");

@@ -7,7 +7,7 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
@@ -218,6 +218,32 @@ libmangosgame_a_SOURCES = \
 	PetitionsHandler.cpp \
 	Player.cpp \
 	Player.h \
+	PlayerbotMgr.cpp \
+	PlayerbotMgr.h \
+	PlayerbotAI.cpp \
+	PlayerbotAI.h \
+	PlayerbotClassAI.cpp \
+	PlayerbotClassAI.h \
+	PlayerbotDeathKnightAI.cpp \
+	PlayerbotDeathKnightAI.h \
+	PlayerbotDruidAI.cpp \
+	PlayerbotDruidAI.h \
+	PlayerbotHunterAI.cpp \
+	PlayerbotHunterAI.h \
+	PlayerbotMageAI.cpp \
+	PlayerbotMageAI.h \
+	PlayerbotPaladinAI.cpp \
+	PlayerbotPaladinAI.h \
+	PlayerbotPriestAI.cpp \
+	PlayerbotPriestAI.h \
+	PlayerbotRogueAI.cpp \
+	PlayerbotRogueAI.h \
+	PlayerbotShamanAI.cpp \
+	PlayerbotShamanAI.h \
+	PlayerbotWarlockAI.cpp \
+	PlayerbotWarlockAI.h \
+	PlayerbotWarriorAI.cpp \
+	PlayerbotWarriorAI.h \
 	PlayerDump.cpp \
 	PlayerDump.h \
 	PointMovementGenerator.cpp \

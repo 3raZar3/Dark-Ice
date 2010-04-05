@@ -32,6 +32,7 @@
 #include "InstanceSaveMgr.h"
 #include "MapInstanced.h"
 #include "Util.h"
+#include "PlayerbotMgr.h"
 
 Group::Group() : m_Id(0), m_leaderGuid(0), m_mainTank(0), m_mainAssistant(0),  m_groupType(GROUPTYPE_NORMAL),
     m_dungeonDifficulty(REGULAR_DIFFICULTY), m_raidDifficulty(REGULAR_DIFFICULTY),
@@ -304,8 +305,16 @@ bool Group::AddMember(const uint64 &guid, const char* name)
 
 uint32 Group::RemoveMember(const uint64 &guid, const uint8 &method)
 {
+    //Playerbot mod - if master leaves group, all bots leave group
+    {
+        Player* const player = sObjectMgr.GetPlayer(guid);
+        if (player && player->GetPlayerbotMgr())
+            player->GetPlayerbotMgr()->RemoveAllBotsFromGroup();
+    }
+    //END Playerbot mod
+
     // remove member and change leader (if need) only if strong more 2 members _before_ member remove
-    if(GetMembersCount() > uint32(isBGGroup() ? 1 : 2))           // in BG group case allow 1 members group
+    if(GetMembersCount() > uint32(isBGGroup() ? 1 : 2))         // in BG group case allow 1 members group
     {
         bool leaderChanged = _removeMember(guid);
 
