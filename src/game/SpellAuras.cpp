@@ -6675,13 +6675,9 @@ void Aura::HandleAuraAllowFlight(bool apply, bool Real)
     else
     {
         data.Initialize(SMSG_MOVE_UNSET_CAN_FLY, 12);
-<<<<<<< HEAD:src/game/SpellAuras.cpp
         ((Player*)m_target)->SetCanFly(false);
     }
-		data.append(m_target->GetPackGUID());
-=======
     data << m_target->GetPackGUID();
->>>>>>> 43dbe28912a5d5418c816243492f219bed92eeb0:src/game/SpellAuras.cpp
     data << uint32(0);                                      // unk
     m_target->SendMessageToSet(&data, true);
 }
