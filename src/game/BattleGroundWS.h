@@ -22,8 +22,12 @@
 #include "BattleGround.h"
 
 #define BG_WS_MAX_TEAM_SCORE      3
-#define BG_WS_FLAG_RESPAWN_TIME   (23*IN_MILLISECONDS)
-#define BG_WS_FLAG_DROP_TIME      (10*IN_MILLISECONDS)
+#define BG_WS_FLAG_RESPAWN_TIME   (23*IN_MILISECONDS)
+#define BG_WS_FLAG_DROP_TIME      (10*IN_MILISECONDS)
+#define BG_WS_TIME_LIMIT          (25*MINUTE*IN_MILISECONDS)
+#define BG_WS_CARRIER_DEBUFF      (15*MINUTE*IN_MILISECONDS)
+#define BG_WS_FIVE_MINUTES        (5*MINUTE*IN_MILISECONDS)
+#define BG_WS_FOCUSED_ASSAULT     46392
 
 enum BG_WS_Sound
 {
@@ -152,5 +156,11 @@ class BattleGroundWS : public BattleGround
         uint32 m_ReputationCapture;
         uint32 m_HonorWinKills;
         uint32 m_HonorEndKills;
+
+        uint32 m_LastCapturedFlagTeam;
+        uint32 m_LastEndTimeMinutes;
+        uint32 m_FocusedAssault;
+
+        bool m_FocusedAssaultExtra;
 };
 #endif

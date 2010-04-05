@@ -103,6 +103,9 @@ bool ChatHandler::HandleServerInfoCommand(const char* /*args*/)
     PSendSysMessage(LANG_USING_EVENT_AI,sWorld.GetCreatureEventAIVersion());
     PSendSysMessage(LANG_CONNECTED_USERS, activeClientsNum, maxActiveClientsNum, queuedClientsNum, maxQueuedClientsNum);
     PSendSysMessage(LANG_UPTIME, str.c_str());
+	SendSysMessage("Hellscreamcore, The core brought to you straight from hell");
+	SendSysMessage("GIT: http://github.com/Darkrulerz/Hellscreamcore/commits");
+	SendSysMessage("A heavily modified MaNGOS core");
 
     return true;
 }
