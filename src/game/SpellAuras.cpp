@@ -6349,6 +6349,14 @@ void Aura::HandleShapeshiftBoosts(bool apply)
         if(MasterShaperSpellId)
             m_target->RemoveAurasDueToSpell(MasterShaperSpellId);
 
+        if(m_target->GetTypeId() == TYPEID_PLAYER)
+        {
+            if(spellId1)
+                ((Player*)m_target)->RemoveSpellCooldown(spellId1, true);
+            if(spellId2)
+                ((Player*)m_target)->RemoveSpellCooldown(spellId2, true);
+        }
+
         Unit::AuraMap& tAuras = m_target->GetAuras();
         for (Unit::AuraMap::iterator itr = tAuras.begin(); itr != tAuras.end();)
         {
