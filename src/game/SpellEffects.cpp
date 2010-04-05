@@ -2088,6 +2088,8 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     if (!pet || !unitTarget)
                         return;
 
+                    // prevent pet's Master Call fail when pet rooted 
+                    pet->RemoveAurasAtMechanicImmunity(IMMUNE_TO_ROOT_AND_SNARE_MASK, 62305, true);
                     pet->CastSpell(unitTarget, m_spellInfo->CalculateSimpleValue(eff_idx), true);
                     return;
                 }
