@@ -6397,6 +6397,7 @@ void Aura::HandleSpellSpecificBoosts(bool apply)
                 }
                 else
                     return;
+                break;
             }
 
             switch(GetId())
@@ -6538,6 +6539,7 @@ void Aura::HandleSpellSpecificBoosts(bool apply)
                 }
                 else
                     return;
+                break;
             }
             // Power Word: Shield
             else if (apply && m_spellProto->SpellFamilyFlags & UI64LIT(0x0000000000000001) && m_spellProto->Mechanic == MECHANIC_SHIELD)
