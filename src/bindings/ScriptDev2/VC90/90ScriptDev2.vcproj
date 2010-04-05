@@ -1740,10 +1740,6 @@
 							>
 						</File>
 						<File
-							RelativePath="..\scripts\northrend\crusaders_coliseum\trial_of_the_crusader\instance_trial_of_the_crusader.h"
-							>
-						</File>
-						<File
 							RelativePath="..\scripts\northrend\crusaders_coliseum\trial_of_the_crusader\trial_of_the_crusader.cpp"
 							>
 						</File>
@@ -2856,6 +2852,14 @@
 			</File>
 			<File
 				RelativePath="..\include\precompiled.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\sc_boss_spell_worker.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\include\sc_boss_spell_worker.h"
 				>
 			</File>
 			<File

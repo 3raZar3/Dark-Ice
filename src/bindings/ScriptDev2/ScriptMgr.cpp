@@ -17,10 +17,16 @@ Script *m_scripts[MAX_SCRIPTS];
 
 Config SD2Config;
 
+QueryResult* strSD2Pquery(char* str)
+{
+return SD2Database.Query(str);
+}
+
 void FillSpellSummary();
 
 void LoadDatabase()
 {
+
     std::string strSD2DBinfo = SD2Config.GetStringDefault("ScriptDev2DatabaseInfo", "");
 
     if (strSD2DBinfo.empty())
@@ -45,9 +51,6 @@ void LoadDatabase()
         error_log("SD2: Unable to connect to Database. Load database aborted.");
         return;
     }
-
-    SD2Database.HaltDelayThread();
-
 }
 
 struct TSpellSummary {
@@ -66,6 +69,7 @@ void ScriptsFree()
         delete m_scripts[i];
 
     num_sc_scripts = 0;
+    SD2Database.HaltDelayThread();
 }
 
 MANGOS_DLL_EXPORT
@@ -79,7 +83,7 @@ void ScriptsInit()
     outstring_log(" MMM  M   M  M");
     outstring_log("   MM M   M MMMM");
     outstring_log("MM  M M  M ");
-    outstring_log(" MMM  MMM  modded for Hellscream");
+    outstring_log(" MMM  MMM  http://www.scriptdev2.com");
     outstring_log("");
 
     //Get configuration file

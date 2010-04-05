@@ -172,3 +172,5 @@ INSERT INTO `spell_proc_event` VALUES
 
 DELETE FROM `spell_proc_event` WHERE `entry` = 67356;
 INSERT INTO `spell_proc_event` VALUES (67356,0x00,7,0x00000010,0x00000000,0x00000000,0x00000000,0x00000000,0.000000,0.000000,0);
+
+REPLACE INTO `achievement_criteria_requirement` (`criteria_id`,`type`,`value1`) VALUES ('9619','0','63624');

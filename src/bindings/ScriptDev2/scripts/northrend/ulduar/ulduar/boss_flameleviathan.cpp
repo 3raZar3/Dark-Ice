@@ -1,92 +1,113 @@
-/* Copyright (C) 2006 - 2010 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- */
-
-/* ScriptData
-SDName: Flame Leviatan
-SD%Complete: 0
-SDComment: PH.
-SDCategory: Ulduar
-EndScriptData */
 
 #include "precompiled.h"
-#include "ulduar.h"
+#include "def_ulduar.h"
 
-/*
-#define SAY_AGGRO -1
-#define SAY_SLAY -1
-*/
+#define SP_BATTERING_RAM    62376
+#define SP_FLAME_VENTS      62396
+#define SP_GATHERING_SPEED  62375
 
-struct MANGOS_DLL_DECL boss_flameleviatanAI : public ScriptedAI
+#define SP_ROCKET           62400
+
+#define SAY_AGGRO   -1603009
+#define SAY_DEATH   -1603010
+#define SAY_SLAY    -1603011
+
+
+
+
+struct MANGOS_DLL_DECL boss_flame_leviathan : public ScriptedAI
 {
-    boss_flameleviatanAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_flame_leviathan(Creature* pCreature) : ScriptedAI(pCreature)
     {
-        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+        pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+        Regular = pCreature->GetMap()->IsRegularDifficulty();
         Reset();
     }
 
-    ScriptedInstance* m_pInstance;
+    ScriptedInstance *pInstance;
+    bool Regular;
+
+    uint32 BatteringRamTimer;
+    uint32 FlameVentsTimer;
+    uint32 RocketTimer;
 
     void Reset()
     {
+        BatteringRamTimer = 15000 + rand()%20000;
+        FlameVentsTimer = 20000 + rand()%10000;
+        RocketTimer = 1000;
+
+        if(pInstance) pInstance->SetData(TYPE_FLAME_LEVIATHAN, NOT_STARTED);
     }
 
-    void KilledUnit(Unit *victim)
+    void Aggro(Unit *who) 
     {
+        if(pInstance) pInstance->SetData(TYPE_FLAME_LEVIATHAN, IN_PROGRESS);
+
+        DoScriptText(SAY_AGGRO, m_creature);
     }
 
-    void JustDied(Unit *victim)
+    void JustDied(Unit *killer)
     {
+        if(pInstance) pInstance->SetData(TYPE_FLAME_LEVIATHAN, DONE);
+
+        DoScriptText(SAY_DEATH, m_creature);
     }
 
-    void Aggro(Unit* pWho)
+    void KilledUnit(Unit *who)
     {
-//        DoScriptText(SAY_AGGRO, m_creature);
-        m_creature->SetInCombatWithZone();
+        DoScriptText(SAY_SLAY, m_creature);
+    }
 
-        if (m_pInstance)
-            m_pInstance->SetData(TYPE_LEVIATHAN, IN_PROGRESS);
+    void DamageTaken(Unit *pDoneBy, uint32 &dmg)
+    {
+        //???????????? ?????????? ??????? ? ??????? ?? ?????
+        dmg *= 4;
     }
 
     void UpdateAI(const uint32 diff)
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
-//SPELLS TODO:
 
-//
+        if(FlameVentsTimer < diff)
+        {
+            DoCast(m_creature->getVictim(), SP_FLAME_VENTS);
+            FlameVentsTimer = 30000 + rand()%20000;
+        }
+        else FlameVentsTimer -= diff;
+
+        if(BatteringRamTimer < diff)
+        {
+            DoCast(m_creature->getVictim(), SP_BATTERING_RAM);
+            BatteringRamTimer = 25000 + rand()%15000;
+        }
+        else BatteringRamTimer -= diff;
+
+        if(RocketTimer < diff)
+        {
+            Unit *target = SelectUnit(SELECT_TARGET_RANDOM, 0);
+            int32 dmg = Regular ? (3000 + rand()%2000) : (2000 + rand()%1200);
+            if(target && target->isAlive())
+                m_creature->CastCustomSpell(target, SP_ROCKET, &dmg, 0, 0, false);
+            RocketTimer = 3000 + rand()%2000;
+        }
+        else RocketTimer -= diff;
+
         DoMeleeAttackIfReady();
-
-        EnterEvadeIfOutOfCombatArea(diff);
-
     }
-
 };
 
-CreatureAI* GetAI_boss_flameleviatan(Creature* pCreature)
+CreatureAI* GetAI_boss_flame_leviathan(Creature* pCreature)
 {
-    return new boss_flameleviatanAI(pCreature);
+    return new boss_flame_leviathan(pCreature);
 }
 
-void AddSC_boss_flameleviatan()
+void AddSC_boss_flameleviathan()
 {
     Script *newscript;
     newscript = new Script;
-    newscript->Name = "boss_flameleviatan";
-    newscript->GetAI = &GetAI_boss_flameleviatan;
+    newscript->Name = "boss_flameleviathan";
+    newscript->GetAI = &GetAI_boss_flame_leviathan;
     newscript->RegisterSelf();
-
 }
-
