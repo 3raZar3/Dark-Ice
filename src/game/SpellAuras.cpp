@@ -1167,7 +1167,20 @@ bool Aura::_RemoveAura()
 
         // Mechanic bleed aura state
         if(GetAllSpellMechanicMask(m_spellProto) & (1 << (MECHANIC_BLEED-1)))
-            m_target->ModifyAuraState(AURA_STATE_MECHANIC_BLEED, false);
+        {
+            bool found = false;
+            Unit::AuraList const& mPerDmg = m_target->GetAurasByType(SPELL_AURA_PERIODIC_DAMAGE);
+            for(Unit::AuraList::const_iterator i = mPerDmg.begin(); i != mPerDmg.end(); ++i)
+            {
+                if(GetAllSpellMechanicMask((*i)->m_spellProto) & (1 << (MECHANIC_BLEED-1)))
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if(!found)
+                m_target->ModifyAuraState(AURA_STATE_MECHANIC_BLEED, false);
+        }
 
         uint32 removeState = 0;
         uint64 removeFamilyFlag = m_spellProto->SpellFamilyFlags;
@@ -2633,7 +2646,6 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
 
             return;
         }
-
         // Vampiric Touch
         if ((GetSpellProto()->SpellFamilyFlags & UI64LIT(0x40000000000)) && m_removeMode==AURA_REMOVE_BY_DISPEL)
         {
@@ -2646,15 +2658,18 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
             m_target->CastCustomSpell(m_target, 64085, &basepoints, NULL, NULL, false);
             return;
         }
-
-        if (m_removeMode == AURA_REMOVE_BY_DEATH)
+        // Arcane Missiles
+        if (m_spellProto->SpellFamilyName == SPELLFAMILY_MAGE && (m_spellProto->SpellFamilyFlags & UI64LIT(0x0000000000000800)))
         {
-            // Stop caster Arcane Missle chanelling on death
-            if (m_spellProto->SpellFamilyName == SPELLFAMILY_MAGE && (m_spellProto->SpellFamilyFlags & UI64LIT(0x0000000000000800)))
+            //Remove arcane blast
+            if (Unit* caster = GetCaster())
+                caster->RemoveAurasDueToSpell(36032);
+
+            //Stop channeling at death
+            if (m_removeMode == AURA_REMOVE_BY_DEATH)
             {
                 if (Unit* caster = GetCaster())
                     caster->InterruptSpell(CURRENT_CHANNELED_SPELL);
-
                 return;
             }
         }
@@ -7167,7 +7182,7 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
                         //Borrowed Time
                         Unit::AuraList const& borrowedTime = caster->GetAurasByType(SPELL_AURA_DUMMY);
                         for(Unit::AuraList::const_iterator itr = borrowedTime.begin(); itr != borrowedTime.end(); ++itr)
-					    {
+                        {
                             SpellEntry const* i_spell = (*itr)->GetSpellProto();
                             if(i_spell->SpellFamilyName==SPELLFAMILY_PRIEST && i_spell->SpellIconID == 2899 && i_spell->EffectMiscValue[(*itr)->GetEffIndex()] == 24)
                             {
