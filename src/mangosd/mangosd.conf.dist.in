@@ -1733,7 +1733,7 @@ PvPToken.MapRestriction = 4
 #
 #	  Custom.CostDualSpec
 #	      Put the amount of money dual-spec costs to learn here (in copper)
-#	  Default : 10000000 (100G)
+#	  Default : 10000000 (1000G)
 #
 #	  Custom.EveryoneDrunk
 #		  Everyone has the drunken view on login (for events)
