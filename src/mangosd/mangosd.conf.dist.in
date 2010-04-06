@@ -1722,9 +1722,14 @@ PvPToken.MapRestriction = 4
 #	      Put the amount of money dual-spec costs to learn here (in copper)
 #	  Default : 10000000 (100G)
 #
+#	  Custom.EveryoneDrunk
+#		  Everyone has the drunken view on login (for events)
+#	  Default : 0
+#
 ###################################################################################################################
 
 Custom.AllowFlyingMountsEverywhere = 0
 Custom.MailItemRefundable = 1
 Custom.MinLevelDualSpec = 40
 Custom.CostDualSpec = 10000000
+Custom.EveryoneDrunk = 0

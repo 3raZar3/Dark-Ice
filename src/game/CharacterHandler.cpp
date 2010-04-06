@@ -735,6 +735,12 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
 
     if (sWorld.getConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE))
         pCurrChar->FlyingMountsSpellsToItems();
+		
+	if (sWorld.getConfig(CONFIG_BOOL_EVERYONE_DRUNK))
+		pCurrChar->CastSpell(pCurrChar, 55664, true);
+		
+	if (!(sWorld.getConfig(CONFIG_BOOL_EVERYONE_DRUNK)))
+		pCurrChar->removeSpell(55664, false, false);
 
     pCurrChar->SendInitialPacketsBeforeAddToMap();
 

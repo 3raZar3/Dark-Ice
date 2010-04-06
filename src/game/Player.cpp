@@ -12707,7 +12707,7 @@ void Player::PrepareGossipMenu(WorldObject *pSource, uint32 menuId)
                         bCanTalk = false;
                     break;
                 case GOSSIP_OPTION_LEARNDUALSPEC:
-                    if(!(GetSpecsCount() == 1 && pCreature->isCanTrainingAndResetTalentsOf(this) && !(getLevel() < sWorld.getConfig(CONFIG_BOOL_MIN_LEVEL_DUALSPEC))))
+                    if(!(GetSpecsCount() == 1 && pCreature->isCanTrainingAndResetTalentsOf(this) && !(getLevel() < sWorld.getConfig(CONFIG_MIN_LEVEL_DUALSPEC))))
                         bCanTalk = false;
                     break;
                 case GOSSIP_OPTION_UNLEARNTALENTS:
@@ -12910,9 +12910,9 @@ void Player::OnGossipSelect(WorldObject* pSource, uint32 gossipListId, uint32 me
             GetSession()->SendTrainerList(guid);
             break;
 		case GOSSIP_OPTION_LEARNDUALSPEC:
-            if(GetSpecsCount() == 1 && !(getLevel() < sWorld.getConfig(CONFIG_BOOL_MIN_LEVEL_DUALSPEC)))
+            if(GetSpecsCount() == 1 && !(getLevel() < sWorld.getConfig(CONFIG_MIN_LEVEL_DUALSPEC)))
             {
-                if (GetMoney() < sWorld.getConfig(CONFIG_BOOL_COST_DUALSPEC))
+                if (GetMoney() < sWorld.getConfig(CONFIG_COST_DUALSPEC))
                 {
                    SendBuyError( BUY_ERR_NOT_ENOUGHT_MONEY, 0, 0, 0);
                     PlayerTalkClass->CloseGossip();
@@ -12920,7 +12920,7 @@ void Player::OnGossipSelect(WorldObject* pSource, uint32 gossipListId, uint32 me
                 }
                 else
                 {
-                    ModifyMoney(-sWorld.getConfig(CONFIG_BOOL_COST_DUALSPEC));
+                    ModifyMoney(-sWorld.getConfig(CONFIG_COST_DUALSPEC));
 
                     // Cast spells that teach dual spec
                     // Both are also ImplicitTarget self and must be cast by player
