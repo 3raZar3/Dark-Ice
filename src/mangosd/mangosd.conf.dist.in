@@ -1704,21 +1704,27 @@ PvPToken.MapRestriction = 4
 
 ###################################################################################################################
 #
+#     ~~~~~~~~~~~~~~CUSTOMS~~~~~~~~~~~~~~
 #     Custom.AllowFlyingMountsEverywhere
 #         Set it to 1 to enable flying mounts everywhere
 #         If you do it, mounts are now used as item...
 #     Default : 0
 #
-###################################################################################################################
-
-Custom.AllowFlyingMountsEverywhere = 0
-
-###################################################################################################################
-#
 #     Custom.MailItemRefundable
 #         Set it to 0 to make items not-refundable anymore after mailing
 #     Default : 1
 #
+#     Custom.MinLevelDualSpec
+#	      Put the minimum level required to learn dual-spec here
+#	  Default : 40
+#
+#	  Custom.CostDualSpec
+#	      Put the amount of money dual-spec costs to learn here (in copper)
+#	  Default : 10000000 (100G)
+#
 ###################################################################################################################
 
+Custom.AllowFlyingMountsEverywhere = 0
 Custom.MailItemRefundable = 1
+Custom.MinLevelDualSpec = 40
+Custom.CostDualSpec = 10000000

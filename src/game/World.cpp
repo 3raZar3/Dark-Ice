@@ -821,6 +821,9 @@ void World::LoadConfigSettings(bool reload)
 	
     setConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE, "Custom.AllowFlyingMountsEverywhere", false);
 	setConfig(CONFIG_BOOL_MAIL_ITEM_REFUNDABLE, "Custom.MailItemRefundable", false);
+	setConfig(CONFIG_BOOL_MIN_LEVEL_DUALSPEC, "Custom.MinLevelDualSpec", 40);
+	setConfig(CONFIG_BOOL_COST_DUALSPEC, "Custom.CostDualSpec", 10000000);
+	
 
     m_VisibleUnitGreyDistance = sConfig.GetFloatDefault("Visibility.Distance.Grey.Unit", 1);
     if(m_VisibleUnitGreyDistance >  MAX_VISIBILITY_DISTANCE)
