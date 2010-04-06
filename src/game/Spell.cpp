@@ -2646,6 +2646,24 @@ void Spell::cast(bool skipCheck)
                 AddPrecastSpell(41425);                     // Hypothermia
             break;
         }
+		case SPELLFAMILY_WARRIOR:
+        {
+            // Item - Warrior T10 Melee 4P Bonus
+            if (m_spellInfo->Id == 46916 || m_spellInfo->Id == 52437)
+			{
+                if (Aura *aur = m_caster->GetAura(70847, EFFECT_INDEX_0))
+				{
+                    if (roll_chance_i(aur->GetModifier()->m_amount))
+					{
+                        AddTriggeredSpell(70849);
+					}
+				}
+			}
+			// Shattering Throw
+            else if (m_spellInfo->Id == 64382)
+                AddPrecastSpell(64380);
+            break;
+        }
         case SPELLFAMILY_PRIEST:
         {
             // Power Word: Shield
@@ -2676,6 +2694,9 @@ void Spell::cast(bool skipCheck)
             // Faerie Fire (Feral)
             if (m_spellInfo->Id == 16857 && m_caster->m_form != FORM_CAT)
                 AddTriggeredSpell(60089);
+			// Item - Druid T10 Balance 2P Bonus
+            else if (m_spellInfo->Id == 16870 && m_caster->HasAura(70718))
+                AddTriggeredSpell(70721);
             break;
         }
         case SPELLFAMILY_ROGUE:
@@ -2715,13 +2736,6 @@ void Spell::cast(bool skipCheck)
             else if (m_spellInfo->Effect[EFFECT_INDEX_0]==SPELL_EFFECT_APPLY_AREA_AURA_RAID && m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000004000000))
                 // only for main totem spell cast
                 AddTriggeredSpell(30708);                   // Totem of Wrath
-            break;
-        }
-        case SPELLFAMILY_WARRIOR:
-        {
-            // Shattering Throw
-            if (m_spellInfo->Id == 64382)
-                AddPrecastSpell(64380);                     // Shattering Throw
             break;
         }
         default:

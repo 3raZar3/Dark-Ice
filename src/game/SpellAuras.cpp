@@ -6481,6 +6481,16 @@ void Aura::HandleSpellSpecificBoosts(bool apply)
                 spellId1 = 30069;                           // Blood Frenzy (Rank 1)
                 spellId2 = 30070;                           // Blood Frenzy (Rank 2)
             }
+			else
+            {
+                // Bloodrage & Item - Warrior T10 Protection 4P Bonus
+                if (GetId() == 29131 && m_target->HasAura(70844))
+                {
+                    int32 bp = int32(m_target->GetMaxHealth() * 20 / 100);
+                    m_target->CastCustomSpell(m_target, 70845, &bp, NULL, NULL, true, NULL, this);
+                    return;
+                }
+            }
             break;
         }
         case SPELLFAMILY_WARLOCK:
@@ -6613,6 +6623,15 @@ void Aura::HandleSpellSpecificBoosts(bool apply)
                 default:
                     return;
             }
+            break;
+        }
+		case SPELLFAMILY_DRUID:
+        {
+            // Item - Druid T10 Feral 4P Bonus
+            if (GetId() == 5229 && m_target->HasAura(70726))// Enrage
+                spellId1 = 70725;
+            else
+                return;
             break;
         }
         case SPELLFAMILY_ROGUE:
