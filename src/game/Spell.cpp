@@ -942,10 +942,10 @@ void Spell::DoAllEffectOnTarget(TargetInfo *target)
         DoSpellHitOnUnit(unit, mask);
     else
     {
-        if (missInfo == SPELL_MISS_REFLECT && target->reflectResult == SPELL_MISS_NONE)       // In case spell reflect from target, do all effect on caster (if hit)
-            DoSpellHitOnUnit(m_caster, mask);
+		if (missInfo == SPELL_MISS_REFLECT && target->reflectResult == SPELL_MISS_NONE)       // In case spell reflect from target, do all effect on caster (if hit)
+			DoSpellHitOnUnit(m_caster, mask);
 
-        else if (missInfo != SPELL_MISS_EVADE && target->reflectResult != SPELL_MISS_EVADE)   // We still need to start combat (not for evade...)
+        else if (missInfo != SPELL_MISS_EVADE && target->reflectResult != SPELL_MISS_EVADE && real_caster)   // We still need to start combat (not for evade...)
         {
             if (!unit->IsStandState() && !unit->hasUnitState(UNIT_STAT_STUNNED))
                 unit->SetStandState(UNIT_STAND_STATE_STAND);
