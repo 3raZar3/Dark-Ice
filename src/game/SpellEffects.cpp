@@ -3223,20 +3223,12 @@ void Spell::DoCreateItem(SpellEffectIndex eff_idx, uint32 itemtype)
     }
 
     // bg reward have some special in code work
-    uint32 bgType = 0;
+    bool bg_mark = false;
     switch(m_spellInfo->Id)
     {
-        case SPELL_AV_MARK_WINNER:
-        case SPELL_AV_MARK_LOSER:
-            bgType = BATTLEGROUND_AV;
-            break;
-        case SPELL_WS_MARK_WINNER:
-        case SPELL_WS_MARK_LOSER:
-            bgType = BATTLEGROUND_WS;
-            break;
-        case SPELL_AB_MARK_WINNER:
-        case SPELL_AB_MARK_LOSER:
-            bgType = BATTLEGROUND_AB;
+        case SPELL_WG_MARK_VICTORY:
+        case SPELL_WG_MARK_DEFEAT:
+            bg_mark = true;
             break;
         default:
             break;
@@ -3326,19 +3318,22 @@ void Spell::DoCreateItem(SpellEffectIndex eff_idx, uint32 itemtype)
 
         // send info to the client
         if(pItem)
-            player->SendNewItem(pItem, num_to_add, true, bgType == 0);
+            player->SendNewItem(pItem, num_to_add, true, !bg_mark);
 
         // we succeeded in creating at least one item, so a levelup is possible
-        if(bgType == 0)
+        if(!bg_mark)
             player->UpdateCraftSkill(m_spellInfo->Id);
     }
 
     // for battleground marks send by mail if not add all expected
-    if(no_space > 0 && bgType)
+    // FIXME: single existed bg marks for outfield bg and we not have it..
+    /*
+    if(no_space > 0 && bg_mark)
     {
         if(BattleGround* bg = sBattleGroundMgr.GetBattleGroundTemplate(BattleGroundTypeId(bgType)))
             bg->SendRewardMarkByMail(player, newitemid, no_space);
     }
+    */
 }
 
 void Spell::EffectCreateItem(SpellEffectIndex eff_idx)
