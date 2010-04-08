@@ -19653,7 +19653,7 @@ void Player::learnDefaultSpells()
         if(!IsInWorld())                                    // will send in INITIAL_SPELLS in list anyway at map add
 		{
             addSpell(tspell, true, true, true, false);
-			if (sWorld.getConfig(CONFIG_BOOL_DUALSPEC_AT_CREATE))
+			if (sWorld.getConfig(CONFIG_BOOL_DUALSPEC_AT_CREATE) && GetSpecsCount() == 1)
 			{
 				CastSpell(this,63680,true,NULL,NULL,GetGUID());
 				CastSpell(this,63624,true,NULL,NULL,GetGUID());

@@ -738,10 +738,10 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
         pCurrChar->FlyingMountsSpellsToItems();
 		
 	if (sWorld.getConfig(CONFIG_BOOL_EVERYONE_DRUNK))
-		pCurrChar->CastSpell(pCurrChar, 55664, true);
+		pCurrChar->SetDrunkValue(23000);
 		
 	if (!(sWorld.getConfig(CONFIG_BOOL_EVERYONE_DRUNK)))
-		pCurrChar->removeSpell(55664, false, false);
+		pCurrChar->SetDrunkValue(0);
 
     pCurrChar->SendInitialPacketsBeforeAddToMap();
 
