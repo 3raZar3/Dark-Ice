@@ -1754,6 +1754,10 @@ PvPToken.MapRestriction = 4
 #		  Everyone has the drunken view on login (for events)
 #	  Default : 0
 #
+#	  Custom.DualSpecAtCreate
+#		  All newly made accounts start with DualSpec already learned if enabled
+#	  Default : 0
+#
 ###################################################################################################################
 
 Custom.AllowFlyingMountsEverywhere = 0
@@ -1761,3 +1765,4 @@ Custom.MailItemRefundable = 1
 Custom.MinLevelDualSpec = 40
 Custom.CostDualSpec = 10000000
 Custom.EveryoneDrunk = 0
+Custom.DualSpecAtCreate = 0

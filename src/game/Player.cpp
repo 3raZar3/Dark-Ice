@@ -19651,7 +19651,15 @@ void Player::learnDefaultSpells()
         uint32 tspell = *itr;
         sLog.outDebug("PLAYER (Class: %u Race: %u): Adding initial spell, id = %u",uint32(getClass()),uint32(getRace()), tspell);
         if(!IsInWorld())                                    // will send in INITIAL_SPELLS in list anyway at map add
+		{
             addSpell(tspell, true, true, true, false);
+			if (sWorld.getConfig(CONFIG_BOOL_DUALSPEC_AT_CREATE))
+			{
+				CastSpell(this,63680,true,NULL,NULL,GetGUID());
+				CastSpell(this,63624,true,NULL,NULL,GetGUID());
+			}
+
+		}
         else                                                // but send in normal spell in game learn case
             learnSpell(tspell, true);
     }
