@@ -114,6 +114,12 @@ bool ChatHandler::HandleServerInfoCommand(const char* /*args*/)
         SendSysMessage("Today Battleground: Eye Of Storm!");
     if(sGameEventMgr.IsActiveEvent(43))
         SendSysMessage("Today Battleground: Warsong Gulch!");
+    if(sGameEventMgr.IsActiveEvent(44))
+        SendSysMessage("Today Battleground: Alterac Valley!");
+    if(sGameEventMgr.IsActiveEvent(45))
+        SendSysMessage("Today Battleground: Isle of Conquest!");
+    if(sGameEventMgr.IsActiveEvent(46))
+        SendSysMessage("Today Battleground: Strand of the Ancients!");
 
     return true;
 }

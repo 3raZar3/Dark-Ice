@@ -100,7 +100,7 @@ void World::SendPvPAnnounce(Player* killer, Player* killed)
   SendWorldText(LANG_SYSTEMMESSAGE, msg.str().c_str());
 }
 
-const float BGEvent[2] = {41, 42, 43};
+const uint16 BGEvent[6] = {41, 42, 43, 44, 45, 46};
 
 /// World constructor
 World::World()
@@ -2124,13 +2124,13 @@ void World::InitDailyQuestResetTime()
 void World::RandomBG()
 {
     //stop event
-    for(int i = 0; i < 3; i++)
+    for(int i = 0; i < 6; i++)
     {
         sGameEventMgr.StopEvent(BGEvent[i]);
         WorldDatabase.PExecute("UPDATE game_event SET occurence = 5184000 WHERE entry = %f", BGEvent[i]);
     }
     //add event     
-    uint8 random = urand(0,2);
+    uint8 random = urand(0,3);
     sGameEventMgr.StartEvent(BGEvent[random]);
     WorldDatabase.PExecute("UPDATE game_event SET occurence = 1400 WHERE entry = %f", BGEvent[random]);
 
