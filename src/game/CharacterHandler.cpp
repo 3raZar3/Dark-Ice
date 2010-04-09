@@ -738,11 +738,21 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
         pCurrChar->FlyingMountsSpellsToItems();
 		
 	if (sWorld.getConfig(CONFIG_BOOL_EVERYONE_DRUNK))
-		pCurrChar->SetDrunkValue(23000);
+	{
+		if (!(sWorld.getConfig(CONFIG_BOOL_GM_ALSO_DRUNK)))
+		{
+			if (!(pCurrChar->isGameMaster()))
+			{
+				pCurrChar->SetDrunkValue(23000);
+			}
+		}
+		else
+		{
+			pCurrChar->SetDrunkValue(23000);
+		}
+	}
+	else pCurrChar->SetDrunkValue(0);
 		
-	if (!(sWorld.getConfig(CONFIG_BOOL_EVERYONE_DRUNK)))
-		pCurrChar->SetDrunkValue(0);
-
     pCurrChar->SendInitialPacketsBeforeAddToMap();
 
     //Show cinematic at the first time that player login

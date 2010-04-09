@@ -21340,7 +21340,7 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank)
     if(CurTalentPoints == 0)
         return;
 
-    if (talentRank >= MAX_TALENT_RANK)
+    if(talentRank >= MAX_TALENT_RANK)
         return;
 
     TalentEntry const *talentInfo = sTalentStore.LookupEntry( talentId );
