@@ -11969,7 +11969,23 @@ int32 Unit::CalculateSpellDuration(SpellEntry const* spellProto, SpellEffectInde
             default:
                 break;
         }
-    }
+	}
+    // Duration in PvP is limited
+    if (!IsFriendlyTo(target))
+    {
+        Unit const* casterOwner = GetCharmerOrOwner();
+        Unit const* targetOwner = target->GetCharmerOrOwner();
+        casterOwner = casterOwner ? casterOwner : this;
+        targetOwner = targetOwner ? targetOwner : target;
+        if (targetOwner->GetTypeId() == TYPEID_PLAYER && casterOwner->GetTypeId() == TYPEID_PLAYER)
+        {
+            DiminishingGroup diminishingGroup = GetDiminishingReturnsGroupForSpell(spellProto, false/*doesn't matter for this purpose*/);
+            int32 limitPvpDuration = GetDiminishingReturnsLimitDuration(diminishingGroup, spellProto);
+            limitPvpDuration = limitPvpDuration ? limitPvpDuration: 10000;
+            if (diminishingGroup != DIMINISHING_NONE)
+                duration = duration > limitPvpDuration ? limitPvpDuration : duration;
+        }
+	}
        
     if (duration > 0)
     {
