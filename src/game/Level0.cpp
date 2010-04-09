@@ -29,6 +29,7 @@
 #include "revision.h"
 #include "revision_nr.h"
 #include "Util.h"
+#include "GameEventMgr.h"
 
 bool ChatHandler::HandleHelpCommand(const char* args)
 {
@@ -106,6 +107,13 @@ bool ChatHandler::HandleServerInfoCommand(const char* /*args*/)
 	SendSysMessage("Hellscreamcore, The core brought to you straight from hell");
 	SendSysMessage("GIT: http://github.com/Darkrulerz/Hellscreamcore/commits");
 	SendSysMessage("A heavily modified MaNGOS core");
+
+    if(sGameEventMgr.IsActiveEvent(41))
+        SendSysMessage("Today Battleground: Arathi Basin!");
+    if(sGameEventMgr.IsActiveEvent(42))
+        SendSysMessage("Today Battleground: Eye Of Storm!");
+    if(sGameEventMgr.IsActiveEvent(43))
+        SendSysMessage("Today Battleground: Warsong Gulch!");
 
     return true;
 }

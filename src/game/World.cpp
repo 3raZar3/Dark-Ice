@@ -100,6 +100,8 @@ void World::SendPvPAnnounce(Player* killer, Player* killed)
   SendWorldText(LANG_SYSTEMMESSAGE, msg.str().c_str());
 }
 
+const float BGEvent[2] = {41, 42, 43};
+
 /// World constructor
 World::World()
 {
@@ -1455,6 +1457,7 @@ void World::Update(uint32 diff)
     if (m_gameTime > m_NextDailyQuestReset)
     {
         ResetDailyQuests();
+        RandomBG();
         m_NextDailyQuestReset += DAY;
     }
 
@@ -2118,7 +2121,20 @@ void World::InitDailyQuestResetTime()
     else
         delete result;
 }
+void World::RandomBG()
+{
+    //stop event
+    for(int i = 0; i < 3; i++)
+    {
+        sGameEventMgr.StopEvent(BGEvent[i]);
+        WorldDatabase.PExecute("UPDATE game_event SET occurence = 5184000 WHERE entry = %f", BGEvent[i]);
+    }
+    //add event     
+    uint8 random = urand(0,2);
+    sGameEventMgr.StartEvent(BGEvent[random]);
+    WorldDatabase.PExecute("UPDATE game_event SET occurence = 1400 WHERE entry = %f", BGEvent[random]);
 
+}
 void World::ResetDailyQuests()
 {
     sLog.outDetail("Daily quests reset for all characters.");
