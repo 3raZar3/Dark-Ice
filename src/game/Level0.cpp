@@ -107,20 +107,6 @@ bool ChatHandler::HandleServerInfoCommand(const char* /*args*/)
 	SendSysMessage("Hellscreamcore, The core brought to you straight from hell");
 	SendSysMessage("GIT: http://github.com/Darkrulerz/Hellscreamcore/commits");
 	SendSysMessage("A heavily modified MaNGOS core");
-
-    if(sGameEventMgr.IsActiveEvent(41))
-        SendSysMessage("Today Battleground: Arathi Basin!");
-    if(sGameEventMgr.IsActiveEvent(42))
-        SendSysMessage("Today Battleground: Eye Of Storm!");
-    if(sGameEventMgr.IsActiveEvent(43))
-        SendSysMessage("Today Battleground: Warsong Gulch!");
-    if(sGameEventMgr.IsActiveEvent(44))
-        SendSysMessage("Today Battleground: Alterac Valley!");
-    if(sGameEventMgr.IsActiveEvent(45))
-        SendSysMessage("Today Battleground: Isle of Conquest!");
-    if(sGameEventMgr.IsActiveEvent(46))
-        SendSysMessage("Today Battleground: Strand of the Ancients!");
-
     return true;
 }
 
