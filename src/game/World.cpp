@@ -84,8 +84,6 @@ uint32 World::m_TeleportToPlaneAlarms = 50;
 uint32 World::m_MistimingAlarms = 20;
 uint32 World::m_MistimingDelta = 2000;
 
-const uint16 BGEvent[6] = {41, 42, 43, 44, 45, 46};
-
 ///PVP Announcer
 void World::SendPvPAnnounce(Player* killer, Player* killed)
 {
