@@ -739,17 +739,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
 		
 	if (sWorld.getConfig(CONFIG_BOOL_EVERYONE_DRUNK))
 	{
-		if (!(sWorld.getConfig(CONFIG_BOOL_GM_ALSO_DRUNK)))
-		{
-			if (!(pCurrChar->isGameMaster()))
-			{
-				pCurrChar->SetDrunkValue(23000);
-			}
-		}
-		else
-		{
-			pCurrChar->SetDrunkValue(23000);
-		}
+		pCurrChar->SetDrunkValue(23000);
 	}
 	else pCurrChar->SetDrunkValue(0);
 		

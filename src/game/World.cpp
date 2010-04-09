@@ -831,7 +831,6 @@ void World::LoadConfigSettings(bool reload)
 	setConfig(CONFIG_MIN_LEVEL_DUALSPEC, "Custom.MinLevelDualSpec", 40);
 	setConfig(CONFIG_COST_DUALSPEC, "Custom.CostDualSpec", 10000000);
 	setConfig(CONFIG_BOOL_EVERYONE_DRUNK, "Custom.EveryoneDrunk", false);
-	setConfig(CONFIG_BOOL_GM_ALSO_DRUNK, "Custom.GMAlsoDrunk", false);
 	setConfig(CONFIG_BOOL_DUALSPEC_AT_CREATE, "Custom.DualSpecAtCreate", false);
 	
 
