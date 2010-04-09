@@ -844,16 +844,29 @@ void WorldSession::HandleBuyBankSlotOpcode(WorldPacket& recvPacket)
 
     BankBagSlotPricesEntry const* slotEntry = sBankBagSlotPricesStore.LookupEntry(slot);
 
+    WorldPacket data(SMSG_BUY_BANK_SLOT_RESULT, 4);
+
     if(!slotEntry)
+    {
+        data << uint32(ERR_BANKSLOT_FAILED_TOO_MANY);
+        SendPacket(&data);
         return;
+    }
 
     uint32 price = slotEntry->price;
 
     if (_player->GetMoney() < price)
+    {
+        data << uint32(ERR_BANKSLOT_INSUFFICIENT_FUNDS);
+        SendPacket(&data);
         return;
+    }
 
     _player->SetBankBagSlotCount(slot);
     _player->ModifyMoney(-int32(price));
+
+     data << uint32(ERR_BANKSLOT_OK);
+     SendPacket(&data);
 
     _player->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_BUY_BANK_SLOT);
 }
@@ -1357,4 +1370,31 @@ void WorldSession::HandleItemRefundInfoRequest(WorldPacket& recv_data)
     }
 
     // item refund system not implemented yet
+}
+
+/**
+ * Handles the packet sent by the client when requesting information about item text.
+ *
+ * This function is called when player clicks on item which has some flag set
+ */
+void WorldSession::HandleItemTextQuery(WorldPacket & recv_data )
+{
+    uint64 itemGuid;
+    recv_data >> itemGuid;
+
+    sLog.outDebug("CMSG_ITEM_TEXT_QUERY item guid: %u", GUID_LOPART(itemGuid));
+
+    WorldPacket data(SMSG_ITEM_TEXT_QUERY_RESPONSE, (4+10));    // guess size
+
+    if(Item *item = _player->GetItemByGuid(itemGuid))
+    {
+        data << uint8(0);                                       // has text
+        data << uint64(itemGuid);                               // item guid
+        data << item->GetText();
+    }
+    else
+    {
+        data << uint8(1);                                       // no text
+    }
+    SendPacket(&data);
 }
