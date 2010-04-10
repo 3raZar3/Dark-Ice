@@ -7744,7 +7744,7 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
     if (uint64 lguid = GetLootGUID())
         m_session->DoLootRelease(lguid);
 
-    Loot    *loot = 0;
+    Loot *loot = 0;
     PermissionTypes permission = ALL_PERMISSION;
 
     sLog.outDebug("Player::SendLoot");
@@ -7752,7 +7752,7 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
     {
         case HIGHGUID_GAMEOBJECT:
         {
-            sLog.outDebug("       IS_GAMEOBJECT_GUID(guid)");
+            sLog.outDebug(" IS_GAMEOBJECT_GUID(guid)");
             GameObject *go = GetMap()->GetGameObject(guid);
 
             // not check distance for GO in case owned GO (fishing bobber case, for example)
@@ -7767,7 +7767,7 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
 
             if (go->getLootState() == GO_READY)
             {
-                uint32 lootid =  go->GetGOInfo()->GetLootId();
+                uint32 lootid = go->GetGOInfo()->GetLootId();
                 if ((go->GetEntry() == BG_AV_OBJECTID_MINE_N || go->GetEntry() == BG_AV_OBJECTID_MINE_S))
                     if (BattleGround *bg = GetBattleGround())
                         if (bg->GetTypeID() == BATTLEGROUND_AV)
@@ -7779,15 +7779,66 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
 
                 if (lootid)
                 {
-                    sLog.outDebug("       if(lootid)");
+                    sLog.outDebug(" if(lootid)");
                     loot->clear();
                     loot->FillLoot(lootid, LootTemplates_Gameobject, this, false);
+                    if(go->GetGoType() == GAMEOBJECT_TYPE_CHEST && go->GetGOInfo()->chest.groupLootRules)
+                    {
+                        if(Group* group = GetGroup())
+                        {
+                            group->UpdateLooterGuid(go,true);
+
+                            switch (group->GetLootMethod())
+                            {
+                                case GROUP_LOOT:
+                                    // GroupLoot delete items over threshold (threshold even not implemented), and roll them. Items with quality<threshold, round robin
+                                    group->GroupLoot(GetObjectGuid(), loot, go);
+                                    permission = GROUP_PERMISSION;
+                                    break;
+                                case NEED_BEFORE_GREED:
+                                    group->NeedBeforeGreed(GetObjectGuid(), loot, go);
+                                    permission = GROUP_PERMISSION;
+                                    break;
+                                case MASTER_LOOT:
+                                    group->MasterLoot(GetObjectGuid(), loot, go);
+                                    permission = MASTER_PERMISSION;
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
                 }
 
                 if (loot_type == LOOT_FISHING)
                     go->getFishLoot(loot,this);
 
                 go->SetLootState(GO_ACTIVATED);
+            }
+            if ((go->getLootState() == GO_ACTIVATED) && (go->GetGoType() == GAMEOBJECT_TYPE_CHEST))
+            {
+                if (go->GetGOInfo()->chest.groupLootRules == 1)
+                {
+                    if(Group* group = GetGroup())
+                    {
+                        if (group == this->GetGroup())
+                        {
+                            if (group->GetLootMethod() == FREE_FOR_ALL)
+                                permission = ALL_PERMISSION;
+                            else if (group->GetLooterGuid() == GetGUID())
+                            {
+                                if (group->GetLootMethod() == MASTER_LOOT)
+                                    permission = MASTER_PERMISSION;
+                                else
+                                    permission = ALL_PERMISSION;
+                            }
+                            else
+                                permission = GROUP_PERMISSION;
+                        }
+                        else
+                            permission = NONE_PERMISSION;
+                    }
+                }
             }
             break;
         }
@@ -7827,7 +7878,7 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
             }
             break;
         }
-        case HIGHGUID_CORPSE:                               // remove insignia
+        case HIGHGUID_CORPSE: // remove insignia
         {
             Corpse *bones = GetMap()->GetCorpse(guid);
 
@@ -7872,7 +7923,7 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
                 return;
             }
 
-            loot   = &creature->loot;
+            loot = &creature->loot;
 
             if (loot_type == LOOT_PICKPOCKETING)
             {
@@ -7986,7 +8037,7 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
     // LOOT_INSIGNIA and LOOT_FISHINGHOLE unsupported by client
     switch(loot_type)
     {
-        case LOOT_INSIGNIA:    loot_type = LOOT_SKINNING; break;
+        case LOOT_INSIGNIA: loot_type = LOOT_SKINNING; break;
         case LOOT_FISHINGHOLE: loot_type = LOOT_FISHING; break;
         default: break;
     }
@@ -7994,7 +8045,7 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
     // need know merged fishing/corpse loot type for achievements
     loot->loot_type = loot_type;
 
-    WorldPacket data(SMSG_LOOT_RESPONSE, (9+50));           // we guess size
+    WorldPacket data(SMSG_LOOT_RESPONSE, (9+50)); // we guess size
 
     data << guid;
     data << uint8(loot_type);

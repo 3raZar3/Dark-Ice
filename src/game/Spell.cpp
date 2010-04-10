@@ -3134,26 +3134,7 @@ void Spell::finish(bool ok)
 
     // Heal caster for all health leech from all targets
     if (m_healthLeech)
-    { 
-        // Divine Storm heal calculation 
-        if (m_spellInfo->Id == 53385) 
-        {
-            SpellEffectIndex healEffIndex = EFFECT_INDEX_1;
-            int32 healAmount = 0;
-            for(tbb::concurrent_vector<TargetInfo>::const_iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
-            {
-                if (ihit->deleted == true)
-                    continue;
-                Unit *unit = m_caster->GetObjectGuid() == ihit->targetGUID ? m_caster : ObjectAccessor::GetUnit(*m_caster, ihit->targetGUID);
-                if (unit && unit->isAlive())
-                    healAmount += m_caster->CalculateSpellDamage(unit, m_spellInfo, healEffIndex, &m_currentBasePoints[healEffIndex]);
-            }
-            healAmount = int32(m_healthLeech * healAmount / 100); 
-            m_caster->CastCustomSpell(m_caster, 54171, &healAmount, NULL, NULL, true); 
-        } 
-        else 
-            m_caster->DealHeal(m_caster, uint32(m_healthLeech), m_spellInfo); 
-    }
+		m_caster->DealHeal(m_caster, uint32(m_healthLeech), m_spellInfo);
 
     if (IsMeleeAttackResetSpell())
     {
