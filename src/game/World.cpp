@@ -1403,6 +1403,8 @@ void World::SetInitialWorldSettings()
 
     sLog.outString("Starting AuctionHouseBot System...");
     auctionbot.Initialize();
+	
+	sLog.outString("Starting Autobroadcast system...");
 
     sLog.outString( "WORLD: World initialized" );
 

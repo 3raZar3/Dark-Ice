@@ -16719,8 +16719,6 @@ void Player::SaveToDB()
 
     CharacterDatabase.BeginTransaction();
 
-    CharacterDatabase.PExecute("DELETE FROM characters WHERE guid = '%u'",GetGUIDLow());
-
     std::string sql_name = m_name;
     CharacterDatabase.escape_string(sql_name);
 
