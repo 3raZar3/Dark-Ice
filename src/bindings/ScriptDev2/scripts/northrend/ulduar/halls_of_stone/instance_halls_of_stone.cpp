@@ -1,4 +1,4 @@
-/* Copyright (C) 2006 - 2010 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+/* Copyright (C) 2006 - 2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -33,8 +33,14 @@ EndScriptData */
 
 struct MANGOS_DLL_DECL instance_halls_of_stone : public ScriptedInstance
 {
-    instance_halls_of_stone(Map* pMap) : ScriptedInstance(pMap) {Initialize();};
+    instance_halls_of_stone(Map* pMap) : ScriptedInstance(pMap) {
+    Regular = pMap->IsRegularDifficulty();
+    Initialize();
+    };
+
     uint32 m_auiEncounter[MAX_ENCOUNTER];
+    bool Regular;
+    std::string strSaveData;
 
     uint64 m_uiKrystallusGUID;
     uint64 m_uiGriefGUID;
@@ -51,16 +57,29 @@ struct MANGOS_DLL_DECL instance_halls_of_stone : public ScriptedInstance
 
     uint64 m_uiGoTribunalConsoleGUID;
     uint64 m_uiGoTribunalChestGUID;
-    uint64 m_uiGoTribunalChestHeroicGUID;
     uint64 m_uiGoTribunalSkyFloorGUID;
     uint64 m_uiGoKaddrakGUID;
     uint64 m_uiGoAbedneumGUID;
     uint64 m_uiGoMarnakGUID;
-    std::string strInstData;
+
+    void OpenDoor(uint64 guid)
+    {
+        if(!guid) return;
+        GameObject* pGo = instance->GetGameObject(guid);
+        if(pGo) pGo->SetGoState(GO_STATE_ACTIVE);
+    }
+
+    void CloseDoor(uint64 guid)
+    {
+        if(!guid) return;
+        GameObject* pGo = instance->GetGameObject(guid);
+        if(pGo) pGo->SetGoState(GO_STATE_READY);
+    }
 
     void Initialize()
     {
-        memset(&m_auiEncounter, 0, sizeof(m_auiEncounter));
+        for(uint8 i = 0; i < MAX_ENCOUNTER; ++i)
+                   m_auiEncounter[i]=NOT_STARTED;
 
         m_uiKrystallusGUID       = 0;
         m_uiGriefGUID            = 0;
@@ -77,7 +96,6 @@ struct MANGOS_DLL_DECL instance_halls_of_stone : public ScriptedInstance
 
         m_uiGoTribunalConsoleGUID  = 0;
         m_uiGoTribunalChestGUID    = 0;
-	 m_uiGoTribunalChestHeroicGUID    = 0;
         m_uiGoTribunalSkyFloorGUID = 0;
         m_uiGoKaddrakGUID          = 0;
         m_uiGoAbedneumGUID         = 0;
@@ -118,27 +136,30 @@ struct MANGOS_DLL_DECL instance_halls_of_stone : public ScriptedInstance
         {
             case GO_GRIEF_DOOR:
                 m_uiGriefDoorGUID = pGo->GetGUID();
-                if (m_auiEncounter[0] == DONE)
-                    pGo->SetGoState(GO_STATE_ACTIVE);
+                if (m_auiEncounter[0] != DONE)
+                    CloseDoor(m_uiGriefDoorGUID);
+                    else OpenDoor(m_uiGriefDoorGUID);
                 break;
             case GO_BRANN_DOOR:
                 m_uiBrannDoorGUID = pGo->GetGUID();
-                if (m_auiEncounter[1] == DONE)
-                    pGo->SetGoState(GO_STATE_ACTIVE);
+                if (m_auiEncounter[1] != DONE)
+                    CloseDoor(m_uiBrannDoorGUID);
+                    else OpenDoor(m_uiBrannDoorGUID);
                 break;
             case GO_SJONNIR_DOOR:
                 m_uiSjonnirDoorGUID = pGo->GetGUID();
-                if (m_auiEncounter[2] == DONE)
-                    pGo->SetGoState(GO_STATE_ACTIVE);
+                if (m_auiEncounter[2] != DONE)
+                    CloseDoor(m_uiSjonnirDoorGUID);
+                    else OpenDoor(m_uiSjonnirDoorGUID);
                 break;
             case GO_TRIBUNAL_CONSOLE:
                 m_uiGoTribunalConsoleGUID = pGo->GetGUID();
                 break;
             case GO_TRIBUNAL_CHEST:
-                m_uiGoTribunalChestGUID = pGo->GetGUID();
+                if (Regular) m_uiGoTribunalChestGUID = pGo->GetGUID();
                 break;
-            case GO_TRIBUNAL_CHEST_HEROIC:
-                m_uiGoTribunalChestHeroicGUID = pGo->GetGUID();
+            case GO_TRIBUNAL_CHEST_H:
+                if (!Regular) m_uiGoTribunalChestGUID = pGo->GetGUID();
                 break;
             case GO_TRIBUNAL_SKY_FLOOR:
                 m_uiGoTribunalSkyFloorGUID = pGo->GetGUID();
@@ -155,24 +176,39 @@ struct MANGOS_DLL_DECL instance_halls_of_stone : public ScriptedInstance
         }
     }
 
+    void OnPlayerEnter(Unit* pPlayer)
+    {
+                if (m_auiEncounter[0] != DONE)
+                    CloseDoor(m_uiGriefDoorGUID);
+                    else OpenDoor(m_uiGriefDoorGUID);
+                if (m_auiEncounter[1] != DONE)
+                    CloseDoor(m_uiBrannDoorGUID);
+                    else OpenDoor(m_uiBrannDoorGUID);
+                if (m_auiEncounter[2] != DONE)
+                    CloseDoor(m_uiSjonnirDoorGUID);
+                    else OpenDoor(m_uiSjonnirDoorGUID);
+    }
+
     void SetData(uint32 uiType, uint32 uiData)
     {
         switch(uiType)
         {
             case TYPE_KRYSTALLUS:
                 if (uiData == DONE)
-                    DoUseDoorOrButton(m_uiGriefDoorGUID);
+                OpenDoor(m_uiGriefDoorGUID);
                 m_auiEncounter[0] = uiData;
                 break;
             case TYPE_GRIEF:
                 if (uiData == DONE)
-                    DoUseDoorOrButton(m_uiBrannDoorGUID);
+                OpenDoor(m_uiBrannDoorGUID);
                 m_auiEncounter[1] = uiData;
                 break;
             case TYPE_BRANN:
                 if (uiData == DONE)
                 {
-      		     DoUseDoorOrButton(m_uiSjonnirDoorGUID);
+                    OpenDoor(m_uiSjonnirDoorGUID);
+                    DoRespawnGameObject(m_uiGoTribunalChestGUID);
+                    OpenDoor(m_uiGoTribunalChestGUID);
                 }
                 m_auiEncounter[2] = uiData;
                 break;
@@ -185,13 +221,16 @@ struct MANGOS_DLL_DECL instance_halls_of_stone : public ScriptedInstance
             OUT_SAVE_INST_DATA;
 
             std::ostringstream saveStream;
-            saveStream << m_auiEncounter[0] << " " << m_auiEncounter[1] << " " << m_auiEncounter[2] << " " << m_auiEncounter[3];
 
-            strInstData = saveStream.str();
+            for(uint8 i = 0; i < MAX_ENCOUNTER; ++i)
+                saveStream << m_auiEncounter[i] << " ";
+
+            strSaveData = saveStream.str();
 
             SaveToDB();
             OUT_SAVE_INST_DATA_COMPLETE;
         }
+
     }
 
     uint32 GetData(uint32 uiType)
@@ -238,24 +277,16 @@ struct MANGOS_DLL_DECL instance_halls_of_stone : public ScriptedInstance
                 return m_uiGoAbedneumGUID;
             case DATA_GO_MARNAK:
                 return m_uiGoMarnakGUID;
-            case DATA_GO_CHEST:
- 		        if (GameObject* pChest = instance->GetGameObject(m_uiGoTribunalChestGUID)) 
-                        if (pChest && !pChest->isSpawned())
-                            pChest->SetRespawnTime(350000000);
-		  break;
-            case DATA_GO_CHEST_H:
- 		        if (GameObject* pChest = instance->GetGameObject(m_uiGoTribunalChestHeroicGUID)) 
-                        if (pChest && !pChest->isSpawned())
-                            pChest->SetRespawnTime(350000000);
-                break;
         }
         return 0;
     }
+
     const char* Save()
     {
-        return strInstData.c_str();
+        return strSaveData.c_str();
     }
-	void Load(const char* chrIn)
+
+    void Load(const char* chrIn)
     {
         if (!chrIn)
         {
@@ -266,16 +297,18 @@ struct MANGOS_DLL_DECL instance_halls_of_stone : public ScriptedInstance
         OUT_LOAD_INST_DATA(chrIn);
 
         std::istringstream loadStream(chrIn);
-        loadStream >> m_auiEncounter[0] >> m_auiEncounter[1] >> m_auiEncounter[2] >> m_auiEncounter[3];
 
         for(uint8 i = 0; i < MAX_ENCOUNTER; ++i)
         {
+            loadStream >> m_auiEncounter[i];
+
             if (m_auiEncounter[i] == IN_PROGRESS)
                 m_auiEncounter[i] = NOT_STARTED;
         }
-			m_auiEncounter[0] = NOT_STARTED;
+
         OUT_LOAD_INST_DATA_COMPLETE;
     }
+
 };
 
 InstanceData* GetInstanceData_instance_halls_of_stone(Map* pMap)
@@ -291,3 +324,4 @@ void AddSC_instance_halls_of_stone()
     newscript->GetInstanceData = &GetInstanceData_instance_halls_of_stone;
     newscript->RegisterSelf();
 }
+

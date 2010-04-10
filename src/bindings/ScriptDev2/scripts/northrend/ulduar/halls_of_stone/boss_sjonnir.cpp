@@ -1,4 +1,4 @@
-/* Copyright (C) 2006 - 2010 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+/* Copyright (C) 2006 - 2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -111,11 +111,13 @@ struct MANGOS_DLL_DECL boss_sjonnirAI : public ScriptedAI
 
         if(m_pInstance)
             m_pInstance->SetData(TYPE_GRIEF, IN_PROGRESS);
+//            pSummoned->RemoveSplineFlag(SPLINEFLAG_WALKMODE);
+//            pSummoned->GetMotionMaster()->MovePoint(0, fX, fY, fZ);
     }
 
     void KilledUnit(Unit* pVictim)
     {
-        switch(urand(0, 2))
+        switch(rand()%3)
         {
             case 0: DoScriptText(SAY_SLAY_1, m_creature); break;
             case 1: DoScriptText(SAY_SLAY_2, m_creature); break;
@@ -123,108 +125,107 @@ struct MANGOS_DLL_DECL boss_sjonnirAI : public ScriptedAI
         }
     }
 
-     void DespawnDwarf()
-     {
-         if (m_lDwarfGUIDList.empty())
-             return;
- 
-         for(std::list<uint64>::iterator itr = m_lDwarfGUIDList.begin(); itr != m_lDwarfGUIDList.end(); ++itr)
-         {
-             if (Creature* pTemp = (Creature*)Unit::GetUnit(*m_creature, *itr))
-             {
-                 if (pTemp->isAlive())
-                     pTemp->ForcedDespawn();
-             }
-         }
- 
-         m_lDwarfGUIDList.clear();
-     }
- 
-     void JustSummoned(Creature* pSummoned)
-     {
-         m_lDwarfGUIDList.push_back(pSummoned->GetGUID());
- 
-         if (Unit* pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
-         {
-             pSummoned->AddThreat(pTarget, 0.0f);
-             pSummoned->AI()->AttackStart(pTarget);
-         }
-     }
- 
-
-
     void JustDied(Unit* pKiller)
     {
         DoScriptText(SAY_DEATH, m_creature);
- 
-         if (m_pInstance)
+
+        if (m_pInstance)
             m_pInstance->SetData(TYPE_GRIEF, DONE);
+    }
+
+    void DespawnDwarf()
+    {
+        if (m_lDwarfGUIDList.empty())
+            return;
+
+        for(std::list<uint64>::iterator itr = m_lDwarfGUIDList.begin(); itr != m_lDwarfGUIDList.end(); ++itr)
+        {
+            if (Creature* pTemp = (Creature*)Unit::GetUnit(*m_creature, *itr))
+            {
+                if (pTemp->isAlive())
+                    pTemp->ForcedDespawn();
+            }
+        }
+
+        m_lDwarfGUIDList.clear();
+    }
+
+    void JustSummoned(Creature* pSummoned)
+    {
+        m_lDwarfGUIDList.push_back(pSummoned->GetGUID());
+
+        if (Unit* pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
+        {
+            pSummoned->AddThreat(pTarget, 0.0f);
+            pSummoned->AI()->AttackStart(pTarget);
+        }
     }
 
     void UpdateAI(const uint32 uiDiff)
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
-         if (m_uiChainLightning_Timer < uiDiff)
-         {
-             if (Unit* pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
-                 DoCast(pTarget, m_bIsRegularMode ? SPELL_CHAIN_LIGHTING : SPELL_CHAIN_LIGHTING_H);
-             m_uiChainLightning_Timer = 10000 + rand()%5000;
-         }
-         else
-             m_uiChainLightning_Timer -= uiDiff;
- 
-         if (m_uiLightningShield_Timer < uiDiff)
-         {
-             DoCast(m_creature, m_bIsRegularMode ? SPELL_LIGHTING_SHIELD : SPELL_LIGHTING_SHIELD_H);
-             m_uiLightningShield_Timer = 20000 + rand()%5000;
-         }
-         else
-             m_uiLightningShield_Timer -= uiDiff;
- 
-         if (m_uiStaticCharge_Timer < uiDiff)
-         {
-             DoCast(m_creature->getVictim(), m_bIsRegularMode ? SPELL_STATIC_CHARGE : SPELL_STATIC_CHARGE_H);
-             m_uiStaticCharge_Timer = 20000 + rand()%5000;
-         }
-         else
-             m_uiStaticCharge_Timer -= uiDiff;
- 
-         if (m_uiLightningRing_Timer < uiDiff)
-         {
-             if (m_creature->IsNonMeleeSpellCasted(false))
-                 m_creature->InterruptNonMeleeSpells(false);
-             DoCast(m_creature, m_bIsRegularMode ? SPELL_LIGHTING_RING : SPELL_LIGHTING_RING_H);
-             m_uiLightningRing_Timer = 30000 + rand()%5000;
-         }
-         else
-             m_uiLightningRing_Timer -= uiDiff;
- 
-         if (m_uiSummon_Timer < uiDiff)
-         {
-             uint32 SummonPipe = rand()%2;
-             uint32 SummonEntry = 0;
-             switch(rand()%3)
-             {
-                 case 0: SummonEntry = NPC_FORGED_IRON_TROGG; break;
-                 case 1: SummonEntry = NPC_MALFORMED_OOZE;    break;
-                 case 2: SummonEntry = NPC_FORGED_IRON_DWARF; break;
-             }
-             m_creature->SummonCreature(SummonEntry, PipeLoc[SummonPipe].x, PipeLoc[SummonPipe].y, PipeLoc[SummonPipe].z, 0.0f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 30000);
-             m_uiSummon_Timer = 20000;
-         }
-         else
-             m_uiSummon_Timer -= uiDiff;
- 
-         if (!m_bIsFrenzy && m_uiFrenzy_Timer < uiDiff)
-         {
-             DoCast(m_creature, SPELL_FRENZY);
-             m_bIsFrenzy = true;
-             m_uiFrenzy_Timer = 0;
-         }
-         else
-             m_uiFrenzy_Timer -= uiDiff;
- 
+
+        if (m_uiChainLightning_Timer < uiDiff)
+        {
+            if (Unit* pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
+                DoCast(pTarget, m_bIsRegularMode ? SPELL_CHAIN_LIGHTING_H : SPELL_CHAIN_LIGHTING);
+            m_uiChainLightning_Timer = 10000 + rand()%5000;
+        }
+        else
+            m_uiChainLightning_Timer -= uiDiff;
+
+        if (m_uiLightningShield_Timer < uiDiff)
+        {
+            DoCast(m_creature, m_bIsRegularMode ? SPELL_LIGHTING_SHIELD_H : SPELL_LIGHTING_SHIELD);
+            m_uiLightningShield_Timer = 20000 + rand()%5000;
+        }
+        else
+            m_uiLightningShield_Timer -= uiDiff;
+
+        if (m_uiStaticCharge_Timer < uiDiff)
+        {
+            DoCast(m_creature->getVictim(), m_bIsRegularMode ? SPELL_STATIC_CHARGE_H : SPELL_STATIC_CHARGE);
+            m_uiStaticCharge_Timer = 20000 + rand()%5000;
+        }
+        else
+            m_uiStaticCharge_Timer -= uiDiff;
+
+        if (m_uiLightningRing_Timer < uiDiff)
+        {
+            if (m_creature->IsNonMeleeSpellCasted(false))
+                m_creature->InterruptNonMeleeSpells(false);
+            DoCast(m_creature, m_bIsRegularMode ? SPELL_LIGHTING_RING_H : SPELL_LIGHTING_RING);
+            m_uiLightningRing_Timer = 30000 + rand()%5000;
+        }
+        else
+            m_uiLightningRing_Timer -= uiDiff;
+
+        if (m_uiSummon_Timer < uiDiff)
+        {
+            uint32 SummonPipe = rand()%2;
+            uint32 SummonEntry = 0;
+            switch(rand()%3)
+            {
+                case 0: SummonEntry = NPC_FORGED_IRON_TROGG; break;
+                case 1: SummonEntry = NPC_MALFORMED_OOZE;    break;
+                case 2: SummonEntry = NPC_FORGED_IRON_DWARF; break;
+            }
+            m_creature->SummonCreature(SummonEntry, PipeLoc[SummonPipe].x, PipeLoc[SummonPipe].y, PipeLoc[SummonPipe].z, 0.0f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 30000);
+            m_uiSummon_Timer = 20000;
+        }
+        else
+            m_uiSummon_Timer -= uiDiff;
+
+        if (!m_bIsFrenzy && m_uiFrenzy_Timer < uiDiff)
+        {
+            DoCast(m_creature, SPELL_FRENZY);
+            m_bIsFrenzy = true;
+            m_uiFrenzy_Timer = 0;
+        }
+        else
+            m_uiFrenzy_Timer -= uiDiff;
+
         DoMeleeAttackIfReady();
     }
 };

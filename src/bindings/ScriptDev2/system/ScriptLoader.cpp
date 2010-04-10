@@ -346,21 +346,25 @@ extern void AddSC_boss_xt002();
 extern void AddSC_boss_yoggsaron();
 extern void AddSC_ulduar_teleporter();
 extern void AddSC_instance_ulduar();
+
 extern void AddSC_boss_ingvar();                            //utgarde_keep
 extern void AddSC_boss_keleseth();
 extern void AddSC_boss_skarvald_and_dalronn();
 extern void AddSC_instance_utgarde_keep();
 extern void AddSC_utgarde_keep();
+
 extern void AddSC_boss_gortok();							//utgarde_pinnacle
 extern void AddSC_boss_skadi();
 extern void AddSC_boss_svala();
 extern void AddSC_boss_ymiron();
 extern void AddSC_instance_pinnacle();
+
 extern void AddSC_instance_violet_hold();                   //violet_hold
 extern void AddSC_violet_hold();
+
 extern void AddSC_instance_forge_of_souls();                //forge_of_souls
 extern void AddSC_boss_bronjahm();
-extern void AddSC_npc_corrupted_soul();
+extern void AddSC_boss_devourer_of_souls();
 
 extern void AddSC_borean_tundra();
 extern void AddSC_dalaran();
@@ -760,22 +764,27 @@ void AddScripts()
     AddSC_boss_ormorok();
     AddSC_boss_telestra();
     AddSC_instance_nexus();
+
     AddSC_boss_sartharion();                                //obsidian_sanctum
     AddSC_instance_obsidian_sanctum();
+
 	AddSC_instance_vault_of_archavon();             		//vault_of_archavon
 	AddSC_boss_koralon();
 	AddSC_boss_emalon();
 	AddSC_boss_archavon();
+
     AddSC_boss_bjarngrim();                                 //Ulduar, halls_of_lightning
     AddSC_boss_ionar();
     AddSC_boss_loken();
     AddSC_boss_volkhan();
     AddSC_instance_halls_of_lightning();
+
     AddSC_boss_maiden_of_grief();                           //Ulduar, halls_of_stone
     AddSC_boss_sjonnir();
     AddSC_halls_of_stone();
 	AddSC_boss_krystallus();
     AddSC_instance_halls_of_stone();
+
     AddSC_boss_algalon(); 									//ulduar
     AddSC_boss_asembly_of_iron();
     AddSC_boss_auriaya();
@@ -792,22 +801,26 @@ void AddScripts()
     AddSC_boss_xt002();
     AddSC_boss_yoggsaron();
     AddSC_ulduar_teleporter();
-    AddSC_instance_ulduar(); 
+    AddSC_instance_ulduar();
+
     AddSC_boss_ingvar();                                    //utgarde_keep
     AddSC_boss_keleseth();
     AddSC_boss_skarvald_and_dalronn();
     AddSC_instance_utgarde_keep();
     AddSC_utgarde_keep();
+
     AddSC_boss_gortok();                                    //utgarde_pinnacle
     AddSC_boss_skadi();
     AddSC_boss_svala();
     AddSC_boss_ymiron();
     AddSC_instance_pinnacle();
+
     AddSC_instance_violet_hold();                           //violet_hold
     AddSC_violet_hold();
+
 	AddSC_instance_forge_of_souls();                        //forge_of_souls
     AddSC_boss_bronjahm();
-    AddSC_npc_corrupted_soul();
+	AddSC_boss_devourer_of_souls();
 
     AddSC_borean_tundra();
     AddSC_dalaran();

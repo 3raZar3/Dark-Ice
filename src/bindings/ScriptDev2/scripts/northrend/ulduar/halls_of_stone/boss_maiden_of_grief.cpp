@@ -1,4 +1,4 @@
-/* Copyright (C) 2006 - 2010 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+/* Copyright (C) 2006 - 2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -85,7 +85,7 @@ struct MANGOS_DLL_DECL boss_maiden_of_griefAI : public ScriptedAI
 
     void KilledUnit(Unit* pVictim)
     {
-        switch(urand(0, 3))
+        switch(rand()%4)
         {
             case 0: DoScriptText(SAY_SLAY_1, m_creature); break;
             case 1: DoScriptText(SAY_SLAY_2, m_creature); break;
@@ -119,7 +119,7 @@ struct MANGOS_DLL_DECL boss_maiden_of_griefAI : public ScriptedAI
         if (m_uiPillarWoe_Timer < uiDiff)
         {
             if (Unit* pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
-                DoCast(pTarget, m_bIsRegularMode ? SPELL_PILLAR_OF_WOE : SPELL_PILLAR_OF_WOE_H);
+                DoCast(pTarget, m_bIsRegularMode ? SPELL_PILLAR_OF_WOE_H : SPELL_PILLAR_OF_WOE);
             m_uiPillarWoe_Timer = 9000 + rand()%4000;
         }
         else
@@ -127,7 +127,7 @@ struct MANGOS_DLL_DECL boss_maiden_of_griefAI : public ScriptedAI
 
         if (m_uiStorm_Timer < uiDiff)
         {
-            DoCast(m_creature, m_bIsRegularMode ? SPELL_STORM_OF_GRIEF : SPELL_STORM_OF_GRIEF_H);
+            DoCast(m_creature, m_bIsRegularMode ? SPELL_STORM_OF_GRIEF_H : SPELL_STORM_OF_GRIEF);
             m_uiStorm_Timer = 20000 + rand()%5000;
         }
         else
@@ -136,7 +136,7 @@ struct MANGOS_DLL_DECL boss_maiden_of_griefAI : public ScriptedAI
         if (m_uiShockSorrow_Timer < uiDiff)
         {
             DoScriptText(SAY_STUN, m_creature);
-            DoCast(m_creature->getVictim(), m_bIsRegularMode ? SPELL_SHOCK_OF_SORROW : SPELL_SHOCK_OF_SORROW_H);
+            DoCast(m_creature->getVictim(), m_bIsRegularMode ? SPELL_SHOCK_OF_SORROW_H : SPELL_SHOCK_OF_SORROW);
             m_uiShockSorrow_Timer = 20000 + rand()%5000;
         }
         else

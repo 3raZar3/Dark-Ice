@@ -1,4 +1,4 @@
-/* Copyright (C) 2006 - 2010 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+/* Copyright (C) 2006 - 2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -131,16 +131,6 @@ static Locations SpawnLoc[]=
 {
     {946.992, 397.016, 208.374},
     {960.748, 382.944, 208.374},
-    {955.530518, 384.617, 205.994370},
-    {946.831055, 388.023224, 205.994370},
-    {957.075, 385.487, 205.994370},
-    {947.219971, 395.817505, 205.994370},
-    {946.992, 397.016, 208.374},
-    {960.748, 382.944, 208.374},
-    {955.530518, 384.617, 205.994370},
-    {946.831055, 388.023224, 205.994370},
-    {957.075, 385.487, 205.994370},
-    {947.219971, 395.817505, 205.994370},
 };
 
 
@@ -201,12 +191,12 @@ struct MANGOS_DLL_DECL mob_tribuna_controllerAI : public ScriptedAI
                     if (uiPositionCounter == 0)
                     {
                         (*itr)->GetMap()->CreatureRelocation((*itr), 927.265, 333.200, 218.780, (*itr)->GetOrientation());
-                        (*itr)->SendMonsterMove(927.265, 333.200, 218.780, SPLINETYPE_NORMAL, (*itr)->GetSplineFlags(), 1);
+                        (*itr)->MonsterMove(927.265, 333.200, 218.780, 1);
                     }
                     else
                     {
                         (*itr)->GetMap()->CreatureRelocation((*itr), 921.745, 328.076, 218.780, (*itr)->GetOrientation());
-                        (*itr)->SendMonsterMove(921.745, 328.076, 218.780, SPLINETYPE_NORMAL, (*itr)->GetSplineFlags(), 1);
+                        (*itr)->MonsterMove(921.745, 328.076, 218.780, 1);
                     }
                 }
                 ++uiPositionCounter;
@@ -226,7 +216,7 @@ struct MANGOS_DLL_DECL mob_tribuna_controllerAI : public ScriptedAI
                     if (!m_lKaddrakGUIDList.empty())
                         for(std::list<Creature*>::iterator itr = m_lKaddrakGUIDList.begin(); itr != m_lKaddrakGUIDList.end(); ++itr)
                             if ((*itr)->isAlive())
-                                (*itr)->CastSpell(pTarget, m_bIsRegularMode ? SPELL_GLARE_OF_THE_TRIBUNAL : SPELL_GLARE_OF_THE_TRIBUNAL_H, true);
+                                (*itr)->CastSpell(pTarget, m_bIsRegularMode ? SPELL_GLARE_OF_THE_TRIBUNAL_H : SPELL_GLARE_OF_THE_TRIBUNAL, true);
 
                 m_uiKaddrak_Encounter_timer = 1500;
             }
@@ -242,7 +232,7 @@ struct MANGOS_DLL_DECL mob_tribuna_controllerAI : public ScriptedAI
                     {
                         pTemp->SetDisplayId(11686);
                         pTemp->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-                        pTemp->CastSpell(pTarget, m_bIsRegularMode ? SPELL_DARK_MATTER : SPELL_DARK_MATTER_H, true);
+                        pTemp->CastSpell(pTarget, m_bIsRegularMode ? SPELL_DARK_MATTER_H : SPELL_DARK_MATTER, true);
                     }
 
                 m_uiMarnak_Encounter_timer = 30000 + rand()%1000;
@@ -259,7 +249,7 @@ struct MANGOS_DLL_DECL mob_tribuna_controllerAI : public ScriptedAI
                     {
                         pTemp->SetDisplayId(11686);
                         pTemp->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-                        pTemp->CastSpell(pTemp, m_bIsRegularMode ? SPELL_SEARING_GAZE : SPELL_SEARING_GAZE_H, true);
+                        pTemp->CastSpell(pTemp, m_bIsRegularMode ? SPELL_SEARING_GAZE_H : SPELL_SEARING_GAZE, true);
                     }
 
                 m_uiAbedneum_Encounter_timer = 30000 + rand()%1000;
@@ -365,7 +355,7 @@ struct MANGOS_DLL_DECL npc_brann_hosAI : public npc_escortAI
 
     void KilledUnit(Unit* pVictim)
     {
-        switch(urand(0, 2))
+        switch(rand()%3)
         {
             case 0: DoScriptText(SAY_KILL_1, m_creature); break;
             case 1: DoScriptText(SAY_KILL_2, m_creature); break;
@@ -377,371 +367,368 @@ struct MANGOS_DLL_DECL npc_brann_hosAI : public npc_escortAI
     {
         DoScriptText(SAY_DEATH, m_creature);
     }
-     void DespawnDwarf()
-      {
-         if (m_lDwarfGUIDList.empty())
-              return;
-  
-         for(std::list<uint64>::iterator itr = m_lDwarfGUIDList.begin(); itr != m_lDwarfGUIDList.end(); ++itr)
-         {
-             if (Creature* pTemp = (Creature*)Unit::GetUnit(*m_creature, *itr))
-             {
-                 if (pTemp->isAlive())
-                     pTemp->ForcedDespawn();
-             }
-         }
- 
-         m_lDwarfGUIDList.clear();
-      }
 
-     void SpawnDwarf(uint32 uiType)
-     {
- 		uint32 SpawnCounter = 0;
-		uint32 i;
-         switch(uiType)
-         {
-             case 1:
-             {
-                 uint32 uiSpawnNumber = (m_bIsRegularMode ? 2 : 3);
-                 for (i = 0; i < uiSpawnNumber; ++i)
-			{
-			++SpawnCounter;
-                 m_creature->SummonCreature(NPC_DARK_RUNE_PROTECTOR, SpawnLoc[SpawnCounter].x, SpawnLoc[SpawnCounter].y, SpawnLoc[SpawnCounter].z, 0.0f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 30000);
-			++SpawnCounter;
-                 m_creature->SummonCreature(NPC_DARK_RUNE_STORMCALLER, SpawnLoc[SpawnCounter].x, SpawnLoc[SpawnCounter].y, SpawnLoc[SpawnCounter].z, 0.0f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 30000);
-			}
-                 break;
-             }
-             case 2:
-                 for (i = 0; i < 2; ++i)
-			{
-			++SpawnCounter;
-                     m_creature->SummonCreature(NPC_DARK_RUNE_STORMCALLER, SpawnLoc[SpawnCounter].x, SpawnLoc[SpawnCounter].y, SpawnLoc[SpawnCounter].z, 0.0f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 30000);
-			}
-                 break;
-             case 3:
-                 m_creature->SummonCreature(NPC_IRON_GOLEM_CUSTODIAN, SpawnLoc[1].x, SpawnLoc[1].y, SpawnLoc[1].z, 0.0f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 30000);
-                 break;
-         }
-     }
- 
-     void JustSummoned(Creature* pSummoned)
-     {
-         m_lDwarfGUIDList.push_back(pSummoned->GetGUID());
-         pSummoned->AddThreat(m_creature, 0.0f);
-         pSummoned->AI()->AttackStart(m_creature);
-     }
- 
-     void JumpToNextStep(uint32 uiTimer)
-     {
-         m_uiPhase_timer = uiTimer;
-         m_uiStep++;
-     }
- 
-     void UpdateEscortAI(const uint32 uiDiff)
-     {
-         if (m_uiPhase_timer < uiDiff)
-         {
-             switch(m_uiStep)
-             {
-                 case 0: // unused
-                     break;
-                 case 1:
-                 	if (m_pInstance)
-                     {
-                         if (m_pInstance->GetData(TYPE_BRANN) != NOT_STARTED)
-                             return;
- 
-                         m_pInstance->SetData(TYPE_BRANN, IN_PROGRESS);
-                     }
-                     m_bIsBattle = false;
-                     DoScriptText(SAY_ESCORT_START, m_creature);
-                     JumpToNextStep(0);
-                     break;
-                 case 3:
-                     SetEscortPaused(false);
-                     JumpToNextStep(0);
-                     break;
-                 case 5:
-                 	if (m_pInstance)
-                         if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_ABEDNEUM))))
-                             DoScriptText(SAY_EVENT_INTRO_3_ABED, pTemp);
-                     JumpToNextStep(8500);
-                     break;
-                 case 6:
-                     DoScriptText(SAY_EVENT_A_1, m_creature);
-                     JumpToNextStep(6500);
-                     break;
-                 case 7:
-                 	if (m_pInstance)
-                         if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_KADDRAK))))
-                             DoScriptText(SAY_EVENT_A_2_KADD, pTemp);
-                     JumpToNextStep(12500);
-                     break;
-                 case 8:
-                     DoScriptText(SAY_EVENT_A_3, m_creature);
-                     if (m_pInstance)
-                 	    m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_KADDRAK));
-                 	if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_uiControllerGUID)))
-                 	    ((mob_tribuna_controllerAI*)pTemp->AI())->m_bIsActivateKaddrak = true;
-                     JumpToNextStep(5000);
-                     break;
-                 case 9:
-                 	SpawnDwarf(1);
-                     JumpToNextStep(20000);
-                     break;
-                 case 10:
-                 	DoScriptText(SAY_EVENT_B_1, m_creature);
-                     JumpToNextStep(6000);
-                     break;
-                 case 11:
-                 	if (m_pInstance)
-                         if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_MARNAK))))
-                             DoScriptText(SAY_EVENT_B_2_MARN, pTemp);
-                 	SpawnDwarf(1);
-                     JumpToNextStep(20000);
-                     break;
-                 case 12:
-                     DoScriptText(SAY_EVENT_B_3, m_creature);
-                     if (m_pInstance)
-                         m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_MARNAK));
-                 	if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_uiControllerGUID)))
-                 	    ((mob_tribuna_controllerAI*)pTemp->AI())->m_bIsActivateMarnak = true;
-                     JumpToNextStep(10000);
-                     break;
-                 case 13:
-                 	SpawnDwarf(1);
-                     JumpToNextStep(10000);
-                     break;
-                 case 14:
-                 	SpawnDwarf(2);
-                     JumpToNextStep(20000);
-                     break;
-                 case 15:
-                     DoScriptText(SAY_EVENT_C_1, m_creature);
-                 	SpawnDwarf(1);
-                     JumpToNextStep(10000);
-                     break;
-                 case 16:
-                 	SpawnDwarf(2);
-                     JumpToNextStep(20000);
-                     break;
-                 case 17:
-                 	if (m_pInstance)
-                         if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_ABEDNEUM))))
-                             DoScriptText(SAY_EVENT_C_2_ABED, pTemp);
-                 	SpawnDwarf(1);
-                     JumpToNextStep(20000);
-                     break;
-                 case 18:
-                     DoScriptText(SAY_EVENT_C_3, m_creature);
-                     if (m_pInstance)
-                         m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_ABEDNEUM));
-                 	if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_uiControllerGUID)))
-                 	    ((mob_tribuna_controllerAI*)pTemp->AI())->m_bIsActivateAbedneum = true;
-                     JumpToNextStep(5000);
-                     break;
-                 case 19:
-                 	SpawnDwarf(2);
-                     JumpToNextStep(10000);
-                     break;
-                 case 20:
-                 	SpawnDwarf(1);
-                     JumpToNextStep(15000);
-                     break;
-                 case 21:
-                     DoScriptText(SAY_EVENT_D_1, m_creature);
-                 	SpawnDwarf(3);
-                     JumpToNextStep(20000);
-                     break;
-                 case 22:
-                 	if (m_pInstance)
+    void DespawnDwarf()
+    {
+        if (m_lDwarfGUIDList.empty())
+            return;
+
+        for(std::list<uint64>::iterator itr = m_lDwarfGUIDList.begin(); itr != m_lDwarfGUIDList.end(); ++itr)
+        {
+            if (Creature* pTemp = (Creature*)Unit::GetUnit(*m_creature, *itr))
+            {
+                if (pTemp->isAlive())
+                    pTemp->ForcedDespawn();
+            }
+        }
+
+        m_lDwarfGUIDList.clear();
+    }
+
+    void SpawnDwarf(uint32 uiType)
+    {
+        switch(uiType)
+        {
+            case 1:
+            {
+                uint32 uiSpawnNumber = (m_bIsRegularMode ? 3 : 2);
+                for (uint8 i = 0; i < uiSpawnNumber; ++i)
+                    m_creature->SummonCreature(NPC_DARK_RUNE_PROTECTOR, SpawnLoc[0].x, SpawnLoc[0].y, SpawnLoc[0].z, 0.0f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 30000);
+                m_creature->SummonCreature(NPC_DARK_RUNE_STORMCALLER, SpawnLoc[0].x, SpawnLoc[0].y, SpawnLoc[0].z, 0.0f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 30000);
+                break;
+            }
+            case 2:
+                for (uint8 i = 0; i < 2; ++i)
+                    m_creature->SummonCreature(NPC_DARK_RUNE_STORMCALLER, SpawnLoc[1].x, SpawnLoc[1].y, SpawnLoc[1].z, 0.0f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 30000);
+                break;
+            case 3:
+                m_creature->SummonCreature(NPC_IRON_GOLEM_CUSTODIAN, SpawnLoc[1].x, SpawnLoc[1].y, SpawnLoc[1].z, 0.0f, TEMPSUMMON_CORPSE_TIMED_DESPAWN, 30000);
+                break;
+        }
+    }
+
+    void JustSummoned(Creature* pSummoned)
+    {
+        m_lDwarfGUIDList.push_back(pSummoned->GetGUID());
+        pSummoned->AddThreat(m_creature, 0.0f);
+        pSummoned->AI()->AttackStart(m_creature);
+    }
+
+    void JumpToNextStep(uint32 uiTimer)
+    {
+        m_uiPhase_timer = uiTimer;
+        m_uiStep++;
+    }
+
+    void UpdateEscortAI(const uint32 uiDiff)
+    {
+        if (m_uiPhase_timer < uiDiff)
+        {
+            switch(m_uiStep)
+            {
+                case 0: // unused
+                    break;
+                case 1:
+                    if (m_pInstance)
+                    {
+                        if (m_pInstance->GetData(TYPE_BRANN) != NOT_STARTED)
+                            return;
+
+                        m_pInstance->SetData(TYPE_BRANN, IN_PROGRESS);
+                    }
+                    m_bIsBattle = false;
+                    DoScriptText(SAY_ESCORT_START, m_creature);
+                    JumpToNextStep(0);
+                    break;
+                case 3:
+                    SetEscortPaused(false);
+                    JumpToNextStep(0);
+                    break;
+                case 5:
+                    if (m_pInstance)
                         if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_ABEDNEUM))))
-                             DoScriptText(SAY_EVENT_D_2_ABED, pTemp);
-                 	SpawnDwarf(1);
-                     JumpToNextStep(5000);
-                     break;
-                 case 23:
-                 	SpawnDwarf(2);
-                     JumpToNextStep(15000);
-                     break;
-                 case 24:
-                     DoScriptText(SAY_EVENT_D_3, m_creature);
-                 	SpawnDwarf(3);
-                     JumpToNextStep(5000);
-                     break;
-                 case 25:
-                 	SpawnDwarf(1);
-                     JumpToNextStep(5000);
-                     break;
-                 case 26:
-                 	SpawnDwarf(2);
-                     JumpToNextStep(10000);
-                     break;
-                 case 27:
-                 	if (m_pInstance)
-                         if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_ABEDNEUM))))
-                             DoScriptText(SAY_EVENT_D_4_ABED, pTemp);
-                 	SpawnDwarf(1);
-                     JumpToNextStep(25000);
-                     break;
-                 case 28:
-                     DoScriptText(SAY_EVENT_END_01, m_creature);
-                     m_creature->SetStandState(UNIT_STAND_STATE_STAND);
-                     if (m_pInstance)
-                         m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_SKY_FLOOR));
-                     if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_uiControllerGUID)))
-                         pTemp->DealDamage(pTemp, pTemp->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
-                     m_bIsBattle = true;
-                     SetEscortPaused(false);
-                     JumpToNextStep(6500);
-                     break;
-                 case 29:
-                     DoScriptText(SAY_EVENT_END_02, m_creature);
-                     JumpToNextStep(5500);
-                     break;
-                 case 30:
-                 	if (m_pInstance)
-                         if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_ABEDNEUM))))
-                             DoScriptText(SAY_EVENT_END_03_ABED, pTemp);
-                     JumpToNextStep(8500);
-                     break;
-                 case 31:
-                     DoScriptText(SAY_EVENT_END_04, m_creature);
-                     JumpToNextStep(11500);
-                     break;
-                 case 32:
-                 	if (m_pInstance)
-                         if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_ABEDNEUM))))
-                             DoScriptText(SAY_EVENT_END_05_ABED, pTemp);
-                     JumpToNextStep(11500);
-                     break;
-                 case 33:
-                     DoScriptText(SAY_EVENT_END_06, m_creature);
-                     JumpToNextStep(4500);
-                     break;
-                 case 34:
-                 	if (m_pInstance)
-                         if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_ABEDNEUM))))
-                             DoScriptText(SAY_EVENT_END_07_ABED, pTemp);
-                     JumpToNextStep(22500);
-                     break;
-                 case 35:
-                     DoScriptText(SAY_EVENT_END_08, m_creature);
-                     JumpToNextStep(7500);
-                     break;
-                 case 36:
-                 	if (m_pInstance)
-                         if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_KADDRAK))))
-                             DoScriptText(SAY_EVENT_END_09_KADD, pTemp);
-                     JumpToNextStep(18500);
-                     break;
-                 case 37:
-                     DoScriptText(SAY_EVENT_END_10, m_creature);
-                     JumpToNextStep(5500);
-                     break;
-                 case 38:
-                 	if (m_pInstance)
-                         if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_KADDRAK))))
-                             DoScriptText(SAY_EVENT_END_11_KADD, pTemp);
-                     JumpToNextStep(20500);
-                     break;
-                 case 39:
-                     DoScriptText(SAY_EVENT_END_12, m_creature);
-                     JumpToNextStep(2500);
-                     break;
-                 case 40:
-                 	if (m_pInstance)
-                         if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_KADDRAK))))
-                             DoScriptText(SAY_EVENT_END_13_KADD, pTemp);
-                     JumpToNextStep(19500);
-                     break;
-                 case 41:
-                     DoScriptText(SAY_EVENT_END_14, m_creature);
-                     JumpToNextStep(10500);
-                     break;
-                 case 42:
-                 	if (m_pInstance)
-                         if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_MARNAK))))
-                             DoScriptText(SAY_EVENT_END_15_MARN, pTemp);
-                     JumpToNextStep(6500);
-                     break;
-                 case 43:
-                     DoScriptText(SAY_EVENT_END_16, m_creature);
-                     JumpToNextStep(6500);
-                     break;
-                 case 44:
-                 	if (m_pInstance)
-                         if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_MARNAK))))
-                             DoScriptText(SAY_EVENT_END_17_MARN, pTemp);
-                     JumpToNextStep(25500);
-                     break;
-                 case 45:
-                     DoScriptText(SAY_EVENT_END_18, m_creature);
-                     JumpToNextStep(23500);
-                     break;
-                 case 46:
-                 	if (m_pInstance)
-                         if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_MARNAK))))
-                             DoScriptText(SAY_EVENT_END_19_MARN, pTemp);
-                     JumpToNextStep(3500);
-                     break;
-                 case 47:
-                     DoScriptText(SAY_EVENT_END_20, m_creature);
-                     JumpToNextStep(8500);
-                     break;
-                 case 48:
-                 	if (m_pInstance)
-                         if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_ABEDNEUM))))
-                             DoScriptText(SAY_EVENT_END_21_ABED, pTemp);
-                     JumpToNextStep(5500);
-                     break;
-                 case 49:
-                 {
-                     if (m_pInstance)
-                     {
-                         m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_KADDRAK));
-                         m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_MARNAK));
-                         m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_ABEDNEUM));
-                         m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_SKY_FLOOR));
-                         m_pInstance->SetData(TYPE_BRANN, DONE);
-                     }
+                            DoScriptText(SAY_EVENT_INTRO_3_ABED, pTemp);
+                    JumpToNextStep(8500);
+                    break;
+                case 6:
+                    DoScriptText(SAY_EVENT_A_1, m_creature);
+                    JumpToNextStep(6500);
+                    break;
+                case 7:
+                    if (m_pInstance)
+                        if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_KADDRAK))))
+                            DoScriptText(SAY_EVENT_A_2_KADD, pTemp);
+                    JumpToNextStep(12500);
+                    break;
+                case 8:
+                    DoScriptText(SAY_EVENT_A_3, m_creature);
+                    if (m_pInstance)
+                        m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_KADDRAK));
+                    if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_uiControllerGUID)))
+                        ((mob_tribuna_controllerAI*)pTemp->AI())->m_bIsActivateKaddrak = true;
+                    JumpToNextStep(5000);
+                    break;
+                case 9:
+                    SpawnDwarf(1);
+                    JumpToNextStep(20000);
+                    break;
+                case 10:
+                    DoScriptText(SAY_EVENT_B_1, m_creature);
+                    JumpToNextStep(6000);
+                    break;
+                case 11:
+                    if (m_pInstance)
+                        if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_MARNAK))))
+                            DoScriptText(SAY_EVENT_B_2_MARN, pTemp);
+                    SpawnDwarf(1);
+                    JumpToNextStep(20000);
+                    break;
+                case 12:
+                    DoScriptText(SAY_EVENT_B_3, m_creature);
+                    if (m_pInstance)
+                        m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_MARNAK));
+                    if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_uiControllerGUID)))
+                        ((mob_tribuna_controllerAI*)pTemp->AI())->m_bIsActivateMarnak = true;
+                    JumpToNextStep(10000);
+                    break;
+                case 13:
+                    SpawnDwarf(1);
+                    JumpToNextStep(10000);
+                    break;
+                case 14:
+                    SpawnDwarf(2);
+                    JumpToNextStep(20000);
+                    break;
+                case 15:
+                    DoScriptText(SAY_EVENT_C_1, m_creature);
+                    SpawnDwarf(1);
+                    JumpToNextStep(10000);
+                    break;
+                case 16:
+                    SpawnDwarf(2);
+                    JumpToNextStep(20000);
+                    break;
+                case 17:
+                    if (m_pInstance)
+                        if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_ABEDNEUM))))
+                            DoScriptText(SAY_EVENT_C_2_ABED, pTemp);
+                    SpawnDwarf(1);
+                    JumpToNextStep(20000);
+                    break;
+                case 18:
+                    DoScriptText(SAY_EVENT_C_3, m_creature);
+                    if (m_pInstance)
+                        m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_ABEDNEUM));
+                    if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_uiControllerGUID)))
+                        ((mob_tribuna_controllerAI*)pTemp->AI())->m_bIsActivateAbedneum = true;
+                    JumpToNextStep(5000);
+                    break;
+                case 19:
+                    SpawnDwarf(2);
+                    JumpToNextStep(10000);
+                    break;
+                case 20:
+                    SpawnDwarf(1);
+                    JumpToNextStep(15000);
+                    break;
+                case 21:
+                    DoScriptText(SAY_EVENT_D_1, m_creature);
+                    SpawnDwarf(3);
+                    JumpToNextStep(20000);
+                    break;
+                case 22:
+                    if (m_pInstance)
+                        if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_ABEDNEUM))))
+                            DoScriptText(SAY_EVENT_D_2_ABED, pTemp);
+                    SpawnDwarf(1);
+                    JumpToNextStep(5000);
+                    break;
+                case 23:
+                    SpawnDwarf(2);
+                    JumpToNextStep(15000);
+                    break;
+                case 24:
+                    DoScriptText(SAY_EVENT_D_3, m_creature);
+                    SpawnDwarf(3);
+                    JumpToNextStep(5000);
+                    break;
+                case 25:
+                    SpawnDwarf(1);
+                    JumpToNextStep(5000);
+                    break;
+                case 26:
+                    SpawnDwarf(2);
+                    JumpToNextStep(10000);
+                    break;
+                case 27:
+                    if (m_pInstance)
+                        if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_ABEDNEUM))))
+                            DoScriptText(SAY_EVENT_D_4_ABED, pTemp);
+                    SpawnDwarf(1);
+                    JumpToNextStep(10000);
+                    break;
+                case 28:
+                    DoScriptText(SAY_EVENT_END_01, m_creature);
+                    m_creature->SetStandState(UNIT_STAND_STATE_STAND);
+                    if (m_pInstance)
+                        m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_SKY_FLOOR));
+                    if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_uiControllerGUID)))
+                        pTemp->DealDamage(pTemp, pTemp->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+                    m_bIsBattle = true;
+                    SetEscortPaused(false);
+                    JumpToNextStep(3500);
+                    break;
+                case 29:
+                    DoScriptText(SAY_EVENT_END_02, m_creature);
+                    JumpToNextStep(3500);
+                    break;
+                case 30:
+                    if (m_pInstance)
+                        if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_ABEDNEUM))))
+                            DoScriptText(SAY_EVENT_END_03_ABED, pTemp);
+                    JumpToNextStep(4500);
+                    break;
+                case 31:
+                    DoScriptText(SAY_EVENT_END_04, m_creature);
+                    JumpToNextStep(6500);
+                    break;
+                case 32:
+                    if (m_pInstance)
+                        if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_ABEDNEUM))))
+                            DoScriptText(SAY_EVENT_END_05_ABED, pTemp);
+                    JumpToNextStep(6500);
+                    break;
+                case 33:
+                    DoScriptText(SAY_EVENT_END_06, m_creature);
+                    JumpToNextStep(2500);
+                    break;
+                case 34:
+                    if (m_pInstance)
+                        if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_ABEDNEUM))))
+                            DoScriptText(SAY_EVENT_END_07_ABED, pTemp);
+                    JumpToNextStep(10500);
+                    break;
+                case 35:
+                    DoScriptText(SAY_EVENT_END_08, m_creature);
+                    JumpToNextStep(4500);
+                    break;
+                case 36:
+                    if (m_pInstance)
+                        if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_KADDRAK))))
+                            DoScriptText(SAY_EVENT_END_09_KADD, pTemp);
+                    JumpToNextStep(7500);
+                    break;
+                case 37:
+                    DoScriptText(SAY_EVENT_END_10, m_creature);
+                    JumpToNextStep(2500);
+                    break;
+                case 38:
+                    if (m_pInstance)
+                        if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_KADDRAK))))
+                            DoScriptText(SAY_EVENT_END_11_KADD, pTemp);
+                    JumpToNextStep(10500);
+                    break;
+                case 39:
+                    DoScriptText(SAY_EVENT_END_12, m_creature);
+                    JumpToNextStep(2500);
+                    break;
+                case 40:
+                    if (m_pInstance)
+                        if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_KADDRAK))))
+                            DoScriptText(SAY_EVENT_END_13_KADD, pTemp);
+                    JumpToNextStep(9500);
+                    break;
+                case 41:
+                    DoScriptText(SAY_EVENT_END_14, m_creature);
+                    JumpToNextStep(5500);
+                    break;
+                case 42:
+                    if (m_pInstance)
+                        if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_MARNAK))))
+                            DoScriptText(SAY_EVENT_END_15_MARN, pTemp);
+                    JumpToNextStep(3500);
+                    break;
+                case 43:
+                    DoScriptText(SAY_EVENT_END_16, m_creature);
+                    JumpToNextStep(3500);
+                    break;
+                case 44:
+                    if (m_pInstance)
+                        if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_MARNAK))))
+                            DoScriptText(SAY_EVENT_END_17_MARN, pTemp);
+                    JumpToNextStep(11500);
+                    break;
+                case 45:
+                    DoScriptText(SAY_EVENT_END_18, m_creature);
+                    JumpToNextStep(10500);
+                    break;
+                case 46:
+                    if (m_pInstance)
+                        if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_MARNAK))))
+                            DoScriptText(SAY_EVENT_END_19_MARN, pTemp);
+                    JumpToNextStep(2500);
+                    break;
+                case 47:
+                    DoScriptText(SAY_EVENT_END_20, m_creature);
+                    JumpToNextStep(4500);
+                    break;
+                case 48:
+                    if (m_pInstance)
+                        if (Creature* pTemp = ((Creature*)Unit::GetUnit((*m_creature), m_pInstance->GetData64(DATA_ABEDNEUM))))
+                            DoScriptText(SAY_EVENT_END_21_ABED, pTemp);
+                    JumpToNextStep(3500);
+                    break;
+                case 49:
+                {
+                    if (m_pInstance)
+                    {
+                        m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_KADDRAK));
+                        m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_MARNAK));
+                        m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_ABEDNEUM));
+                        m_pInstance->DoUseDoorOrButton(m_pInstance->GetData64(DATA_GO_SKY_FLOOR));
+                        m_pInstance->SetData(TYPE_BRANN, DONE);
+                    }
+
+                    Player* pPlayer = GetPlayerForEscort();
+                    if (pPlayer)
+                        pPlayer->GroupEventHappens(QUEST_HALLS_OF_STONE, m_creature);
+
+                    m_creature->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
+                    m_creature->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER);
+
+                    JumpToNextStep(180000);
+                    break;
+                }
+                case 50:
+                    SetEscortPaused(false);
+                    break;
+            }
+        }
+        else m_uiPhase_timer -= uiDiff;
  
-                     Player* pPlayer = GetPlayerForEscort();
-                     if (pPlayer)
-                         pPlayer->GroupEventHappens(QUEST_HALLS_OF_STONE, m_creature);
- 
-                     m_creature->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_GOSSIP);
-                     m_creature->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER);
- 		        m_pInstance->GetData64(m_bIsRegularMode ? DATA_GO_CHEST :  DATA_GO_CHEST_H); //  heroic and normal
-                     JumpToNextStep(180000);
-                     break;
-                 }
-                 case 50:
-                     SetEscortPaused(true);
-                 break;
-             }
-         }
-         else m_uiPhase_timer -= uiDiff;
-  
-         if (!m_bIsLowHP && (m_creature->GetHealth()*100 / m_creature->GetMaxHealth()) <= 30)
-         {
-             DoScriptText(SAY_LOW_HEALTH, m_creature);
-             m_bIsLowHP = true;
-         }
-         else if (m_bIsLowHP && (m_creature->GetHealth()*100 / m_creature->GetMaxHealth()) > 30)
-             m_bIsLowHP = false;
-	}
+        if (!m_bIsLowHP && (m_creature->GetHealth()*100 / m_creature->GetMaxHealth()) <= 30)
+        {
+            DoScriptText(SAY_LOW_HEALTH, m_creature);
+            m_bIsLowHP = true;
+        }
+        else if (m_bIsLowHP && (m_creature->GetHealth()*100 / m_creature->GetMaxHealth()) > 30)
+            m_bIsLowHP = false;
+    }
 };
 
 bool GossipHello_npc_brann_hos(Player* pPlayer, Creature* pCreature)
 {
-ScriptedInstance* m_pInstance = ((ScriptedInstance*)pCreature->GetInstanceData());
+        ScriptedInstance* m_pInstance;
+        m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+
     if (pCreature->isQuestGiver())
         pPlayer->PrepareQuestMenu(pCreature->GetGUID());
 
-		pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_START, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
-		pPlayer->SEND_GOSSIP_MENU(TEXT_ID_START, pCreature->GetGUID());
+if (m_pInstance->GetData(TYPE_BRANN) != DONE)
+    pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_START, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
+
+    pPlayer->SEND_GOSSIP_MENU(TEXT_ID_START, pCreature->GetGUID());
+
     //pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM_PROGRESS, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+2);
     //pPlayer->SEND_GOSSIP_MENU(TEXT_ID_PROGRESS, pCreature->GetGUID());
     return true;
@@ -755,6 +742,7 @@ bool GossipSelect_npc_brann_hos(Player* pPlayer, Creature* pCreature, uint32 uiS
         ((npc_brann_hosAI*)pCreature->AI())->m_uiStep = 1;
         ((npc_brann_hosAI*)pCreature->AI())->Start(true, false, pPlayer->GetGUID());
     }
+
     return true;
 }
 

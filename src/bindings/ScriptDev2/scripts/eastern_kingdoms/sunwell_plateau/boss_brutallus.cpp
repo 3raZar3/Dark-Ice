@@ -131,14 +131,16 @@ struct MANGOS_DLL_DECL boss_brutallusAI : public ScriptedAI
             }
             m_uiLoveTimer = urand(15000, 23000);
         }
-        else m_uiLoveTimer -= uiDiff;
+        else
+            m_uiLoveTimer -= uiDiff;
 
         if (m_uiSlashTimer < uiDiff)
         {
             DoCastSpellIfCan(m_creature->getVictim(),SPELL_METEOR_SLASH);
             m_uiSlashTimer = 11000;
         }
-        else m_uiSlashTimer -= uiDiff;
+        else
+            m_uiSlashTimer -= uiDiff;
 
         if (m_uiStompTimer < uiDiff)
         {
@@ -152,7 +154,8 @@ struct MANGOS_DLL_DECL boss_brutallusAI : public ScriptedAI
 
             m_uiStompTimer = 30000;
         }
-        else m_uiStompTimer -= uiDiff;
+        else
+            m_uiStompTimer -= uiDiff;
 
         if (m_uiBurnTimer < uiDiff)
         {
@@ -161,13 +164,13 @@ struct MANGOS_DLL_DECL boss_brutallusAI : public ScriptedAI
             {
                 //so we get owner, in case unit was pet/totem/etc
                 if (Player* pPlayer = pTarget->GetCharmerOrOwnerPlayerOrPlayerItself())
-					DoCastSpellIfCan(pPlayer, SPELL_BURN);
-				//
-					//m_creature->CastSpell(pPlayer,46394,false);
+                    DoCastSpellIfCan(pPlayer, SPELL_BURN);
             }
 
             m_uiBurnTimer = 60000;
-        } else m_uiBurnTimer -= uiDiff;
+        }
+        else
+            m_uiBurnTimer -= uiDiff;
 
         if (m_uiBerserkTimer < uiDiff)
         {
@@ -176,7 +179,9 @@ struct MANGOS_DLL_DECL boss_brutallusAI : public ScriptedAI
                 DoScriptText(YELL_BERSERK, m_creature);
                 m_uiBerserkTimer = 20000;
             }
-        } else m_uiBerserkTimer -= uiDiff;
+        }
+        else
+            m_uiBerserkTimer -= uiDiff;
 
         DoMeleeAttackIfReady();
     }

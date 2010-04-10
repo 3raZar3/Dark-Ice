@@ -1,4 +1,4 @@
-/* Copyright (C) 2006 - 2010 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+/* Copyright (C) 2006 - 2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -52,13 +52,13 @@ struct MANGOS_DLL_DECL boss_krystallusAI : public ScriptedAI
     boss_krystallusAI(Creature *pCreature) : ScriptedAI(pCreature)
     {
         m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
-        m_bIsRegularDifficulty = pCreature->GetMap()->IsRegularDifficulty();
+        m_bIsRegularMode = pCreature->GetMap()->IsRegularDifficulty();
         Reset();
     }
 
     ScriptedInstance* m_pInstance;
 
-    bool m_bIsRegularDifficulty;
+    bool m_bIsRegularMode;
     bool m_bIsSlam;
 
     uint32 m_uiToss_Timer;
@@ -110,7 +110,7 @@ struct MANGOS_DLL_DECL boss_krystallusAI : public ScriptedAI
         if (m_uiToss_Timer < uiDiff)
         {
             if (Unit* pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
-                DoCast(pTarget, m_bIsRegularDifficulty ? SPELL_BOULDER_TOSS : SPELL_BOULDER_TOSS_H);
+                DoCast(pTarget, m_bIsRegularMode ? SPELL_BOULDER_TOSS_H : SPELL_BOULDER_TOSS);
             m_uiToss_Timer = 9000 + rand()%6000;
         }
         else
@@ -127,7 +127,7 @@ struct MANGOS_DLL_DECL boss_krystallusAI : public ScriptedAI
 
         if (m_uiStomp_Timer < uiDiff)
         {
-            DoCast(m_creature, m_bIsRegularDifficulty ? SPELL_STOMP : SPELL_STOMP_H);
+            DoCast(m_creature, m_bIsRegularMode ? SPELL_STOMP_H : SPELL_STOMP);
             m_uiStomp_Timer = 20000 + rand()%9000;
         }
         else
@@ -147,7 +147,7 @@ struct MANGOS_DLL_DECL boss_krystallusAI : public ScriptedAI
         {
             if (m_uiShatter_Timer < uiDiff)
             {
-                DoCast(m_creature, m_bIsRegularDifficulty ? SPELL_SHATTER : SPELL_SHATTER_H);
+                DoCast(m_creature, m_bIsRegularMode ? SPELL_SHATTER_H : SPELL_SHATTER);
                 m_bIsSlam = false;
                 m_uiShatter_Timer = 0;
             }
