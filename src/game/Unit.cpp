@@ -1740,6 +1740,20 @@ void Unit::DealMeleeDamage(CalcDamageInfo *damageInfo, bool durabilityLoss)
                alreadyDone.insert(*i);
                uint32 damage=(*i)->GetModifier()->m_amount;
                SpellEntry const *i_spellProto = (*i)->GetSpellProto();
+
+               //Spell power bonus
+               if (Unit* caster = (*i)->GetCaster())
+               {
+                   if (const SpellBonusEntry *bonus = sSpellMgr.GetSpellBonusData(i_spellProto->Id))
+                   {
+                       SpellEffectIndex effIndex = (*i)->GetEffIndex();
+                       int32 spellPower = caster->SpellBaseDamageBonus(GetSpellSchoolMask(i_spellProto)) + 
+                                          caster->SpellBaseDamageBonusForVictim(GetSpellSchoolMask(i_spellProto), this);
+                       damage = i_spellProto->CalculateSimpleValue(effIndex) + bonus->direct_damage * spellPower;
+                       int32 bpoints = (*i)->GetBasePoints();
+                       damage = caster->CalculateSpellDamage(pVictim, i_spellProto,effIndex, &bpoints);
+                    }
+               }
                //Calculate absorb resist ??? no data in opcode for this possibly unable to absorb or resist?
                //uint32 absorb;
                //uint32 resist;

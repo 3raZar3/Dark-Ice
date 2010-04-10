@@ -1358,6 +1358,35 @@ void WorldSession::HandleCancelTempEnchantmentOpcode(WorldPacket& recv_data)
     item->ClearEnchantment(TEMP_ENCHANTMENT_SLOT);
 }
 
+/**
+ * Handles the packet sent by the client when requesting information about item text.
+ *
+ * This function is called when player clicks on item which has some flag set
+ */
+
+void WorldSession::HandleItemTextQuery(WorldPacket & recv_data )
+{
+    uint64 itemGuid;
+    recv_data >> itemGuid;
+
+    sLog.outDebug("CMSG_ITEM_TEXT_QUERY item guid: %u", GUID_LOPART(itemGuid));
+
+    WorldPacket data(SMSG_ITEM_TEXT_QUERY_RESPONSE, (4+10));    // guess size
+
+    if(Item *item = _player->GetItemByGuid(itemGuid))
+    {
+        data << uint8(0);                                       // has text
+        data << uint64(itemGuid);                               // item guid
+        data << item->GetText();
+    }
+    else
+    {
+        data << uint8(1);                                       // no text
+    }
+    SendPacket(&data);
+}
+
+// Item refund system
 void WorldSession::HandleItemRefundInfoRequest(WorldPacket& recv_data)
 {
     sLog.outDebug("WORLD: CMSG_ITEM_REFUND_INFO_REQUEST");
@@ -1394,12 +1423,12 @@ void WorldSession::HandleItemRefundInfoRequest(WorldPacket& recv_data)
         if(!vItems || vItems->Empty())
             return;
 
-        size_t vendor_slot = vItems->FindItemSlot(item->GetEntry());
-        if (vendor_slot >= vItems->GetItemCount())
-            return;
+        VendorItem const* crItem;
+        for(VendorItemList::const_iterator i = vItems->m_items.begin(); i != vItems->m_items.end(); ++i )
+            if((*i)->item == item->GetEntry())
+                crItem = (*i);
 
-        VendorItem const* crItem = vItems->m_items[vendor_slot];
-        if(crItem->ExtendedCost)
+        if(crItem && crItem->ExtendedCost)
         {
             ItemExtendedCostEntry const* iece = sItemExtendedCostStore.LookupEntry(crItem->ExtendedCost);
             if (!iece)
@@ -1413,7 +1442,7 @@ void WorldSession::HandleItemRefundInfoRequest(WorldPacket& recv_data)
                 ExtendedCostCount[i] = iece->reqitemcount[i];
             }
         }
-    }	
+    }
 
     WorldPacket data(SMSG_ITEM_REFUND_INFO_RESPONSE, 68); // guess size
     data << guid;                                         // item guid
@@ -1427,34 +1456,6 @@ void WorldSession::HandleItemRefundInfoRequest(WorldPacket& recv_data)
     }
     data << uint32(0);
     data << uint32(playedTime);                           // buy time in played time
-    SendPacket(&data);
-}
-
-/**
- * Handles the packet sent by the client when requesting information about item text.
- *
- * This function is called when player clicks on item which has some flag set
- */
-
-void WorldSession::HandleItemTextQuery(WorldPacket & recv_data )
-{
-    uint64 itemGuid;
-    recv_data >> itemGuid;
-
-    sLog.outDebug("CMSG_ITEM_TEXT_QUERY item guid: %u", GUID_LOPART(itemGuid));
-
-    WorldPacket data(SMSG_ITEM_TEXT_QUERY_RESPONSE, (4+10));    // guess size
-
-    if(Item *item = _player->GetItemByGuid(itemGuid))
-    {
-        data << uint8(0);                                       // has text
-        data << uint64(itemGuid);                               // item guid
-        data << item->GetText();
-    }
-    else
-    {
-        data << uint8(1);                                       // no text
-    }
     SendPacket(&data);
 }
 
@@ -1495,12 +1496,12 @@ void WorldSession::HandleItemRefund(WorldPacket& recv_data)
         if(!vItems || vItems->Empty())
             return;
 
-        size_t vendor_slot = vItems->FindItemSlot(item->GetEntry());
-        if (vendor_slot >= vItems->GetItemCount())
-            return;
+        VendorItem const* crItem;
+        for(VendorItemList::const_iterator i = vItems->m_items.begin(); i != vItems->m_items.end(); ++i )
+            if((*i)->item == item->GetEntry())
+                crItem = (*i);
 
-        VendorItem const* crItem = vItems->m_items[vendor_slot];
-        if(crItem->ExtendedCost)
+        if(crItem && crItem->ExtendedCost)
         {
             ItemExtendedCostEntry const* iece = sItemExtendedCostStore.LookupEntry(crItem->ExtendedCost);
             if (!iece)
@@ -1527,7 +1528,8 @@ void WorldSession::HandleItemRefund(WorldPacket& recv_data)
                     return;
                 }
             }
-        }
+        }else
+            return;
     }
     
     //Refund money, honor and arena points and items
