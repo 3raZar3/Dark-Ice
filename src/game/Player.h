@@ -2027,6 +2027,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void ModifyHonorPoints( int32 value );
         void ModifyArenaPoints( int32 value );
         uint32 GetMaxPersonalArenaRatingRequirement(uint32 minarenaslot);
+        void RewardHonorEndBattlegroud( bool win);
 
         //End of PvP System
 

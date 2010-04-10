@@ -1475,6 +1475,7 @@ void World::Update(uint32 diff)
     if (m_gameTime > m_NextDailyQuestReset)
     {
         ResetDailyQuests();
+        ResetBGDaily();
         m_NextDailyQuestReset += DAY;
     }
 
@@ -2137,6 +2138,11 @@ void World::InitDailyQuestResetTime()
         CharacterDatabase.PExecute("INSERT INTO saved_variables (NextDailyQuestResetTime) VALUES ('"UI64FMTD"')", uint64(m_NextDailyQuestReset));
     else
         delete result;
+}
+
+void World::ResetBGDaily()
+{
+    WorldDatabase.Execute("DELETE FROM character_battleground_status");
 }
 
 void World::ResetDailyQuests()
