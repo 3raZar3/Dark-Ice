@@ -2405,6 +2405,49 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 
                     return;
                 }
+				// Raise Dead
+				else if (m_spellInfo->Id == 46584)
+				{   
+					if( unitTarget->isDead() && unitTarget->GetCreatureType()==CREATURE_TYPE_HUMANOID && unitTarget->getLevel() >= m_caster->getLevel()-3 )
+					{
+						if( m_caster->GetTypeId()==TYPEID_PLAYER && ((Player*)m_caster)->HasSpell(52143) )
+						{
+							m_caster->CastSpell(m_caster, 52150, true, NULL);
+							((Player*)m_caster)->SendCooldownEvent(m_spellInfo,52150, this); 
+							((Player*)m_caster)->RemoveSpellCooldown(52150, true);
+						}
+						else
+						{
+							m_caster->CastSpell(m_caster, 46585, true, NULL);
+							((Player*)m_caster)->SendCooldownEvent(m_spellInfo,46585, this); 
+							((Player*)m_caster)->RemoveSpellCooldown(46585, true);
+						}
+					}
+					else
+					{
+						if(((Player*)m_caster)->HasItemCount(37201,1))
+						{
+							   if( m_caster->GetTypeId()==TYPEID_PLAYER && ((Player*)m_caster)->HasSpell(52143) )
+							{
+								m_caster->CastSpell(m_caster, 52150, true, NULL);
+								((Player*)m_caster)->SendCooldownEvent(m_spellInfo,52150, this); 
+								((Player*)m_caster)->RemoveSpellCooldown(52150, true);
+								   
+							}
+							else
+							{
+								m_caster->CastSpell(m_caster, 46585, true, NULL);
+								((Player*)m_caster)->SendCooldownEvent(m_spellInfo,46585, this); 
+								((Player*)m_caster)->RemoveSpellCooldown(46585, true);
+							   
+							}
+							((Player*)m_caster)->DestroyItemCount(37201,1,true);
+						}
+						else 
+							m_caster->CastStop();
+						return;
+					}
+				}
             }
             break;
         }
@@ -3970,7 +4013,7 @@ void Spell::DoSummon(SpellEffectIndex eff_idx)
 
     spawnCreature->SetOwnerGUID(m_caster->GetGUID());
     spawnCreature->SetUInt32Value(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_NONE);
-    spawnCreature->setPowerType(POWER_MANA);
+    spawnCreature->setPowerType(spawnCreature->GetCreatureInfo()->family == CREATURE_FAMILY_GHOUL ? POWER_ENERGY : POWER_MANA);
     spawnCreature->setFaction(m_caster->getFaction());
     spawnCreature->SetUInt32Value(UNIT_FIELD_FLAGS, 0);
     spawnCreature->SetUInt32Value(UNIT_FIELD_BYTES_0, 2048);
@@ -4897,7 +4940,7 @@ void Spell::EffectSummonPet(SpellEffectIndex eff_idx)
     // this enables popup window (pet dismiss, cancel), hunter pet additional flags set later
     if(m_caster->GetTypeId() == TYPEID_PLAYER)
         NewSummon->SetUInt32Value(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE);
-
+	
     if(m_caster->IsPvP())
         NewSummon->SetPvP(true);
 
