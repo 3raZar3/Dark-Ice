@@ -4896,13 +4896,20 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
                 if (m_removeMode == AURA_REMOVE_BY_DEFAULT && GetEffIndex() + 1 < MAX_EFFECT_INDEX)
                     m_target->CastSpell(m_target, m_spellProto->CalculateSimpleValue(SpellEffectIndex(GetEffIndex()+1)), true);
                 return;
+			case 46221:                                     // Animal Blood
+				if (m_removeMode == AURA_REMOVE_BY_DEFAULT && m_target->IsInWater())
+				{
+					LiquidData liquid_status;
+
+					if (m_target->GetMap()->getLiquidStatus(m_target->GetPositionX(), m_target->GetPositionY(), m_target->GetPositionZ(), MAP_ALL_LIQUIDS, &liquid_status))
+						m_target->CastSpell(m_target->GetPositionX(), m_target->GetPositionY(), liquid_status.level, 63471, true, NULL, this);
+				}
             case 51912:                                     // Ultra-Advanced Proto-Typical Shortening Blaster
                 if (m_removeMode == AURA_REMOVE_BY_DEFAULT && m_duration <= 0)
                 {
                     if (Unit* pCaster = GetCaster())
                         pCaster->CastSpell(m_target, m_spellProto->EffectTriggerSpell[GetEffIndex()], true, NULL, this);
                 }
-
                 return;
             default:
                 break;
@@ -8574,6 +8581,13 @@ void Aura::HandlePhase(bool apply, bool Real)
                 }
             }
         }
+          
+	if(m_target->GetCharm() && !apply)//remove other auras from charm on unapply
+	{
+		Creature * creat=((Creature*)m_target->GetCharm());						
+		creat->GetMap()->CreatureRelocation(creat,m_target->GetPositionX(),m_target->GetPositionY(),m_target->GetPositionZ(),m_target->GetOrientation());
+		creat->RemoveAurasDueToSpellByCancel(GetId());			
+	} 
     }
     else
         m_target->SetPhaseMask(apply ? GetMiscValue() : PHASEMASK_NORMAL, false);

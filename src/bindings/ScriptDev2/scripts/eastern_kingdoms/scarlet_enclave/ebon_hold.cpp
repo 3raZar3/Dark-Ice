@@ -3323,13 +3323,13 @@ struct MANGOS_DLL_DECL npc_eye_of_acherusAI : public ScriptedAI
         Active = false;
     }
  
-void JustDied(Unit*u)
-{
-    /*m_creature->GetMap()->CreatureRelocation(m_creature, 2325.0f, -5660.0f, 427.0f, 3.83f);
-    m_creature->RemoveAurasDueToSpellByCancel(51852);//*/
-    m_creature->CleanupsBeforeDelete();
-    m_creature->AddObjectToRemoveList();
-}
+	void JustDied(Unit*u)
+	{
+		/*m_creature->GetMap()->CreatureRelocation(m_creature, 2325.0f, -5660.0f, 427.0f, 3.83f);*/
+		m_creature->RemoveAurasDueToSpellByCancel(51852);
+		m_creature->CleanupsBeforeDelete();
+		m_creature->AddObjectToRemoveList();
+	}
  
     void AttackStart(Unit *pWho)
     {
@@ -3343,6 +3343,12 @@ void JustDied(Unit*u)
 		  pWho->SetInCombatWith(m_creature);    
 		}
     }
+
+	void QuestComplete(Player *player)
+	{
+		if (player->GetQuestStatus(12641) == QUEST_STATUS_COMPLETE)
+			player->RemoveAurasDueToSpellByCancel(51852);
+	}
  
     void MovementInform(uint32 uiType, uint32 uiPointId)
     {
@@ -3351,14 +3357,12 @@ void JustDied(Unit*u)
  
         if (uiPointId == 0)
         {
-        Unit *Eye1 = Unit::GetUnit((*m_creature), m_creature->GetGUID());
-        if (Eye1)
+			Unit *Eye1 = Unit::GetUnit((*m_creature), m_creature->GetGUID());
+			if (Eye1)
             {
-            char * text1 = "The Eye of Acherus is in your control";
-            Eye1->MonsterTextEmote(text1, Eye1->GetGUID(), true);
-            /*m_creature->RemoveMonsterMoveFlag(MONSTER_MOVE_SPLINE_FLY);
-            m_creature->SetSpeedRate(MOVE_FLIGHT, 2.8f, true);*/
-            m_creature->CastSpell(m_creature, 51890, true);
+				char * text1 = "The Eye of Acherus is in your control";
+				Eye1->MonsterTextEmote(text1, Eye1->GetGUID(), true);
+				m_creature->CastSpell(m_creature, 51890, true);
             }
         }
  
@@ -3388,8 +3392,8 @@ void JustDied(Unit*u)
 		}
 		else
 		{
-		  m_creature->CleanupsBeforeDelete();
-		  m_creature->AddObjectToRemoveList();
+			m_creature->CleanupsBeforeDelete();
+			m_creature->AddObjectToRemoveList();
 		}
 		DoMeleeAttackIfReady();
     }
@@ -3407,9 +3411,12 @@ CreatureAI* GetAI_npc_eye_of_acherus(Creature* pCreature)
 bool GOHello_go_eye_of_acherus(Player *player, GameObject* _GO)
 {
     if (player->GetQuestStatus(12641) == QUEST_STATUS_INCOMPLETE)
-     player->CastSpell(player, 51852, true);
- 
-    return true;
+		player->CastSpell(player, 51852, true);
+
+	if(player->GetQuestStatus(12641) == QUEST_STATUS_COMPLETE)
+		player->RemoveAurasDueToSpellByCancel(51852);
+
+	return true;
 }
  
 void AddSC_ebon_hold()
