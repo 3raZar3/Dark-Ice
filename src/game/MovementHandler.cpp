@@ -619,12 +619,12 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         }
  
         
-        if(Anti__FloorZ < -199900.0f && Anti__GroundZ >= -199900.0f &&
+        /*if(Anti__FloorZ < -199900.0f && Anti__GroundZ >= -199900.0f &&
            GetPlayer()->GetPositionZ()+5.0f < Anti__GroundZ)
         {
             Anti__CheatOccurred(CurTime,"Teleport2Plane hack",
                                 GetPlayer()->GetPositionZ(),NULL,Anti__GroundZ);
-        }
+        }*/
     } 
     // <<---- anti-cheat features
 
