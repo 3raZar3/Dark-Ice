@@ -292,6 +292,8 @@ AC_CONFIG_FILES([
    sql/Makefile
    sql/tools/Makefile
    sql/updates/Makefile
+   sql/ScriptDev2/Makefile
+   sql/ScriptDev2/Updates/Makefile
    src/Makefile
    src/tools/Makefile
    src/tools/genrevision/Makefile
@@ -313,8 +315,6 @@ AC_CONFIG_FILES([
    src/bindings/ScriptDev2/hellscream.conf.dist
    src/bindings/ScriptDev2/config.h
    src/bindings/ScriptDev2/hn_config.h
-   arc/bindings/ScriptDev2/sql/Makefile
-   src/bindings/ScriptDev2/sql/Updates/Makefile
 ])
 
 ## Configure ACE, if needed
