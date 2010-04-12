@@ -22571,7 +22571,7 @@ void Player::FlyingMountsSpellsToItems()
             {
 				uint16 RidingSkill = GetSkillValue(SKILL_RIDING);
                 removeSpell(pProto->Spells[i].SpellId, false, false);
-                SetSkill(SKILL_RIDING, GetSkillStep(SKILL_RIDING), RidingSkill, 300);
+                SetSkill(SKILL_RIDING, RidingSkill, 300);
                 break;
             }
 
@@ -22605,7 +22605,7 @@ void Player::FlyingMountsSpellsToItems()
                     {
                         uint16 RidingSkill = GetSkillValue(SKILL_RIDING);
                         removeSpell(pProto->Spells[i].SpellId, false, false);
-                        SetSkill(SKILL_RIDING, GetSkillStep(SKILL_RIDING), RidingSkill, 300);
+                        SetSkill(SKILL_RIDING, RidingSkill, 300);
                         break;
                     }
                 }
