@@ -570,11 +570,8 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
             Anti__ReportCheat("Tele hack",delta,LookupOpcodeName(opcode));
         }
 
-        // Check for waterwalking
-        if(((movementInfo.GetMovementFlags() & MOVEFLAG_WATERWALKING) != 0) &&
-           ((movementInfo.GetMovementFlags() ^ MOVEFLAG_WATERWALKING) != 0) && // Client sometimes set waterwalk where it shouldn't do that...
-           ((movementInfo.GetMovementFlags() & MOVEFLAG_FALLING) == 0) &&
-           GetPlayer()->GetBaseMap()->IsUnderWater(movementInfo.GetPos()->x, movementInfo.GetPos()->y, movementInfo.GetPos()->z-6.0f) &&
+        // Check for waterwalking . Fix new way of checking for waterwalking by Darky88
+        if (movementInfo.HasMovementFlag(MOVEFLAG_WATERWALKING) &&
            !(GetPlayer()->HasAuraType(SPELL_AURA_WATER_WALK) || GetPlayer()->HasAuraType(SPELL_AURA_GHOST)))
         {
             Anti__CheatOccurred(CurTime,"Water walking",0.0f,NULL,0.0f,(uint32)(movementInfo.GetMovementFlags()));
