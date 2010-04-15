@@ -123,7 +123,8 @@ struct MANGOS_DLL_DECL boss_festergutAI : public ScriptedAI
                    break;
 
             };
-            if (pTarget) DoCastSpellIfCan(pTarget,pSpell->m_uiSpellEntry[Difficulty]);
+            if (pTarget) DoCastSpellIfCan(pTarget,pSpell->m_uiSpellEntry[Difficulty])
+         return true;
     }
 
     void Aggro(Unit *who) 
