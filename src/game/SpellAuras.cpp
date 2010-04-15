@@ -8606,6 +8606,16 @@ void Aura::HandleIgnoreUnitState(bool apply, bool Real)
                     break;
             }
         }
+		else
+        {
+            switch(GetId())
+            {
+                case 64976:
+                case 57499:
+                    SendAuraUpdate(true);
+                    break;
+            }
+        }
     }
 }
 void Aura::UnregisterSingleCastAura()
