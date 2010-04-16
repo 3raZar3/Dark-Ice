@@ -80,7 +80,7 @@ bool GossipSelect_ulduar_teleporter(Player *player, Creature *creature, uint32 s
         player->TeleportTo(603, -706.122f, -92.6024f, 429.876f, 0);
         player->CLOSE_GOSSIP_MENU(); break;
     case GROUNDS:
-        player->TeleportTo(603, 131.248f -35.3802f, 409.804f, 0);
+        player->TeleportTo(603, 131.248f, -35.3802f, 409.804f, 0);
         player->CLOSE_GOSSIP_MENU(); break;
     case FORGE:
         player->TeleportTo(603, 553.233f, -12.3247f, 409.679f, 0);

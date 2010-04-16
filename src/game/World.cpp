@@ -790,12 +790,12 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_UINT32_HONORABLE_KILL,                            "HonorableKill", 124);
     setConfig(CONFIG_UINT32_BONUS_HONOR_AB_WIN,                        "BG.BonusHonor.AB.Win", 1);
     setConfig(CONFIG_UINT32_BONUS_HONOR_AB_END,                        "BG.BonusHonor.AB.End", 1);
-    setConfig(CONFIG_UINT32_BONUS_HONOR_WSG_WIN,                       "BG.BonusHonor.AB.Win", 5);
-    setConfig(CONFIG_UINT32_BONUS_HONOR_WSG_END,                       "BG.BonusHonor.AB.End", 5);
-    setConfig(CONFIG_UINT32_BONUS_HONOR_AV_WIN,                        "BG.BonusHonor.AB.Win", 5);
-    setConfig(CONFIG_UINT32_BONUS_HONOR_AV_END,                        "BG.BonusHonor.AB.End", 5);
-    setConfig(CONFIG_UINT32_BONUS_HONOR_EOS_WIN,                       "BG.BonusHonor.AB.Win", 1);
-    setConfig(CONFIG_UINT32_BONUS_HONOR_EOS_END,                       "BG.BonusHonor.AB.End", 1);
+    setConfig(CONFIG_UINT32_BONUS_HONOR_WSG_WIN,                       "BG.BonusHonor.WSG.Win", 5);
+    setConfig(CONFIG_UINT32_BONUS_HONOR_WSG_END,                       "BG.BonusHonor.WSG.End", 5);
+    setConfig(CONFIG_UINT32_BONUS_HONOR_AV_WIN,                        "BG.BonusHonor.AV.Win", 5);
+    setConfig(CONFIG_UINT32_BONUS_HONOR_AV_END,                        "BG.BonusHonor.AV.End", 5);
+    setConfig(CONFIG_UINT32_BONUS_HONOR_EOS_WIN,                       "BG.BonusHonor.EOS.Win", 1);
+    setConfig(CONFIG_UINT32_BONUS_HONOR_EOS_END,                       "BG.BonusHonor.EOS.End", 1);
     setConfig(CONFIG_UINT32_BONUS_HONOR_HOLIDAY,                       "BG.BonusHonor.Holiday",5);
 
     setConfig(CONFIG_UINT32_BONUS_HONOR_FLAG_WSG,                      "BG.BonusHonor.WSG.Flag",2);
@@ -843,7 +843,6 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE, "Custom.AllowFlyingMountsEverywhere", false);
 	setConfig(CONFIG_BOOL_MAIL_ITEM_REFUNDABLE, "Custom.MailItemRefundable", false);
 	setConfig(CONFIG_MIN_LEVEL_DUALSPEC, "Custom.MinLevelDualSpec", 40);
-	setConfig(CONFIG_COST_DUALSPEC, "Custom.CostDualSpec", 10000000);
 	setConfig(CONFIG_BOOL_EVERYONE_DRUNK, "Custom.EveryoneDrunk", false);
 	setConfig(CONFIG_BOOL_DUALSPEC_AT_CREATE, "Custom.DualSpecAtCreate", false);
 	
@@ -2143,7 +2142,7 @@ void World::InitDailyQuestResetTime()
 
 void World::ResetBGDaily()
 {
-    WorldDatabase.Execute("DELETE FROM character_battleground_status");
+    CharacterDatabase.Execute("DELETE FROM character_battleground_status");
 }
 
 void World::ResetDailyQuests()

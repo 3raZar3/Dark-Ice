@@ -1787,6 +1787,5 @@ BG.BonusHonor.Holiday = 5
 Custom.AllowFlyingMountsEverywhere = 0
 Custom.MailItemRefundable = 1
 Custom.MinLevelDualSpec = 40
-Custom.CostDualSpec = 10000000
 Custom.EveryoneDrunk = 0
 Custom.DualSpecAtCreate = 0
