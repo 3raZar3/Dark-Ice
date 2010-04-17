@@ -95,7 +95,8 @@ void World::SendPvPAnnounce(Player* killer, Player* killed)
   KilledName << killed->GetName();
 
   msg << "|CFFFFFF01[" << KillerName.str().c_str() << "]" << "|CFF0042FF Has Killed " << "|CFFFFFF01[" << KilledName.str().c_str() << "]" << "|CFFE55BB0 in " << "|CFFFE8A0E[" << killer->GetBaseMap()->GetMapName() << "]";
-  SendWorldText(LANG_SYSTEMMESSAGE, msg.str().c_str());
+  if (sWorld.getConfig(CONFIG_BOOL_PVP_ANNOUNCER))
+	SendWorldText(LANG_SYSTEMMESSAGE, msg.str().c_str());
 }
 
 /// World constructor
@@ -844,6 +845,7 @@ void World::LoadConfigSettings(bool reload)
 	setConfig(CONFIG_BOOL_MAIL_ITEM_REFUNDABLE, "Custom.MailItemRefundable", false);
 	setConfig(CONFIG_MIN_LEVEL_DUALSPEC, "Custom.MinLevelDualSpec", 40);
 	setConfig(CONFIG_BOOL_EVERYONE_DRUNK, "Custom.EveryoneDrunk", false);
+	setConfig(CONFIG_BOOL_PVP_ANNOUNCER, "Custom.PvPAnnouncer", false);
 	setConfig(CONFIG_BOOL_DUALSPEC_AT_CREATE, "Custom.DualSpecAtCreate", false);
 	
 

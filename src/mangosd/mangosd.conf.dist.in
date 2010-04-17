@@ -1757,6 +1757,7 @@ BG.BonusHonor.Holiday = 5
 ###################################################################################################################
 #
 #     ~~~~~~~~~~~~~~CUSTOMS~~~~~~~~~~~~~~
+#
 #     Custom.AllowFlyingMountsEverywhere
 #         Set it to 1 to enable flying mounts everywhere
 #         If you do it, mounts are now used as item...
@@ -1770,16 +1771,16 @@ BG.BonusHonor.Holiday = 5
 #	      Put the minimum level required to learn dual-spec here
 #	  Default : 40
 #
-#	  Custom.CostDualSpec
-#	      Put the amount of money dual-spec costs to learn here (in copper)
-#	  Default : 10000000 (1000G)
-#
 #	  Custom.EveryoneDrunk
 #		  Everyone has the drunken view on login (for events)
 #	  Default : 0
 #
 #	  Custom.DualSpecAtCreate
 #		  All newly made accounts start with DualSpec already learned if enabled
+#	  Default : 0
+#
+#	  Custom.PvPAnnouncer
+#		  PvP announcer will announce killed players (X killed by Y) if enabled
 #	  Default : 0
 #
 ###################################################################################################################
@@ -1789,3 +1790,4 @@ Custom.MailItemRefundable = 1
 Custom.MinLevelDualSpec = 40
 Custom.EveryoneDrunk = 0
 Custom.DualSpecAtCreate = 0
+Custom.PvPAnnouncer = 0
