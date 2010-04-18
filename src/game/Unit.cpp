@@ -5513,9 +5513,19 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                         return false;
 
                     Aura *aur = GetAura(71905, EFFECT_INDEX_0);
+					
+					if (aur && uint32(aur->GetStackAmount()) == 1)
+						CastSpell(this, 72521, false);       // First Effect
+					
+					if (aur && uint32(aur->GetStackAmount()) == 6)
+					{
+						RemoveAurasDueToSpell(72521);       // remove First Effect
+						CastSpell(this, 72523, false);       // Second Effect
+					}
                     if (aur && uint32(aur->GetStackAmount() + 1) >= aur->GetSpellProto()->StackAmount)
                     {
-                        RemoveAurasDueToSpell(71905);
+						RemoveAurasDueToSpell(72523);       // remove Second Effect
+                        RemoveAurasDueToSpell(71905);       // remove Shards
                         CastSpell(this, 71904, true);       // Chaos Bane
                         return true;
                     }
