@@ -21230,7 +21230,7 @@ void Player::AutoStoreLoot(uint8 bag, uint8 slot, uint32 loot_id, LootStore cons
 uint32 Player::CalculateTalentsPoints() const
 {
     uint32 base_talent = getLevel() < 10 ? 0 : getLevel()-9;
-	if (!(getConfig(CONFIG_BOOL_DK_NO_QUESTS_FOR_TP)))
+	if (!(sWorld.getConfig(CONFIG_BOOL_DK_NO_QUESTS_FOR_TP)))
 	{
 		if(getClass() != CLASS_DEATH_KNIGHT)
 			return uint32(base_talent * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
