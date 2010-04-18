@@ -3294,8 +3294,8 @@ bool GossipSelect_minecar(Player *player, Creature *_Creature, uint32 sender, ui
 {
   switch(rand()% 2)
           {
-              case 0: player->TeleportTo(609, 2265.45, -6203.52, 13.0776, 1.929); break;
-              case 1: player->TeleportTo(609, 2104.57, -6194.57, 13.0764, 1.15398); break;
+              case 0: player->TeleportTo(609, 2265.45f, -6203.52f, 13.0776f, 1.929f); break;
+              case 1: player->TeleportTo(609, 2104.57f, -6194.57f, 13.0764f, 1.15398f); break;
           }
 return true;
 }
