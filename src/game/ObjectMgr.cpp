@@ -871,8 +871,8 @@ void ObjectMgr::ConvertCreatureAddonPassengers(CreatureDataAddon* addon, char co
     // replace by new structures array
     const_cast<CreatureDataAddonPassengers*&>(addon->passengers) = new CreatureDataAddonPassengers[val.size()/2+1];
 
-    int i=0;
-    for(int j=0;j<val.size()/2;++j)
+    uint32 i=0;
+    for(uint32 j=0;j<val.size()/2;++j)
     {
         CreatureDataAddonPassengers& cPas = const_cast<CreatureDataAddonPassengers&>(addon->passengers[i]);
         if(guidEntryStr == "Entry")
