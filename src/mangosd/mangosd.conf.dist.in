@@ -1819,6 +1819,10 @@ Anticheat.Movement.GmLevel = 0
 #		  PvP announcer will announce killed players (X killed by Y) if enabled
 #	  Default : 0
 #
+#	  Custom.DeathKnightNoQuestsForTP
+#		  If enabled, Death Knights will get their TP from leveling instead of having to do the start quests
+#	  Default : 0
+#
 ###################################################################################################################
 
 Custom.AllowFlyingMountsEverywhere = 0
@@ -1827,3 +1831,4 @@ Custom.MinLevelDualSpec = 40
 Custom.EveryoneDrunk = 0
 Custom.DualSpecAtCreate = 0
 Custom.PvPAnnouncer = 0
+Custom.DeathKnightNoQuestsForTP = 0

@@ -25,14 +25,14 @@ EndScriptData */
 
 #include "precompiled.h"
 #include "../../../shared/Config/Config.h"
+#include "../config.h"
 #include "Database/DatabaseEnv.h"
 
 extern DatabaseType SD2Database;
 extern Config SD2Config;
 int DEBUG_TELE = 0; //Set to 1 to see debugger messages in error logs
 
-std::string coppertogold(uint32 copper)
-{
+std::string CopperToGold(uint32 copper){
 	// Convert copper to gold/silver/copper
 	int32 gold = 0;
 	int32 silver = 0;
@@ -58,13 +58,13 @@ void ProcessTeleport_custom_npc_teleportmaster(Player *player, Creature *Creatur
 				if(pFields[0].GetInt32() == action){
 					if(player->GetMoney() < pFields[1].GetUInt32()){
 							std::stringstream ss;
-							ss << "You do not have enough money to teleport here.  You need " << coppertogold(pFields[1].GetUInt32()) <<".";
+							ss << "You do not have enough money to teleport here.  You need " << CopperToGold(pFields[1].GetUInt32()) <<".";
 							Creature->MonsterWhisper(ss.str().c_str(), player->GetGUID());
 					}
 					else{
 						// Player has enough money! Do the teleport!
 						std::stringstream ss;
-						ss << "You spent " << coppertogold(pFields[1].GetUInt32()) <<" on your teleport to " << pFields[7].GetCppString() << ".";
+						ss << "You spent " << CopperToGold(pFields[1].GetUInt32()) <<" on your teleport to " << pFields[7].GetCppString() << ".";
 						Creature->MonsterWhisper(ss.str().c_str(), player->GetGUID());
 						player->ModifyMoney(-pFields[1].GetInt32());
 						player->CLOSE_GOSSIP_MENU();
@@ -165,7 +165,7 @@ void ProcessMenu_custom_npc_teleportmaster(Player *player, Creature *Creature, u
 						}
 						else{
 							std::stringstream menuItem;
-							menuItem << pFields[2].GetCppString() << " - " << coppertogold(pFields[6].GetInt32());
+							menuItem << pFields[2].GetCppString() << " - " << CopperToGold(pFields[6].GetInt32());
 							player->ADD_GOSSIP_ITEM( 2, menuItem.str().c_str(), GOSSIP_SENDER_MAIN, pFields[0].GetInt32());
 							ItemCount++;
 						}
@@ -198,7 +198,7 @@ void ProcessMenu_custom_npc_teleportmaster(Player *player, Creature *Creature, u
 				}
 				else{
 					std::stringstream menuItem;
-					menuItem << pFields[5].GetCppString() << " - " << coppertogold(pFields[6].GetInt32());
+					menuItem << pFields[5].GetCppString() << " - " << CopperToGold(pFields[6].GetInt32());
 					player->ADD_GOSSIP_ITEM( 2, menuItem.str().c_str(), GOSSIP_SENDER_MAIN, pFields[0].GetInt32());
 					ItemCount++;
 				}
@@ -262,12 +262,20 @@ void ProcessMenu_custom_npc_teleportmaster(Player *player, Creature *Creature, u
 
 bool GossipHello_custom_npc_teleportmaster(Player *player, Creature *Creature)
 {
+	// Make sure we can access the Config file
+	if(!SD2Config.SetSource(_SCRIPTDEV2_CONFIG,true)){
+		player->CLOSE_GOSSIP_MENU();
+		error_log("TeleportMaster: Unable to open configuration file");
+		Creature->MonsterWhisper("I'm sorry, we are having technical difficulties.  Please check back later.", player->GetGUID());
+		return false;
+	}
 	// Make sure player is not in combat
 	if(!player->getAttackers().empty()){
 		player->CLOSE_GOSSIP_MENU();
 		Creature->MonsterWhisper("You are in combat!", player->GetGUID());
 		return false;
 	}
+
 	ProcessMenu_custom_npc_teleportmaster(player, Creature,0,0,0);
 	return true;
 }

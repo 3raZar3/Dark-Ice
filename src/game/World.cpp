@@ -816,6 +816,7 @@ void World::LoadConfigSettings(bool reload)
 	setConfig(CONFIG_BOOL_MAIL_ITEM_REFUNDABLE, "Custom.MailItemRefundable", false);
 	setConfig(CONFIG_MIN_LEVEL_DUALSPEC, "Custom.MinLevelDualSpec", 40);
 	setConfig(CONFIG_BOOL_EVERYONE_DRUNK, "Custom.EveryoneDrunk", false);
+	setConfig(CONFIG_BOOL_DK_NO_QUESTS_FOR_TP, "Custom.DeathKnightNoQuestsForTP", false);
 	setConfig(CONFIG_BOOL_PVP_ANNOUNCER, "Custom.PvPAnnouncer", false);
 	setConfig(CONFIG_BOOL_DUALSPEC_AT_CREATE, "Custom.DualSpecAtCreate", false);
 	

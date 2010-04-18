@@ -21230,17 +21230,23 @@ void Player::AutoStoreLoot(uint8 bag, uint8 slot, uint32 loot_id, LootStore cons
 uint32 Player::CalculateTalentsPoints() const
 {
     uint32 base_talent = getLevel() < 10 ? 0 : getLevel()-9;
+	if (!(getConfig(CONFIG_BOOL_DK_NO_QUESTS_FOR_TP)))
+	{
+		if(getClass() != CLASS_DEATH_KNIGHT)
+			return uint32(base_talent * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
 
-    if(getClass() != CLASS_DEATH_KNIGHT)
-        return uint32(base_talent * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
+		uint32 talentPointsForLevel = getLevel() < 56 ? 0 : getLevel() - 55;
+		talentPointsForLevel += m_questRewardTalentCount;
 
-    uint32 talentPointsForLevel = getLevel() < 56 ? 0 : getLevel() - 55;
-    talentPointsForLevel += m_questRewardTalentCount;
+		if(talentPointsForLevel > base_talent)
+			talentPointsForLevel = base_talent;
 
-    if(talentPointsForLevel > base_talent)
-        talentPointsForLevel = base_talent;
-
-    return uint32(talentPointsForLevel * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
+		return uint32(talentPointsForLevel * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
+	}
+	else
+	{
+		return uint32(base_talent * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
+	}
 }
 
 bool Player::IsKnowHowFlyIn(uint32 mapid, uint32 zone) const
