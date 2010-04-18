@@ -15,7 +15,7 @@
  */
 
 /* ScriptData
-SDName: Flame Leviatan
+SDName: Flame Leviathan
 SD%Complete: 0
 SDComment: PH.
 SDCategory: Ulduar
@@ -29,9 +29,9 @@ EndScriptData */
 #define SAY_SLAY -1
 */
 
-struct MANGOS_DLL_DECL boss_flameleviatanAI : public ScriptedAI
+struct MANGOS_DLL_DECL boss_flameleviathanAI : public ScriptedAI
 {
-    boss_flameleviatanAI(Creature* pCreature) : ScriptedAI(pCreature)
+    boss_flameleviathanAI(Creature* pCreature) : ScriptedAI(pCreature)
     {
         m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
         Reset();
@@ -75,9 +75,9 @@ struct MANGOS_DLL_DECL boss_flameleviatanAI : public ScriptedAI
 
 };
 
-CreatureAI* GetAI_boss_flameleviatan(Creature* pCreature)
+CreatureAI* GetAI_boss_flameleviathan(Creature* pCreature)
 {
-    return new boss_flameleviatanAI(pCreature);
+    return new boss_flameleviathanAI(pCreature);
 }
 
 void AddSC_boss_flameleviathan()
@@ -85,7 +85,7 @@ void AddSC_boss_flameleviathan()
     Script *newscript;
     newscript = new Script;
     newscript->Name = "boss_flameleviathan";
-    newscript->GetAI = &GetAI_boss_flameleviatan;
+    newscript->GetAI = &GetAI_boss_flameleviathan;
     newscript->RegisterSelf();
 
 }
