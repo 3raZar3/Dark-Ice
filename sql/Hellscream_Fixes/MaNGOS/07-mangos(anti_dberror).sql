@@ -1,6 +1,6 @@
 DELETE FROM game_event_gameobject WHERE event IN (41, 42);
 DELETE FROM game_event_creature WHERE event IN (41, 42, 43, 44, 45);
-DELETE FROM fishing_loot_template WHERE condition_value1 = 45
+DELETE FROM fishing_loot_template WHERE condition_value1 = 45;
 
 UPDATE `creature_template` SET `ScriptName`='mob_parasitic_shadowfiend' WHERE `entry`='23498';
 UPDATE `creature_template` SET `ScriptName`='mob_shadowy_construct' WHERE `entry`='23111'; 

@@ -400,6 +400,7 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
 
     m_DailyQuestChanged = false;
     m_WeeklyQuestChanged = false;
+	m_FirstBattleground = false;
 
     for (int i=0; i<MAX_TIMERS; ++i)
         m_MirrorTimer[i] = DISABLED_MIRROR_TIMER;
@@ -520,6 +521,10 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
     m_lastFallZ = 0;
 
     m_flytimer = time(NULL);
+
+    //TeamBG helpers
+    m_isInTeamBG = false;
+    m_TeamBGSide = 0;
 }
 
 Player::~Player ()
@@ -6099,7 +6104,19 @@ uint32 Player::TeamForRace(uint8 race)
     sLog.outError("Race %u have wrong teamid %u in DBC: wrong DBC files?",uint32(race),rEntry->TeamID);
     return ALLIANCE;
 }
+//TEAMBG code
+uint32 Player::GetTeam() const
+{
+    if(!m_isInTeamBG || (m_isInTeamBG && !GetBattleGroundTypeId()))
+        return m_team;
 
+    switch(m_TeamBGSide)
+    {
+        case 1: return ALLIANCE;
+        case 2: return HORDE;
+        default: return m_team;
+    }
+}
 uint32 Player::getFactionForRace(uint8 race)
 {
     ChrRacesEntry const* rEntry = sChrRacesStore.LookupEntry(race);
@@ -6444,21 +6461,20 @@ bool Player::RewardHonor(Unit *uVictim, uint32 groupsize, float honor)
 void Player::RewardHonorEndBattlegroud(bool win)
 {
     uint32 hk = 0;
-    uint32 guid = GetGUIDLow();
     bool ap = false;
     if(!win)
         hk = 5;
+
     else
     {
-        QueryResult *result = CharacterDatabase.PQuery("SELECT daily_bg FROM character_battleground_status WHERE guid = '%u'", guid);
-        if(result)
+        if(FirstBGDone())
             hk = 15;
         else
         {
             hk = 30;
             if(getLevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
                 ap = true;
-            CharacterDatabase.PExecute("INSERT INTO character_battleground_status VALUES ('%u', '" UI64FMTD "')", guid, uint64(time(NULL)));
+            SetFirstBGTime();
         }
     }
 
@@ -15038,6 +15054,21 @@ void Player::_LoadBGData(QueryResult* result)
     m_bgData.taxiPath[0]  = fields[7].GetUInt32();
     m_bgData.taxiPath[1]  = fields[8].GetUInt32();
     m_bgData.mountSpell   = fields[9].GetUInt32();
+	
+	//TEAMBG
+    if(fields[10].GetUInt32() != 0 && m_bgData.bgInstanceID != 0)
+    {
+        BattleGround *currentBg = sBattleGroundMgr.GetBattleGround(m_bgData.bgInstanceID, BATTLEGROUND_TYPE_NONE);
+        bool player_at_bg = currentBg && currentBg->IsPlayerInBattleGround(GetGUID());
+        if(player_at_bg && currentBg->GetStatus() != STATUS_WAIT_LEAVE)
+        {
+            SetTeamBG(true, fields[10].GetUInt32());
+            if(fields[10].GetUInt32() == 1)
+                setFaction(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_FACTION_BLUE));
+            else
+                setFaction(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_FACTION_RED));
+        }
+    }
 
     delete result;
 }
@@ -15252,7 +15283,8 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
         m_movementInfo.SetTransportData(0, 0.0f, 0.0f, 0.0f, 0.0f, 0, -1);
     }
-
+	
+	_LoadBGStatus(holder->GetResult(PLAYER_LOGIN_QUERY_LOADBGSTATUS));
     _LoadBGData(holder->GetResult(PLAYER_LOGIN_QUERY_LOADBGDATA));
 
     if(m_bgData.bgInstanceID)                                                //saved in BattleGround
@@ -16743,6 +16775,17 @@ bool Player::_LoadHomeBind(QueryResult *result)
     return true;
 }
 
+void Player::_LoadBGStatus(QueryResult *result)
+{
+    if (result)
+    {
+        m_FirstBGTime = (*result)[0].GetUInt32();
+        delete result;
+    }
+    else
+        m_FirstBGTime = 0;
+}
+
 /*********************************************************/
 /***                   SAVE SYSTEM                     ***/
 /*********************************************************/
@@ -16911,6 +16954,7 @@ void Player::SaveToDB()
         _SaveMail();
 
     _SaveBGData();
+	_SaveBGStatus();
     _SaveInventory();
     _SaveQuestStatus();
     _SaveDailyQuestStatus();
@@ -22109,10 +22153,22 @@ void Player::_SaveBGData()
     if (m_bgData.bgInstanceID)
     {
         /* guid, bgInstanceID, bgTeam, x, y, z, o, map, taxi[0], taxi[1], mountSpell */
-        CharacterDatabase.PExecute("INSERT INTO character_battleground_data VALUES ('%u', '%u', '%u', '%f', '%f', '%f', '%f', '%u', '%u', '%u', '%u')",
+        CharacterDatabase.PExecute("INSERT INTO character_battleground_data VALUES ('%u', '%u', '%u', '%f', '%f', '%f', '%f', '%u', '%u', '%u', '%u', '%u')",
             GetGUIDLow(), m_bgData.bgInstanceID, m_bgData.bgTeam, m_bgData.joinPos.coord_x, m_bgData.joinPos.coord_y, m_bgData.joinPos.coord_z,
-            m_bgData.joinPos.orientation, m_bgData.joinPos.mapid, m_bgData.taxiPath[0], m_bgData.taxiPath[1], m_bgData.mountSpell);
+            m_bgData.joinPos.orientation, m_bgData.joinPos.mapid, m_bgData.taxiPath[0], m_bgData.taxiPath[1], m_bgData.mountSpell, m_TeamBGSide);
     }
+}
+
+void Player::_SaveBGStatus()
+{
+    if(!m_FirstBattleground)
+        return;
+
+    CharacterDatabase.PExecute("DELETE FROM character_battleground_status WHERE guid='%u'", GetGUIDLow());
+    CharacterDatabase.PExecute("INSERT INTO character_battleground_status VALUES ('%u', '%u')",
+        GetGUIDLow(), m_FirstBGTime);
+
+    m_FirstBattleground = false;
 }
 
 void Player::DeleteEquipmentSet(uint64 setGuid)
