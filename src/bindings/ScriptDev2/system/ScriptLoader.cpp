@@ -344,7 +344,6 @@ extern void AddSC_boss_razorscale();
 extern void AddSC_boss_thorim();
 extern void AddSC_boss_xt002();
 extern void AddSC_boss_yoggsaron();
-extern void AddSC_ulduar_teleporter();
 extern void AddSC_instance_ulduar();
 
 extern void AddSC_boss_ingvar();                            //utgarde_keep
@@ -800,7 +799,6 @@ void AddScripts()
     AddSC_boss_thorim();
     AddSC_boss_xt002();
     AddSC_boss_yoggsaron();
-    AddSC_ulduar_teleporter();
     AddSC_instance_ulduar();
 
     AddSC_boss_ingvar();                                    //utgarde_keep

@@ -200,8 +200,8 @@ extern int main(int argc, char **argv)
     sLog.outTitle( "                                                IXI						");
 	sLog.outTitle( "GIT: Github.com/Darkrulerz/Hellscreamcore								");
 	sLog.outTitle( "Hellscreamcore, the core brought to you straight from hell				");
-	
-    sLog.outString("Using configuration file %s.", cfg_file);
+	sLog.outString("Running on Revision %s.", cfg_file);
+	printf("%s\n", _FULLVERSION(REVISION_DATE,REVISION_TIME,REVISION_NR,REVISION_ID));
 
     sLog.outDetail("%s (Library: %s)", OPENSSL_VERSION_TEXT, SSLeay_version(SSLEAY_VERSION));
     if (SSLeay() < 0x009080bfL )

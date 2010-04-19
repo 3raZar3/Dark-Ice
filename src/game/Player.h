@@ -915,7 +915,9 @@ enum PlayerLoginQueryIndex
     PLAYER_LOGIN_QUERY_LOADMAILEDITEMS          = 24,
     PLAYER_LOGIN_QUERY_LOADTALENTS              = 25,
     PLAYER_LOGIN_QUERY_LOADWEKLYQUESTSTATUS     = 26,
-    MAX_PLAYER_LOGIN_QUERY                      = 27
+	PLAYER_LOGIN_QUERY_LOADBGSTATUS             = 27,
+    MAX_PLAYER_LOGIN_QUERY                      = 28
+	
 };
 
 enum PlayerDelayedOperations
@@ -1994,7 +1996,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void CheckExploreSystem(void);
 
         static uint32 TeamForRace(uint8 race);
-        uint32 GetTeam() const { return m_team; }
+        uint32 GetTeam() const;
         static uint32 getFactionForRace(uint8 race);
         void setFactionForRace(uint8 race);
 
@@ -2206,6 +2208,14 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool CanUseBattleGroundObject();
         bool isTotalImmune();
         bool CanCaptureTowerPoint();
+		
+		bool FirstBGDone() { return m_FirstBGTime > 0; }
+        void SetFirstBGTime()
+        {
+            m_FirstBGTime = uint64(time(NULL));
+            m_FirstBattleground = true;
+        }
+        void ResetBGStatus() { m_FirstBGTime = 0; }
 
         /*********************************************************/
         /***                    REST SYSTEM                    ***/
@@ -2252,7 +2262,11 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool isMoving() const { return m_movementInfo.HasMovementFlag(movementFlagsMask); }
         bool isMovingOrTurning() const { return m_movementInfo.HasMovementFlag(movementOrTurningFlagsMask); }
 
-        bool CanFly() const { return m_movementInfo.HasMovementFlag(MOVEFLAG_CAN_FLY); }
+        uint32 Anti__GetLastTeleTime() const { return m_anti_TeleTime; }
+        void Anti__SetLastTeleTime(uint32 TeleTime) { m_anti_TeleTime=TeleTime; }
+        //bool CanFly() const { return m_movementInfo.HasMovementFlag(MOVEFLAG_CAN_FLY); }
+        bool CanFly() const { return m_CanFly;  }
+        void SetCanFly(bool CanFly) { m_CanFly=CanFly; }
         bool IsFlying() const { return m_movementInfo.HasMovementFlag(MOVEFLAG_FLYING); }
         bool IsKnowHowFlyIn(uint32 mapid, uint32 zone) const;
 
@@ -2415,6 +2429,10 @@ class MANGOS_DLL_SPEC Player : public Unit
         PlayerbotMgr* GetPlayerbotMgr() { return m_playerbotMgr; }
         void SetBotDeathTimer() { m_deathTimer = 0; }
 
+        //TEAMBG helpers
+        bool isInTeamBG() { return m_isInTeamBG; };
+        void SetTeamBG(bool isIn, uint8 side) { m_isInTeamBG = isIn; m_TeamBGSide = side; };
+        uint8 getTeamBGSide() { return m_TeamBGSide; };
     protected:
 
         uint32 m_contestedPvPTimer;
@@ -2470,6 +2488,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void _LoadArenaTeamInfo(QueryResult *result);
         void _LoadEquipmentSets(QueryResult *result);
         void _LoadBGData(QueryResult* result);
+		void _LoadBGStatus(QueryResult* result);
         void _LoadGlyphs(QueryResult *result);
         void _LoadIntoDataField(const char* data, uint32 startOffset, uint32 count);
 
@@ -2488,6 +2507,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void _SaveSpells();
         void _SaveEquipmentSets();
         void _SaveBGData();
+		void _SaveBGStatus();
         void _SaveGlyphs();
         void _SaveTalents();
         void _SaveStats();
@@ -2584,6 +2604,7 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         bool   m_DailyQuestChanged;
         bool   m_WeeklyQuestChanged;
+		bool   m_FirstBattleground;
 
         uint32 m_drunkTimer;
         uint16 m_drunk;
@@ -2615,29 +2636,15 @@ class MANGOS_DLL_SPEC Player : public Unit
         RestType rest_type;
         ////////////////////Rest System/////////////////////
 
-        /////////////////Movement Anticheat/////////////////
-        uint32 m_anti_LastClientTime;       //last movement client time
-        uint32 m_anti_LastServerTime;       //last movement server time
-        uint32 m_anti_DeltaClientTime;      //client side session time
-        uint32 m_anti_DeltaServerTime;      //server side session time
-        uint32 m_anti_MistimingCount;       //mistiming counts before kick
-
-        uint32 m_anti_LastSpeedChangeTime;  //last speed change time
-        uint32 m_anti_BeginFallTime;        //alternative falling begin time (obsolete)
-
-        float  m_anti_Last_HSpeed;          //horizontal speed, default RUN speed
-        float  m_anti_Last_VSpeed;          //vertical speed, default max jump height
-
-        uint64 m_anti_TransportGUID;        //current transport GUID
-
-        uint32 m_anti_JustTeleported;       //seted when player was teleported
-        uint32 m_anti_TeleToPlane_Count;    //Teleport To Plane alarm counter
-
-        uint64 m_anti_AlarmCount;           //alarm counter
-
-        uint32 m_anti_JustJumped;           //Jump already began, anti air jump check
-        float  m_anti_JumpBaseZ;            //Z coord before jump
-        /////////////////Movement Anticheat/////////////////
+        //movement anticheat
+        uint32 m_anti_lastmovetime;     //last movement time
+        float  m_anti_MovedLen;         //Length of traveled way
+        uint32 m_anti_NextLenCheck;
+        float  m_anti_BeginFallZ;    //alternative falling begin
+        uint32 m_anti_lastalarmtime;    //last time when alarm generated
+        uint32 m_anti_alarmcount;       //alarm counter
+        uint32 m_anti_TeleTime;
+        bool m_CanFly;
 
         // Transports
         Transport * m_transport;
@@ -2733,11 +2740,17 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         AchievementMgr m_achievementMgr;
         ReputationMgr  m_reputationMgr;
-
         uint32 m_timeSyncCounter;
         uint32 m_timeSyncTimer;
         uint32 m_timeSyncClient;
         uint32 m_timeSyncServer;
+		
+		// Battleground reward system
+        uint32 m_FirstBGTime;
+
+        // TEAMBG helpers
+        bool m_isInTeamBG;
+        uint8 m_TeamBGSide; // 0 nothing, 1 blue(ali), 2 red(horde)
 };
 
 void AddItemsSetItem(Player*player,Item *item);

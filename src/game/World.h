@@ -182,12 +182,10 @@ enum eConfigUInt32Values
     /* Start AHBot */
     CONFIG_UINT32_AHBOT_ACCOUNT_ID,
     CONFIG_UINT32_AHBOT_CHARACTER_ID,
-
     CONFIG_UINT32_AHBOT_ITEMS_CYCLE,
     /* End AHBot*/
 
     CONFIG_UINT32_MIN_LEVEL_STAT_SAVE,
-
     CONFIG_UINT32_NUMTHREADS,
 	
 	/* Honor Options for BG */
@@ -205,6 +203,10 @@ enum eConfigUInt32Values
     CONFIG_UINT32_BONUS_HONOR_FLAG_EOS,
     CONFIG_UINT32_BONUS_HONOR_FLAG_AV,
     CONFIG_UINT32_BONUS_HONOR_HOLIDAY,
+    CONFIG_UINT32_TEAM_BG_FACTION_BLUE,
+    CONFIG_UINT32_TEAM_BG_FACTION_RED,
+    CONFIG_UINT32_TEAM_BG_BUFF_BLUE,
+    CONFIG_UINT32_TEAM_BG_BUFF_RED,
     CONFIG_UINT32_VALUE_COUNT
 };
 
@@ -345,17 +347,14 @@ enum eConfigBoolValues
     /* Start AHBot */
     CONFIG_BOOL_AHBOT_SELLER_ENABLED,
     CONFIG_BOOL_AHBOT_BUYER_ENABLED,
-
     CONFIG_BOOL_AHBOT_ITEMS_VENDOR,
     CONFIG_BOOL_AHBOT_ITEMS_LOOT,
     CONFIG_BOOL_AHBOT_ITEMS_MISC,
-
     CONFIG_BOOL_AHBOT_BIND_NO,
     CONFIG_BOOL_AHBOT_BIND_PICKUP,
     CONFIG_BOOL_AHBOT_BIND_EQUIP,
     CONFIG_BOOL_AHBOT_BIND_USE,
     CONFIG_BOOL_AHBOT_BIND_QUEST,
-
     CONFIG_BOOL_AHBOT_BUYPRICE_SELLER,
     CONFIG_BOOL_AHBOT_BUYPRICE_BUYER,
     /* End AHBot*/
@@ -367,8 +366,15 @@ enum eConfigBoolValues
     CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE,
 	CONFIG_BOOL_MAIL_ITEM_REFUNDABLE,
 	CONFIG_BOOL_EVERYONE_DRUNK,
+	CONFIG_BOOL_DK_NO_QUESTS_FOR_TP,
+	CONFIG_BOOL_PVP_ANNOUNCER,
 	CONFIG_BOOL_DUALSPEC_AT_CREATE,
 	
+	/* TeamBG Mod*/
+    CONFIG_BOOL_TEAM_BG_ALLOW_AB,
+    CONFIG_BOOL_TEAM_BG_ALLOW_AV,
+    CONFIG_BOOL_TEAM_BG_ALLOW_EOS,
+    CONFIG_BOOL_TEAM_BG_ALLOW_WSG,
     CONFIG_BOOL_VALUE_COUNT
 };
 
@@ -631,12 +637,17 @@ class World
         static float GetVisibleUnitGreyDistance()           { return m_VisibleUnitGreyDistance;       }
         static float GetVisibleObjectGreyDistance()         { return m_VisibleObjectGreyDistance;     }
 
-        //movement anticheat
-        static bool GetEnableMvAnticheat()          {return m_EnableMvAnticheat;}
-        static uint32 GetTeleportToPlaneAlarms()    {return m_TeleportToPlaneAlarms;}
-        static uint32 GetMistimingDelta()           {return m_MistimingDelta;}
-        static uint32 GetMistimingAlarms()          {return m_MistimingAlarms;}
-        //end movement anticheat
+        //movement anticheat enable flag
+        inline bool GetMvAnticheatEnable()             {return m_MvAnticheatEnable;}
+        inline bool GetMvAnticheatKick()               {return m_MvAnticheatKick;}
+        inline uint32 GetMvAnticheatAlarmCount()       {return m_MvAnticheatAlarmCount;}
+        inline uint32 GetMvAnticheatAlarmPeriod()      {return m_MvAnticheatAlarmPeriod;}
+        inline unsigned char GetMvAnticheatBan()       {return m_MvAntiCheatBan;}
+        inline std::string GetMvAnticheatBanTime()     {return m_MvAnticheatBanTime;}
+        inline unsigned char GetMvAnticheatGmLevel()   {return m_MvAnticheatGmLevel;}
+        inline bool GetMvAnticheatKill()               {return m_MvAnticheatKill;}
+        inline float GetMvAnticheatMaxXYT()            {return m_MvAnticheatMaxXYT;}
+        inline uint16 GetMvAnticheatIgnoreAfterTeleport()   {return m_MvAnticheatIgnoreAfterTeleport;}
 
         void ProcessCliCommands();
         void QueueCliCommand(CliCommandHolder* commandHolder) { cliCmdQueue.add(commandHolder); }
@@ -730,11 +741,17 @@ class World
         static float m_VisibleUnitGreyDistance;
         static float m_VisibleObjectGreyDistance;
 
-        // for movement anticheat
-        static bool m_EnableMvAnticheat;
-        static uint32 m_TeleportToPlaneAlarms;
-        static uint32 m_MistimingDelta;
-        static uint32 m_MistimingAlarms;
+        //movement anticheat enable flag
+        bool m_MvAnticheatEnable;
+        bool m_MvAnticheatKick;
+        uint32 m_MvAnticheatAlarmCount;
+        uint32 m_MvAnticheatAlarmPeriod;
+        unsigned char m_MvAntiCheatBan;
+        std::string m_MvAnticheatBanTime;
+        unsigned char m_MvAnticheatGmLevel;
+        bool m_MvAnticheatKill;
+        float m_MvAnticheatMaxXYT;
+        uint16 m_MvAnticheatIgnoreAfterTeleport;
 
         // CLI command holder to be thread safe
         ACE_Based::LockedQueue<CliCommandHolder*,ACE_Thread_Mutex> cliCmdQueue;

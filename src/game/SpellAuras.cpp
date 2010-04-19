@@ -3859,7 +3859,13 @@ void Aura::HandleModPossess(bool apply, bool Real)
 
         if(m_target->GetTypeId() == TYPEID_PLAYER && !m_target->GetVehicleGUID())
         {
-            ((Player*)m_target)->setFactionForRace(m_target->getRace());
+            //TEAMBG check
+            if(((Player*)m_target)->isInTeamBG() && ((Player*)m_target)->getTeamBGSide() == 1) //BLUE(ali)
+                ((Player*)m_target)->setFaction(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_FACTION_BLUE));
+            else if(((Player*)m_target)->isInTeamBG() && ((Player*)m_target)->getTeamBGSide() == 2) //RED(horde)
+                ((Player*)m_target)->setFaction(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_FACTION_RED));
+            else
+                ((Player*)m_target)->setFactionForRace(m_target->getRace());
             ((Player*)m_target)->SetClientControl(m_target, 1);
         }
         else if(m_target->GetTypeId() == TYPEID_UNIT)
@@ -4003,7 +4009,15 @@ void Aura::HandleModCharm(bool apply, bool Real)
         m_target->SetCharmerGUID(0);
 
         if(m_target->GetTypeId() == TYPEID_PLAYER)
-            ((Player*)m_target)->setFactionForRace(m_target->getRace());
+        {
+            //TEAMBG check
+            if(((Player*)m_target)->isInTeamBG() && ((Player*)m_target)->getTeamBGSide() == 1) //BLUE(ali)
+                ((Player*)m_target)->setFaction(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_FACTION_BLUE));
+            else if(((Player*)m_target)->isInTeamBG() && ((Player*)m_target)->getTeamBGSide() == 2) //RED(horde)
+                ((Player*)m_target)->setFaction(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_FACTION_RED));
+            else
+                ((Player*)m_target)->setFactionForRace(m_target->getRace());
+        }
         else
         {
             CreatureInfo const *cinfo = ((Creature*)m_target)->GetCreatureInfo();
@@ -4609,9 +4623,16 @@ void Aura::HandleAuraModIncreaseFlightSpeed(bool apply, bool Real)
     {
         WorldPacket data;
         if(apply)
+        {
+            ((Player*)m_target)->SetCanFly(true);
             data.Initialize(SMSG_MOVE_SET_CAN_FLY, 12);
+        }
         else
+        {
             data.Initialize(SMSG_MOVE_UNSET_CAN_FLY, 12);
+            ((Player*)m_target)->SetCanFly(false);
+        }
+        //data.append(m_target->GetPackGUID());
         data << m_target->GetPackGUID();
         data << uint32(0);                                      // unknown
         m_target->SendMessageToSet(&data, true);
@@ -7054,9 +7075,15 @@ void Aura::HandleAuraAllowFlight(bool apply, bool Real)
     // allow fly
     WorldPacket data;
     if(apply)
+    {
+        ((Player*)m_target)->SetCanFly(true);
         data.Initialize(SMSG_MOVE_SET_CAN_FLY, 12);
+    }
     else
+    {
         data.Initialize(SMSG_MOVE_UNSET_CAN_FLY, 12);
+        ((Player*)m_target)->SetCanFly(false);
+    }
     data << m_target->GetPackGUID();
     data << uint32(0);                                      // unk
     m_target->SendMessageToSet(&data, true);
@@ -8498,6 +8525,7 @@ void Aura::HandleAuraControlVehicle(bool apply, bool Real)
     {
         // some SPELL_AURA_CONTROL_VEHICLE auras have a dummy effect on the player - remove them
         caster->RemoveAurasDueToSpell(GetId());
+		caster->RemoveSingleSpellAurasFromStack(53797);
     }
 }
 

@@ -871,8 +871,8 @@ void ObjectMgr::ConvertCreatureAddonPassengers(CreatureDataAddon* addon, char co
     // replace by new structures array
     const_cast<CreatureDataAddonPassengers*&>(addon->passengers) = new CreatureDataAddonPassengers[val.size()/2+1];
 
-    int i=0;
-    for(int j=0;j<val.size()/2;++j)
+    uint32 i=0;
+    for(uint32 j=0;j<val.size()/2;++j)
     {
         CreatureDataAddonPassengers& cPas = const_cast<CreatureDataAddonPassengers&>(addon->passengers[i]);
         if(guidEntryStr == "Entry")
@@ -5203,8 +5203,7 @@ void ObjectMgr::LoadAreaTriggerScripts()
     sLog.outString( ">> Loaded %u areatrigger scripts", count );
 }
 
-//use searched_node for search some known node
-uint32 ObjectMgr::GetNearestTaxiNode( float x, float y, float z, uint32 mapid, uint32 team, uint32 searched_node ) // Movement anticheat
+uint32 ObjectMgr::GetNearestTaxiNode( float x, float y, float z, uint32 mapid, uint32 team )
 {
     bool found = false;
     float dist;
@@ -5213,32 +5212,17 @@ uint32 ObjectMgr::GetNearestTaxiNode( float x, float y, float z, uint32 mapid, u
     for(uint32 i = 1; i < sTaxiNodesStore.GetNumRows(); ++i)
     {
         TaxiNodesEntry const* node = sTaxiNodesStore.LookupEntry(i);
-
-        //movement anticheat
-        if (!node || node->map_id != mapid)
+        if(!node || node->map_id != mapid || !node->MountCreatureID[team == ALLIANCE ? 1 : 0])
             continue;
 
-        float dist2 = (node->x - x)*(node->x - x)+(node->y - y)*(node->y - y)+(node->z - z)*(node->z - z);
-
-        if (searched_node != 0 && i == searched_node)
-        {
-            id = i;
-            dist = dist2;
-            break;
-        }
-        if(!node->MountCreatureID[team == ALLIANCE ? 1 : 0])
-            continue;
-
-        //end movement anticheat
-
-        uint8  field   = (uint8)((i - 1) / 32);
+        uint8 field = (uint8)((i - 1) / 32);
         uint32 submask = 1<<((i-1)%32);
 
         // skip not taxi network nodes
         if((sTaxiNodesMask[field] & submask)==0)
             continue;
 
-        // float dist2 = (node->x - x)*(node->x - x)+(node->y - y)*(node->y - y)+(node->z - z)*(node->z - z);
+        float dist2 = (node->x - x)*(node->x - x)+(node->y - y)*(node->y - y)+(node->z - z)*(node->z - z);
         if(found)
         {
             if(dist2 < dist)
@@ -5254,10 +5238,6 @@ uint32 ObjectMgr::GetNearestTaxiNode( float x, float y, float z, uint32 mapid, u
             id = i;
         }
     }
-    //movement anticheat fix
-    if (dist > 3600)
-       id = 0;
-    //movement anticheat fix
 
     return id;
 }

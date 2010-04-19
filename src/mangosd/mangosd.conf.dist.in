@@ -49,9 +49,9 @@ ConfVersion=2010040601
 RealmID = 1
 DataDir = "."
 LogsDir = ""
-LoginDatabaseInfo     = "127.0.0.1;3306;mangos;mangos;realmd"
-WorldDatabaseInfo     = "127.0.0.1;3306;mangos;mangos;mangos"
-CharacterDatabaseInfo = "127.0.0.1;3306;mangos;mangos;characters"
+LoginDatabaseInfo     = "127.0.0.1;3306;root;mangos;realmd"
+WorldDatabaseInfo     = "127.0.0.1;3306;root;mangos;mangos"
+CharacterDatabaseInfo = "127.0.0.1;3306;root;mangos;characters"
 MaxPingTime = 30
 WorldServerPort = 8085
 BindIP = "0.0.0.0"
@@ -1618,30 +1618,6 @@ SOAP.IP = 127.0.0.1
 SOAP.Port = 7878
 
 ###################################################################################################################
-# MOVEMENT ANTICHEAT
-#
-#    Anticheat.Movement.Enable
-#        Enable Movement Anticheat
-#        Default: 1 - on
-#                 0 - off
-#
-#    Anticheat.Movement.TeleportToPlaneAlarms
-#        maximum alarms before player will be kicked (default 50, allowed 20 - 100)
-#
-#    Anticheat.Movement.MistimingDelta
-#        mistiming intelval between client and serverside (default 10000 ms, allowed 1000 - 15000 ms)
-#
-#    Anticheat.Movement.MistimingAlarms
-#        mistiming alarms before player will be kicked (default 20, allowed 10 - 50)
-#
-###################################################################################################################
-
-Anticheat.Movement.Enable = 1
-Anticheat.Movement.TeleportToPlaneAlarms = 50
-Anticheat.Movement.MistimingDelta = 10000
-Anticheat.Movement.MistimingAlarms = 20
-
-###################################################################################################################
 # PLAYERBOTAI CONFIGURATION
 #
 #    PlayerbotAI.DisableBots
@@ -1755,8 +1731,103 @@ BG.BonusHonor.EOS.Flag = 1
 BG.BonusHonor.Holiday = 5
 
 ###################################################################################################################
+# MOVEMENT ANTICHEAT
+#
+#    Anticheat.Movement.Enable
+#        Enable Movement Anticheat
+#        Default: 0 - off
+#                 1 - on
+#
+#    Anticheat.Movement.AlarmCount
+#        Count alarms. After AlarmCount is exceeded, actions are taken against the player. (default 5)
+#
+#    Anticheat.Movement.AlarmTime
+#        Reset alarm-count after this milliseconds. (default 5000)
+#
+#    Anticheat.Movement.Kill
+#        Enable Kill cheater
+#        Default: 0 - off
+#                 1 - on
+#
+#    Anticheat.Movement.Kick
+#        Enable Kick cheater
+#        Default: 0 - off
+#                 1 - on
+#
+#    Anticheat.Movement.BanType
+#        Enable Ban cheater
+#        Default: 0 - off
+#                 1 - Ban Account
+#                 2 - Ban IP
+#                 3 - Ban Account + IP
+#
+#    Anticheat.Movement.BanTime
+#        How long the ban should last.
+#        Default: 1 Minute - 1m
+#
+#    Anticheat.Movement.MaxXYT
+#        Max units a player is allowed to travel per millisecond.
+#        Default: 0.04 (This is ~400% Speed, 0.007 is walk-speed, 310% is 0.0287)
+#
+#    Anticheat.Movement.IgnoreSecAfterTeleport
+#        After being teleported this number of seconds no cheat is reported.
+#        Default: 10 seconds - 10
+#
+#    Anticheat.Movement.GmLevel
+#        Only accounts that are below this gm-level or exact at the same, are reported for cheating.
+#        Default: Only normal Players - 0
+#
+###################################################################################################################
+
+Anticheat.Movement.Enable = 1
+Anticheat.Movement.AlarmCount = 5
+Anticheat.Movement.AlarmTime = 5000
+Anticheat.Movement.Kill = 0
+Anticheat.Movement.Kick = 0
+Anticheat.Movement.BanType = 0
+Anticheat.Movement.BanTime = "1m"
+Anticheat.Movement.MaxXYT = 0.04
+Anticheat.Movement.IgnoreSecAfterTeleport = 10
+Anticheat.Movement.GmLevel = 0
+
+###################################################################################################################
+# TEAMBG CONFIG
+#
+#    TeamBG.AllowAB
+#    TeamBG.AllowAV
+#    TeamBG.AllowEOS
+#    TeamBG.AllowWSG
+#        Allow TeamBG in that bg
+#        Default: 0 (disable)
+#                 1 (enable)
+#
+#    TeamBG.TeamBG.Faction.Blue
+#    TeamBG.TeamBG.Faction.Red
+#        Which faction is set to player when enter bg
+#        Default: 1 (for blue, player human)
+#                 2 (for red, player orc)
+#
+#    TeamBG.Buff.Blue
+#    TeamBG.Buff.Red
+#        Spell id, its casted on player on bg enter and removed on leave,
+#        could be some red/blue coloration
+#        Default: 0 (disable)
+#
+###################################################################################################################
+
+TeamBG.AllowAB = 0
+TeamBG.AllowAV = 0
+TeamBG.AllowEOS = 0
+TeamBG.AllowWSG = 0
+TeamBG.TeamBG.Faction.Blue = 1
+TeamBG.TeamBG.Faction.Red = 2
+TeamBG.Buff.Blue = 0
+TeamBG.Buff.Red = 0
+
+###################################################################################################################
 #
 #     ~~~~~~~~~~~~~~CUSTOMS~~~~~~~~~~~~~~
+#
 #     Custom.AllowFlyingMountsEverywhere
 #         Set it to 1 to enable flying mounts everywhere
 #         If you do it, mounts are now used as item...
@@ -1770,16 +1841,20 @@ BG.BonusHonor.Holiday = 5
 #	      Put the minimum level required to learn dual-spec here
 #	  Default : 40
 #
-#	  Custom.CostDualSpec
-#	      Put the amount of money dual-spec costs to learn here (in copper)
-#	  Default : 10000000 (1000G)
-#
 #	  Custom.EveryoneDrunk
 #		  Everyone has the drunken view on login (for events)
 #	  Default : 0
 #
 #	  Custom.DualSpecAtCreate
 #		  All newly made accounts start with DualSpec already learned if enabled
+#	  Default : 0
+#
+#	  Custom.PvPAnnouncer
+#		  PvP announcer will announce killed players (X killed by Y) if enabled
+#	  Default : 0
+#
+#	  Custom.DeathKnightNoQuestsForTP
+#		  If enabled, Death Knights will get their TP from leveling instead of having to do the start quests
 #	  Default : 0
 #
 ###################################################################################################################
@@ -1789,3 +1864,5 @@ Custom.MailItemRefundable = 1
 Custom.MinLevelDualSpec = 40
 Custom.EveryoneDrunk = 0
 Custom.DualSpecAtCreate = 0
+Custom.PvPAnnouncer = 0
+Custom.DeathKnightNoQuestsForTP = 0

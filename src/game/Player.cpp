@@ -400,6 +400,7 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
 
     m_DailyQuestChanged = false;
     m_WeeklyQuestChanged = false;
+	m_FirstBattleground = false;
 
     for (int i=0; i<MAX_TIMERS; ++i)
         m_MirrorTimer[i] = DISABLED_MIRROR_TIMER;
@@ -447,30 +448,17 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
     rest_type=REST_TYPE_NO;
     ////////////////////Rest System/////////////////////
 
-    ////////////////Movement Anticheat//////////////////
-    m_anti_LastClientTime  = 0;     //last movement client time
-    m_anti_LastServerTime  = 0;     //last movement server time
-    m_anti_DeltaClientTime = 0;     //client side session time
-    m_anti_DeltaServerTime = 0;     //server side session time
-    m_anti_MistimingCount  = 0;     //mistiming counts before kick
-
-    m_anti_LastSpeedChangeTime = 0; //last speed change time
-    m_anti_BeginFallTime = 0;       //alternative falling begin time (obsolete)
-
-    m_anti_Last_HSpeed =  7.0f;     //horizontal speed, default RUN speed
-    m_anti_Last_VSpeed = -2.3f;     //vertical speed, default max jump height
-
-    m_anti_TransportGUID = 0;       //current transport GUID
-
-    m_anti_JustTeleported = 0;      //seted when player was teleported
-    m_anti_TeleToPlane_Count = 0;   //Teleport To Plane alarm counter
-
-    m_anti_AlarmCount = 0;          //alarm counter
-
-    m_anti_JustJumped = 0;          //Jump already began, anti air jump check
-    m_anti_JumpBaseZ = 0;           //Z coord before jump (AntiGrav)
-    ////////////////Movement Anticheat//////////////////
-
+    //movement anticheat
+    m_anti_lastmovetime = 0;   //last movement time
+    m_anti_NextLenCheck = 0;
+    m_anti_MovedLen = 0.0f;
+    m_anti_BeginFallZ = INVALID_HEIGHT;
+    m_anti_lastalarmtime = 0;    //last time when alarm generated
+    m_anti_alarmcount = 0;       //alarm counter
+    m_anti_TeleTime = 0;
+    m_CanFly=false;
+    /////////////////////////////////
+ 
     m_mailsUpdated = false;
     unReadMails = 0;
     m_nextMailDelivereTime = 0;
@@ -533,6 +521,10 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
     m_lastFallZ = 0;
 
     m_flytimer = time(NULL);
+
+    //TeamBG helpers
+    m_isInTeamBG = false;
+    m_TeamBGSide = 0;
 }
 
 Player::~Player ()
@@ -1685,9 +1677,6 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
         return false;
     }
 
-    //movement anticheat
-    m_anti_JustTeleported = 1;
-
     // preparing unsummon pet if lost (we must get pet before teleportation or will not find it later)
     Pet* pet = GetPet();
 
@@ -1744,9 +1733,6 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
 
     if ((GetMapId() == mapid) && (!m_transport))
     {
-        //movement anticheat
-        m_anti_JumpBaseZ = 0;
-
         //lets reset far teleport flag if it wasn't reset during chained teleports
         SetSemaphoreTeleportFar(false);
         //setup delayed teleport flag
@@ -1903,9 +1889,6 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
 
             m_teleport_dest = WorldLocation(mapid, final_x, final_y, final_z, final_o);
             SetFallInformation(0, final_z);
-
-            //movement anticheat
-            m_anti_JumpBaseZ = 0;
 
             // if the player is saved before worldport ack (at logout for example)
             // this will be used instead of the current location in SaveToDB
@@ -6121,7 +6104,19 @@ uint32 Player::TeamForRace(uint8 race)
     sLog.outError("Race %u have wrong teamid %u in DBC: wrong DBC files?",uint32(race),rEntry->TeamID);
     return ALLIANCE;
 }
+//TEAMBG code
+uint32 Player::GetTeam() const
+{
+    if(!m_isInTeamBG || (m_isInTeamBG && !GetBattleGroundTypeId()))
+        return m_team;
 
+    switch(m_TeamBGSide)
+    {
+        case 1: return ALLIANCE;
+        case 2: return HORDE;
+        default: return m_team;
+    }
+}
 uint32 Player::getFactionForRace(uint8 race)
 {
     ChrRacesEntry const* rEntry = sChrRacesStore.LookupEntry(race);
@@ -6466,21 +6461,20 @@ bool Player::RewardHonor(Unit *uVictim, uint32 groupsize, float honor)
 void Player::RewardHonorEndBattlegroud(bool win)
 {
     uint32 hk = 0;
-    uint32 guid = GetGUIDLow();
     bool ap = false;
     if(!win)
         hk = 5;
+
     else
     {
-        QueryResult *result = CharacterDatabase.PQuery("SELECT daily_bg FROM character_battleground_status WHERE guid = '%u'", guid);
-        if(result)
+        if(FirstBGDone())
             hk = 15;
         else
         {
             hk = 30;
             if(getLevel() >= sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
                 ap = true;
-            CharacterDatabase.PExecute("INSERT INTO character_battleground_status VALUES ('%u', '" UI64FMTD "')", guid, uint64(time(NULL)));
+            SetFirstBGTime();
         }
     }
 
@@ -15060,6 +15054,21 @@ void Player::_LoadBGData(QueryResult* result)
     m_bgData.taxiPath[0]  = fields[7].GetUInt32();
     m_bgData.taxiPath[1]  = fields[8].GetUInt32();
     m_bgData.mountSpell   = fields[9].GetUInt32();
+	
+	//TEAMBG
+    if(fields[10].GetUInt32() != 0 && m_bgData.bgInstanceID != 0)
+    {
+        BattleGround *currentBg = sBattleGroundMgr.GetBattleGround(m_bgData.bgInstanceID, BATTLEGROUND_TYPE_NONE);
+        bool player_at_bg = currentBg && currentBg->IsPlayerInBattleGround(GetGUID());
+        if(player_at_bg && currentBg->GetStatus() != STATUS_WAIT_LEAVE)
+        {
+            SetTeamBG(true, fields[10].GetUInt32());
+            if(fields[10].GetUInt32() == 1)
+                setFaction(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_FACTION_BLUE));
+            else
+                setFaction(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_FACTION_RED));
+        }
+    }
 
     delete result;
 }
@@ -15274,7 +15283,8 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
         m_movementInfo.SetTransportData(0, 0.0f, 0.0f, 0.0f, 0.0f, 0, -1);
     }
-
+	
+	_LoadBGStatus(holder->GetResult(PLAYER_LOGIN_QUERY_LOADBGSTATUS));
     _LoadBGData(holder->GetResult(PLAYER_LOGIN_QUERY_LOADBGDATA));
 
     if(m_bgData.bgInstanceID)                                                //saved in BattleGround
@@ -16765,6 +16775,17 @@ bool Player::_LoadHomeBind(QueryResult *result)
     return true;
 }
 
+void Player::_LoadBGStatus(QueryResult *result)
+{
+    if (result)
+    {
+        m_FirstBGTime = (*result)[0].GetUInt32();
+        delete result;
+    }
+    else
+        m_FirstBGTime = 0;
+}
+
 /*********************************************************/
 /***                   SAVE SYSTEM                     ***/
 /*********************************************************/
@@ -16933,6 +16954,7 @@ void Player::SaveToDB()
         _SaveMail();
 
     _SaveBGData();
+	_SaveBGStatus();
     _SaveInventory();
     _SaveQuestStatus();
     _SaveDailyQuestStatus();
@@ -21057,9 +21079,6 @@ void Player::SendEnterVehicle(Vehicle *vehicle, VehicleSeatEntry const *veSeat)
     data << uint32(0);                                      // fall time
     GetSession()->SendPacket(&data);
 
-    //movement anticheat fix
-    SetPosition(vehicle->GetPositionX(), vehicle->GetPositionY(), vehicle->GetPositionZ(),vehicle->GetOrientation());
-
     data.Initialize(SMSG_PET_SPELLS, 8+2+4+4+4*MAX_UNIT_ACTION_BAR_INDEX+1+1);
     data << uint64(vehicle->GetGUID());
     data << uint16(0);
@@ -21255,17 +21274,23 @@ void Player::AutoStoreLoot(uint8 bag, uint8 slot, uint32 loot_id, LootStore cons
 uint32 Player::CalculateTalentsPoints() const
 {
     uint32 base_talent = getLevel() < 10 ? 0 : getLevel()-9;
+	if (!(sWorld.getConfig(CONFIG_BOOL_DK_NO_QUESTS_FOR_TP)))
+	{
+		if(getClass() != CLASS_DEATH_KNIGHT)
+			return uint32(base_talent * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
 
-    if(getClass() != CLASS_DEATH_KNIGHT)
-        return uint32(base_talent * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
+		uint32 talentPointsForLevel = getLevel() < 56 ? 0 : getLevel() - 55;
+		talentPointsForLevel += m_questRewardTalentCount;
 
-    uint32 talentPointsForLevel = getLevel() < 56 ? 0 : getLevel() - 55;
-    talentPointsForLevel += m_questRewardTalentCount;
+		if(talentPointsForLevel > base_talent)
+			talentPointsForLevel = base_talent;
 
-    if(talentPointsForLevel > base_talent)
-        talentPointsForLevel = base_talent;
-
-    return uint32(talentPointsForLevel * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
+		return uint32(talentPointsForLevel * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
+	}
+	else
+	{
+		return uint32(base_talent * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
+	}
 }
 
 bool Player::IsKnowHowFlyIn(uint32 mapid, uint32 zone) const
@@ -21474,7 +21499,11 @@ uint8 Player::CanEquipUniqueItem( ItemPrototype const* itemProto, uint8 except_s
 void Player::HandleFall(MovementInfo const& movementInfo)
 {
     // calculate total z distance of the fall
-    float z_diff = m_lastFallZ - movementInfo.GetPos()->z;
+    //float z_diff = m_lastFallZ - movementInfo.z;
+    float z_diff = (m_lastFallZ >= m_anti_BeginFallZ ? m_lastFallZ : m_anti_BeginFallZ) - movementInfo.GetPos()->z;
+     
+    m_anti_BeginFallZ=INVALID_HEIGHT;
+    //float z_diff = m_lastFallZ - movementInfo.GetPos()->z;
     sLog.outDebug("zDiff = %f", z_diff);
 
     //Players with low fall distance, Feather Fall or physical immunity (charges used) are ignored
@@ -22124,10 +22153,22 @@ void Player::_SaveBGData()
     if (m_bgData.bgInstanceID)
     {
         /* guid, bgInstanceID, bgTeam, x, y, z, o, map, taxi[0], taxi[1], mountSpell */
-        CharacterDatabase.PExecute("INSERT INTO character_battleground_data VALUES ('%u', '%u', '%u', '%f', '%f', '%f', '%f', '%u', '%u', '%u', '%u')",
+        CharacterDatabase.PExecute("INSERT INTO character_battleground_data VALUES ('%u', '%u', '%u', '%f', '%f', '%f', '%f', '%u', '%u', '%u', '%u', '%u')",
             GetGUIDLow(), m_bgData.bgInstanceID, m_bgData.bgTeam, m_bgData.joinPos.coord_x, m_bgData.joinPos.coord_y, m_bgData.joinPos.coord_z,
-            m_bgData.joinPos.orientation, m_bgData.joinPos.mapid, m_bgData.taxiPath[0], m_bgData.taxiPath[1], m_bgData.mountSpell);
+            m_bgData.joinPos.orientation, m_bgData.joinPos.mapid, m_bgData.taxiPath[0], m_bgData.taxiPath[1], m_bgData.mountSpell, m_TeamBGSide);
     }
+}
+
+void Player::_SaveBGStatus()
+{
+    if(!m_FirstBattleground)
+        return;
+
+    CharacterDatabase.PExecute("DELETE FROM character_battleground_status WHERE guid='%u'", GetGUIDLow());
+    CharacterDatabase.PExecute("INSERT INTO character_battleground_status VALUES ('%u', '%u')",
+        GetGUIDLow(), m_FirstBGTime);
+
+    m_FirstBattleground = false;
 }
 
 void Player::DeleteEquipmentSet(uint64 setGuid)
