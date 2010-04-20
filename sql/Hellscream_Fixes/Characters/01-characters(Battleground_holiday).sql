@@ -1,5 +1,3 @@
-USE `characters`;
-
 DROP TABLE IF EXISTS `character_battleground_status`;
 
 CREATE TABLE `character_battleground_status` (
