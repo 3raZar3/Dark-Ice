@@ -70,15 +70,16 @@ enum ShutdownExitCode
 /// Timers for different object refresh rates
 enum WorldTimers
 {
-    WUPDATE_OBJECTS     = 0,
-    WUPDATE_SESSIONS    = 1,
-    WUPDATE_AUCTIONS    = 2,
-    WUPDATE_WEATHERS    = 3,
-    WUPDATE_UPTIME      = 4,
-    WUPDATE_CORPSES     = 5,
-    WUPDATE_EVENTS      = 6,
-    WUPDATE_AUTOBROADCAST = 7,
-    WUPDATE_COUNT         = 8
+    WUPDATE_OBJECTS       = 0,
+    WUPDATE_SESSIONS      = 1,
+    WUPDATE_AUCTIONS      = 2,
+    WUPDATE_WEATHERS      = 3,
+    WUPDATE_UPTIME        = 4,
+    WUPDATE_CORPSES       = 5,
+    WUPDATE_EVENTS        = 6,
+    WUPDATE_DELETECHARS   = 7,
+    WUPDATE_AUTOBROADCAST = 8,
+    WUPDATE_COUNT         = 9
 };
 
 /// Configuration elements
@@ -207,6 +208,10 @@ enum eConfigUInt32Values
     CONFIG_UINT32_TEAM_BG_FACTION_RED,
     CONFIG_UINT32_TEAM_BG_BUFF_BLUE,
     CONFIG_UINT32_TEAM_BG_BUFF_RED,
+
+    CONFIG_UINT32_CHARDELETE_KEEP_DAYS,
+    CONFIG_UINT32_CHARDELETE_METHOD,
+    CONFIG_UINT32_CHARDELETE_MIN_LEVEL,
     CONFIG_UINT32_VALUE_COUNT
 };
 
