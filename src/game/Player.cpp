@@ -16536,6 +16536,7 @@ void Player::_LoadTalents(QueryResult *result)
         delete result;
     }
 }
+
 void Player::_LoadGroup(QueryResult *result)
 {
     //QueryResult *result = CharacterDatabase.PQuery("SELECT groupId FROM group_member WHERE memberGuid='%u'", GetGUIDLow());
@@ -22269,7 +22270,7 @@ void Player::ActivateSpec(uint8 specNum)
 
     ApplyGlyphs(false);
 
-    // copy of new talent spec (we will use it as model for converting current tlanet state to new)
+    // copy of new talent spec (we will use it as model for converting current talent state to new)
     PlayerTalentMap tempSpec = m_talents[specNum];
 
     // copy old spec talents to new one, must be before spec switch to have previous spec num(as m_activeSpec)
