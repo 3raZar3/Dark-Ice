@@ -4856,7 +4856,7 @@ void Unit::SendPeriodicAuraLog(SpellPeriodicAuraLogInfo *pInfo)
     {
         case SPELL_AURA_PERIODIC_DAMAGE:
         case SPELL_AURA_PERIODIC_DAMAGE_PERCENT:
-            data << uint32(pInfo->damage);                  // damage
+            data << uint32(pInfo->damage - pInfo->absorb - pInfo->resist);   // damage
             data << uint32(pInfo->overDamage);              // overkill?
             data << uint32(GetSpellSchoolMask(aura->GetSpellProto()));
             data << uint32(pInfo->absorb);                  // absorb
@@ -11782,6 +11782,25 @@ float Unit::ApplyTotalThreatModifier(float threat, SpellSchoolMask schoolMask)
 
 void Unit::AddThreat(Unit* pVictim, float threat /*= 0.0f*/, bool crit /*= false*/, SpellSchoolMask schoolMask /*= SPELL_SCHOOL_MASK_NONE*/, SpellEntry const *threatSpell /*= NULL*/)
 {
+    //Prevent crash, but that should be checked before call this void. Damn SD2
+    if(!pVictim)
+        return;
+
+    if(!pVictim->isAlive())
+        return;
+
+    //Misdirection hack
+    if (pVictim->GetTypeId() == TYPEID_PLAYER && pVictim->HasAura(34477, EFFECT_INDEX_1))
+        if (Group *pGroup = ((Player*)pVictim)->GetGroup())
+            for (GroupReference *itr = pGroup->GetFirstMember(); itr != NULL; itr = itr->next())
+                if (Unit* realVictim = itr->getSource())
+                    if (Aura* misdirection = realVictim->GetDummyAura(35079))
+                        if (pVictim->GetGUID() == misdirection->GetCasterGUID() && realVictim->IsInMap(pVictim))
+                        {
+                            pVictim = realVictim;
+                            break;
+                        }
+
     // Only mobs can manage threat lists
     if(CanHaveThreatList())
         m_ThreatManager.addThreat(pVictim, threat, crit, schoolMask, threatSpell);
