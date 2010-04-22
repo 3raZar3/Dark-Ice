@@ -21,7 +21,7 @@
 
 DROP TABLE IF EXISTS `character_db_version`;
 CREATE TABLE `character_db_version` (
-  `required_9702_01_characters_item` bit(1) default NULL
+  `required_9767_03_characters_characters` bit(1) default NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Last applied sql update to DB';
 
 --
@@ -256,6 +256,9 @@ CREATE TABLE `characters` (
   `ammoId` int(10) UNSIGNED NOT NULL default '0',
   `knownTitles` longtext,
   `actionBars` tinyint(3) UNSIGNED NOT NULL default '0',
+  `deleteInfos_Account` int(11) UNSIGNED default NULL,
+  `deleteInfos_Name` varchar(12) default NULL,
+  `deleteDate` bigint(20) default NULL,
   PRIMARY KEY  (`guid`),
   KEY `idx_account` (`account`),
   KEY `idx_online` (`online`),
@@ -816,7 +819,8 @@ CREATE TABLE `character_spell` (
   `spell` int(11) unsigned NOT NULL default '0' COMMENT 'Spell Identifier',
   `active` tinyint(3) unsigned NOT NULL default '1',
   `disabled` tinyint(3) unsigned NOT NULL default '0',
-  PRIMARY KEY  (`guid`,`spell`)
+  PRIMARY KEY  (`guid`,`spell`),
+  KEY `Idx_spell` (`spell`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ROW_FORMAT=DYNAMIC COMMENT='Player System';
 
 --
