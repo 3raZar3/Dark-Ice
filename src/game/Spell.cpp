@@ -1112,6 +1112,14 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
             realCaster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_IMMUNE);
         return;
     }
+	
+	// Recheck deflection (only for delayed spells)
+    if (m_spellInfo->speed && unit->HasAura(19263))
+    {
+        if (realCaster)
+            realCaster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_DEFLECT);
+        return;
+    }
 
     if (unit->GetTypeId() == TYPEID_PLAYER)
     {
@@ -2718,6 +2726,13 @@ void Spell::cast(bool skipCheck)
 			// Item - Druid T10 Balance 2P Bonus
             else if (m_spellInfo->Id == 16870 && m_caster->HasAura(70718))
                 AddTriggeredSpell(70721);
+            break;
+        }
+		case SPELLFAMILY_HUNTER:
+        {
+            // Deterrence
+            if (m_spellInfo->Id == 19263)
+                AddTriggeredSpell(67801);
             break;
         }
         case SPELLFAMILY_ROGUE:
