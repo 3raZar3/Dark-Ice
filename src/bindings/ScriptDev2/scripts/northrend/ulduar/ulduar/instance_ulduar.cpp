@@ -22,7 +22,7 @@ SDCategory: Ulduar
 EndScriptData */
 
 #include "precompiled.h"
-#include "ulduar.h"
+#include "def_ulduar.h"
 
 //Flame leviathan coordinates to summon - its vehicle 
 #define LEVIATHAN_X  458.518f
