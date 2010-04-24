@@ -238,7 +238,7 @@ void instance_naxxramas::SwitchDoor(uint32 uiData, uint64 doorGUID)
         else
             pDoor->SetGoState(GO_STATE_ACTIVE);
     }
-
+}
 bool instance_naxxramas::IsEncounterInProgress()
 {
     for (uint8 i = 0; i < MAX_ENCOUNTER; ++i)
@@ -272,7 +272,7 @@ void instance_naxxramas::SetData(uint32 uiType, uint32 uiData)
             SwitchDoor(uiData, m_uiMaexInnerGUID);
             if (uiData == DONE)
             {
-                SwitchDoor(uiData, m_uiAracEyeRampGUID)
+                SwitchDoor(uiData, m_uiAracEyeRampGUID);
                 DoRespawnGameObject(m_uiAracPortalGUID, 30*MINUTE);
             }
             break;
@@ -400,7 +400,6 @@ void instance_naxxramas::SetData(uint32 uiType, uint32 uiData)
                     break;
                 default:
                     m_auiEncounter[14] = uiData;
-					SwitchDoor(uiData, m_uiKelthuzadExitDoorGUID);
                     break;
             }
             break;
