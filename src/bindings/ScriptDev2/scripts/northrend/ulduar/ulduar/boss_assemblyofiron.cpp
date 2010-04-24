@@ -80,7 +80,7 @@ CreatureAI* GetAI_boss_aaa(Creature* pCreature)
     return new boss_aaaAI(pCreature);
 }
 
-void AddSC_boss_asembly_of_iron()
+void AddSC_boss_assembly_of_iron()
 {
     Script *newscript;
     newscript = new Script;

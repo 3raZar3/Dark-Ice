@@ -336,7 +336,7 @@ extern void AddSC_halls_of_stone();
 extern void AddSC_boss_krystallus();
 extern void AddSC_instance_halls_of_stone();
 extern void AddSC_boss_algalon();							//ulduar
-extern void AddSC_boss_asembly_of_iron();
+extern void AddSC_boss_assembly_of_iron();
 extern void AddSC_boss_auriaya();
 extern void AddSC_boss_flameleviathan();
 extern void AddSC_boss_freya();
@@ -825,7 +825,7 @@ void AddScripts()
     AddSC_instance_halls_of_stone();
 
     AddSC_boss_algalon(); 									//ulduar
-    AddSC_boss_asembly_of_iron();
+    AddSC_boss_assembly_of_iron();
     AddSC_boss_auriaya();
     AddSC_boss_flameleviathan();
     AddSC_boss_freya();
