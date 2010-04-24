@@ -449,6 +449,10 @@
 					RelativePath="..\scripts\custom\custom_npc_tokenvendor.cpp"
 					>
 				</File>
+				<File
+					RelativePath="..\scripts\custom\custom_script_training_dummy.cpp"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="eastern_kingdoms"

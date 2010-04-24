@@ -250,7 +250,7 @@ struct MANGOS_DLL_DECL instance_ulduar : public ScriptedInstance
             case TYPE_VEZAX:
                 m_auiEncounter[11] = uiData;
                 break;
-            case TYPE_YOGGSARON:
+            case TYPE_YOGG_SARON:
                 m_auiEncounter[12] = uiData;
                 break;
             case TYPE_ALGALON:
@@ -347,7 +347,7 @@ struct MANGOS_DLL_DECL instance_ulduar : public ScriptedInstance
             case TYPE_THORIM:
             case TYPE_FREYA:
             case TYPE_VEZAX:
-            case TYPE_YOGGSARON:
+            case TYPE_YOGG_SARON:
             case TYPE_ALGALON:
                 return m_auiEncounter[uiType];
         }
