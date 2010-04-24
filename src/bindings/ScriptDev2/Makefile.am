@@ -59,6 +59,7 @@ scripts/custom/custom_npc_spellmaster.cpp \
 scripts/custom/custom_npc_teleportmaster.cpp \
 scripts/custom/custom_npc_titlemaster.cpp \
 scripts/custom/custom_npc_tokenvendor.cpp \
+scripts/custom/custom_script_training_dummy.cpp \
 scripts/eastern_kingdoms/alterac_mountains.cpp \
 scripts/eastern_kingdoms/arathi_highlands.cpp \
 scripts/eastern_kingdoms/blasted_lands.cpp \
