@@ -2224,10 +2224,6 @@
 						RelativePath="..\scripts\northrend\violet_hold\violet_hold.cpp"
 						>
 					</File>
-					<File
-						RelativePath="..\scripts\northrend\violet_hold\violet_hold.h"
-						>
-					</File>
 				</Filter>
 				<Filter
 					Name="icecrown_citadel"
@@ -2315,10 +2311,6 @@
 								>
 							</File>
 							<File
-								RelativePath="..\scripts\northrend\icecrown_citadel\frozen_halls\pit_of_saron\boss_scourgelord_tirannus.cpp"
-								>
-							</File>
-							<File
 								RelativePath="..\scripts\northrend\icecrown_citadel\frozen_halls\pit_of_saron\boss_scourgelord_tyrannus.cpp"
 								>
 							</File>
@@ -2368,10 +2360,6 @@
 							</File>
 							<File
 								RelativePath="..\scripts\northrend\icecrown_citadel\frozen_halls\forge_of_souls\def_forge.h"
-								>
-							</File>
-							<File
-								RelativePath="..\scripts\northrend\icecrown_citadel\frozen_halls\forge_of_souls\forge_of_souls.h"
 								>
 							</File>
 							<File
