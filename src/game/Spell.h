@@ -362,7 +362,7 @@ class Spell
         void EffectSummonVehicle(SpellEffectIndex eff_idx);
         void EffectDamageBuilding(SpellEffectIndex eff_idx);
 
-        Spell( Unit* Caster, SpellEntry const *info, bool triggered, ObjectGuid originalCasterGUID = ObjectGuid(), Spell** triggeringContainer = NULL );
+        Spell( Unit* caster, SpellEntry const *info, bool triggered, ObjectGuid originalCasterGUID = ObjectGuid(), Spell** triggeringContainer = NULL );
         ~Spell();
 
         void prepare(SpellCastTargets const* targets, Aura* triggeredByAura = NULL);
