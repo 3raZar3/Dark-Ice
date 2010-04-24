@@ -1511,6 +1511,11 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
         case SPELLFAMILY_MAGE:
             if( spellInfo_2->SpellFamilyName == SPELLFAMILY_MAGE )
             {
+				// Living Bomb & Ignite
+                if( (spellInfo_1->SpellIconID == 3000) && (spellInfo_2->SpellIconID == 937) ||
+                    (spellInfo_2->SpellIconID == 3000) && (spellInfo_1->SpellIconID == 937) )
+                    return false;
+
                 // Blizzard & Chilled (and some other stacked with blizzard spells
                 if( (spellInfo_1->SpellFamilyFlags & UI64LIT(0x80)) && (spellInfo_2->SpellFamilyFlags & UI64LIT(0x100000)) ||
                     (spellInfo_2->SpellFamilyFlags & UI64LIT(0x80)) && (spellInfo_1->SpellFamilyFlags & UI64LIT(0x100000)) )
@@ -1534,6 +1539,26 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 // Arcane Intellect and Dalaran Intellect
                 if( (spellInfo_1->SpellFamilyFlags & UI64LIT(0x400)) && (spellInfo_2->SpellFamilyFlags & UI64LIT(0x400)) )
                     return true;
+
+				//Focus magic 30min buff and 10s proc
+                if( (spellInfo_1->Id == 54648) && (spellInfo_2->Id == 54646) ||
+                    (spellInfo_2->Id == 54648) && (spellInfo_1->Id == 54646) )
+                    return false;
+
+                //Focus magic(30 min buff) and Praxis (T8 set bonus)
+                if( (spellInfo_1->Id == 54646) && (spellInfo_2->Id == 64868) ||
+                    (spellInfo_2->Id == 54646) && (spellInfo_1->Id == 64868) )
+                    return false;
+
+                //Focus magic(10s buff) and Praxis (T8 set bonus)
+                if( (spellInfo_1->Id == 54648) && (spellInfo_2->Id == 64868) ||
+                    (spellInfo_2->Id == 54648) && (spellInfo_1->Id == 64868) )
+                    return false;
+
+                //Improved scorch and Winter's Chill
+                if( (spellInfo_1->Id == 22959) && (spellInfo_2->Id == 12579) ||
+                    (spellInfo_2->Id == 22959) && (spellInfo_1->Id == 12579) )
+                    return false;
             }
             // Detect Invisibility and Mana Shield (multi-family check)
             if( spellInfo_2->Id == 132 && spellInfo_1->SpellIconID == 209 && spellInfo_1->SpellVisual[0] == 968 )
