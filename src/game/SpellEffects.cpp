@@ -1737,8 +1737,9 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     return;
 
                 uint32 rage = m_caster->GetPower(POWER_RAGE);
+				uint32 lastrage=0;
 
-                // up to max 30 rage cost
+				// up to max 30 rage cost
                 if (rage > 300)
                     rage = 300;
 
