@@ -12048,7 +12048,7 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
     else
         unitPlayer = NULL;
 
-    uint8 comboPoints = unitPlayer ? unitPlayer->GetComboPoints() : 0;
+    uint8 comboPoints = (GetTypeId() != TYPEID_PLAYER && ((Creature*)this)->isVehicle() ? ((Vehicle*)this)->m_comboPointsForCast : (unitPlayer ? unitPlayer->GetComboPoints() : 0));
 
     int32 level = int32(getLevel());
     if (level > (int32)spellProto->maxLevel && spellProto->maxLevel > 0)

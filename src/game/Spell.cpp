@@ -44,6 +44,7 @@
 #include "VMapFactory.h"
 #include "BattleGround.h"
 #include "Util.h"
+#include "Vehicle.h"
 
 #define SPELL_CHANNEL_UPDATE_INTERVAL (1 * IN_MILLISECONDS)
 
@@ -2909,7 +2910,14 @@ void Spell::cast(bool skipCheck)
     SendCastResult(castResult);
     SendSpellGo();                                          // we must send smsg_spell_go packet before m_castItem delete in TakeCastItem()...
 
-    InitializeDamageMultipliers();
+	// Cache combo points used for spell and clear real one to prevent mutlti-casting delayed spells
+	if(m_caster->GetTypeId() != TYPEID_PLAYER && ((Creature*)m_caster)->isVehicle() && NeedsComboPoints(m_spellInfo))
+	{
+	((Vehicle*)m_caster)->m_comboPointsForCast = ((Player*)m_caster->GetCharmer())->GetComboPoints();
+	((Player*)m_caster->GetCharmer())->ClearComboPoints();
+	}
+	
+	InitializeDamageMultipliers();
 
     // Okay, everything is prepared. Now we need to distinguish between immediate and evented delayed spells
     if (m_spellInfo->speed > 0.0f)
@@ -2918,6 +2926,13 @@ void Spell::cast(bool skipCheck)
         // Remove used for cast item if need (it can be already NULL after TakeReagents call
         // in case delayed spell remove item at cast delay start
         TakeCastItem();
+		if(m_caster->GetTypeId() != TYPEID_PLAYER && ((Creature*)m_caster)->isVehicle() && NeedsComboPoints(m_spellInfo))
+		{
+			if(m_caster->GetTypeId() == TYPEID_PLAYER)
+				((Player*)m_caster)->ClearComboPoints();
+			else
+				((Player*)m_caster->GetCharmer())->ClearComboPoints();
+		}
 
         // fill initial spell damage from caster for delayed casted spells
         for(std::list<TargetInfo>::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
@@ -3287,9 +3302,7 @@ void Spell::finish(bool ok)
         if (needDrop)
         {
             if(m_caster->GetTypeId() == TYPEID_PLAYER)
-                ((Player*)m_caster)->ClearComboPoints();
-            else
-                ((Player*)m_caster->GetCharmer())->ClearComboPoints();
+                ((Player*)m_caster)->ClearComboPoints();						
         }
     }
 
