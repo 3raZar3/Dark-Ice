@@ -1,10 +1,3 @@
--- Quest "They took our men!"
--- rusty cage
-UPDATE gameobject_template SET
-data3 = 6000,
-ScriptName = 'go_rusty_cage'
-WHERE entry = 191544;
-
 DELETE FROM `script_texts` WHERE `entry` IN (-1999778,-1999777);
 INSERT INTO `script_texts` (`entry`, `content_default`, `sound`, `type`, `language`, `emote`, `comment`) VALUES
 (-1999778, "Time to hightail it! Thanks friend!", 0, 0, 0, 0, 'Goblin Prisoner - thanks1 (Q: They took out men)'),
