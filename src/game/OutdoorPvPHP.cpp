@@ -72,13 +72,10 @@ bool OutdoorPvPHP::SetupOutdoorPvP()
     for (int i = 0; i < OutdoorPvPHPBuffZonesNum; ++i)
         RegisterZone(OutdoorPvPHPBuffZones[i]);
 
-    sLog.outError("!!! HP_TOWER_BROKEN_HILL !!!");
     AddCapturePoint(new OPvPCapturePointHP(this,HP_TOWER_BROKEN_HILL));
 
-    sLog.outError("!!! HP_TOWER_OVERLOOK !!!");
     AddCapturePoint(new OPvPCapturePointHP(this,HP_TOWER_OVERLOOK));
 
-    sLog.outError("!!! HP_TOWER_STADIUM !!!");
     AddCapturePoint(new OPvPCapturePointHP(this,HP_TOWER_STADIUM));
 
     return true;
@@ -249,8 +246,6 @@ void OPvPCapturePointHP::ChangeState()
 
     GameObject * flag = ObjectAccessor::GetGameObjectInWorld(m_capturePointGUID);
     GameObject * flag2 = ObjectAccessor::GetGameObjectInWorld(m_Objects[m_TowerType]);
-    /*GameObject* flag = HashMapHolder<GameObject>::Find(m_capturePointGUID);
-    GameObject* flag2 = HashMapHolder<GameObject>::Find(m_Objects[m_TowerType]);*/
     if(flag)
     {
         flag->SetGoArtKit(artkit);
@@ -308,7 +303,6 @@ void OPvPCapturePointHP::FillInitialWorldStates(WorldPacket &data)
 
 bool OPvPCapturePointHP::HandlePlayerEnter(Player *plr)
 {
-    sLog.outError("OPvPCapturePointHP::HandlePlayerEnter");
     if(OPvPCapturePoint::HandlePlayerEnter(plr))
     {
         plr->SendUpdateWorldState(HP_UI_TOWER_SLIDER_DISPLAY, 1);

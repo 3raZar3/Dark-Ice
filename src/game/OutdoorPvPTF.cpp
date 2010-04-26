@@ -287,7 +287,6 @@ void OPvPCapturePointTF::ChangeState()
     }
 
     GameObject * flag = ObjectAccessor::GetGameObjectInWorld(m_capturePointGUID);
-    //GameObject* flag = HashMapHolder<GameObject>::Find(m_capturePointGUID);
     if(flag)
     {
         flag->SetGoArtKit(artkit);

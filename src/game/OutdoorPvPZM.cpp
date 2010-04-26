@@ -346,7 +346,6 @@ bool OPvPCapturePointZM_GraveYard::HandleGossipOption(Player *plr, uint64 guid, 
     if(itr != m_CreatureTypes.end())
     {
         Creature * cr = ObjectAccessor::GetCreatureInWorld(guid);
-        //Creature * cr = HashMapHolder<Creature>::Find(guid);
         if(!cr)
             return true;
         // if the flag is already taken, then return

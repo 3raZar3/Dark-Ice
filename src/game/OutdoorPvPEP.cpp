@@ -90,8 +90,6 @@ void OPvPCapturePointEP_EWT::ChangeState()
 
         GameObject * flag = ObjectAccessor::GetGameObjectInWorld(m_capturePointGUID);
         GameObject * flag2 = ObjectAccessor::GetGameObjectInWorld(m_Objects[EP_EWT_FLAGS]);
-        /*GameObject* flag = HashMapHolder<GameObject>::Find(m_capturePointGUID);
-        GameObject* flag2 = HashMapHolder<GameObject>::Find(m_Objects[EP_EWT_FLAGS]);*/
         if(flag)
         {
             flag->SetGoArtKit(artkit);
@@ -245,8 +243,6 @@ void OPvPCapturePointEP_NPT::ChangeState()
 
         GameObject * flag = ObjectAccessor::GetGameObjectInWorld(m_capturePointGUID);
         GameObject * flag2 = ObjectAccessor::GetGameObjectInWorld(m_Objects[EP_NPT_FLAGS]);
-        /*GameObject* flag = HashMapHolder<GameObject>::Find(m_capturePointGUID);
-        GameObject* flag2 = HashMapHolder<GameObject>::Find(m_Objects[EP_NPT_FLAGS]);*/
         if(flag)
         {
             flag->SetGoArtKit(artkit);
@@ -323,7 +319,6 @@ void OPvPCapturePointEP_NPT::SummonGO(uint32 team)
         m_SummonedGOSide = team;
         DelObject(EP_NPT_BUFF);
         AddObject(EP_NPT_BUFF,EP_NPT_LordaeronShrine.entry,EP_NPT_LordaeronShrine.map,EP_NPT_LordaeronShrine.x,EP_NPT_LordaeronShrine.y,EP_NPT_LordaeronShrine.z,EP_NPT_LordaeronShrine.o,EP_NPT_LordaeronShrine.rot0,EP_NPT_LordaeronShrine.rot1,EP_NPT_LordaeronShrine.rot2,EP_NPT_LordaeronShrine.rot3);
-        //GameObject * go = HashMapHolder<GameObject>::Find(m_Objects[EP_NPT_BUFF]);
         GameObject * go = ObjectAccessor::GetGameObjectInWorld(m_Objects[EP_NPT_BUFF]);
         if(go)
             go->SetUInt32Value(GAMEOBJECT_FACTION,(team == ALLIANCE ? 84 : 83));
@@ -393,8 +388,6 @@ void OPvPCapturePointEP_CGT::ChangeState()
 
         GameObject * flag = ObjectAccessor::GetGameObjectInWorld(m_capturePointGUID);
         GameObject * flag2 = ObjectAccessor::GetGameObjectInWorld(m_Objects[EP_CGT_FLAGS]);
-        /*GameObject* flag = HashMapHolder<GameObject>::Find(m_capturePointGUID);
-        GameObject* flag2 = HashMapHolder<GameObject>::Find(m_Objects[EP_CGT_FLAGS]);*/
         if(flag)
         {
             flag->SetGoArtKit(artkit);
@@ -539,8 +532,6 @@ void OPvPCapturePointEP_PWT::ChangeState()
 
         GameObject * flag = ObjectAccessor::GetGameObjectInWorld(m_capturePointGUID);
         GameObject * flag2 = ObjectAccessor::GetGameObjectInWorld(m_Objects[EP_PWT_FLAGS]);
-        /*GameObject* flag = HashMapHolder<GameObject>::Find(m_capturePointGUID);
-        GameObject* flag2 = HashMapHolder<GameObject>::Find(m_Objects[EP_PWT_FLAGS]);*/
         if(flag)
         {
             flag->SetGoArtKit(artkit);
