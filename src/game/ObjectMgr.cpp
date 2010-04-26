@@ -1318,6 +1318,106 @@ void ObjectMgr::RemoveCreatureFromGrid(uint32 guid, CreatureData const* data)
     }
 }
 
+uint32 ObjectMgr::AddGOData(uint32 entry, uint32 mapId, float x, float y, float z, float o, uint32 spawntimedelay, float rotation0, float rotation1, float rotation2, float rotation3)
+{
+    GameObjectInfo const* goinfo = GetGameObjectInfo(entry);
+    if (!goinfo)
+        return 0;
+
+    Map * map = const_cast<Map*>(sMapMgr.CreateBaseMap(mapId));
+    if(!map)
+        return 0;
+
+    uint32 guid = GenerateLowGuid(HIGHGUID_GAMEOBJECT);
+    GameObjectData& data = NewGOData(guid);
+    data.id             = entry;
+    data.mapid          = mapId;
+    data.posX           = x;
+    data.posY           = y;
+    data.posZ           = z;
+    data.orientation    = o;
+    data.rotation0      = rotation0;
+    data.rotation1      = rotation1;
+    data.rotation2      = rotation2;
+    data.rotation3      = rotation3;
+    data.spawntimesecs  = spawntimedelay;
+    data.animprogress   = 100;
+    data.spawnMask      = 1;
+    data.go_state       = GO_STATE_READY;
+    data.phaseMask      = PHASEMASK_NORMAL;
+    data.artKit         = goinfo->type == GAMEOBJECT_TYPE_CAPTURE_POINT ? 21 : 0;
+    data.dbData = false;
+
+    AddGameobjectToGrid(guid, &data);
+
+    // Spawn if necessary (loaded grids only)
+    // We use spawn coords to spawn
+    if(!map->Instanceable() && map->IsLoaded(x, y))
+    {
+        GameObject *go = new GameObject;
+        if (!go->LoadFromDB(guid, map))
+        {
+            sLog.outError("AddGOData: cannot add gameobject entry %u to map", entry);
+            delete go;
+            return 0;
+        }
+        map->Add(go);
+    }
+
+    sLog.outDebug("AddGOData: dbguid %u entry %u map %u x %f y %f z %f o %f", guid, entry, mapId, x, y, z, o);
+
+    return guid;
+}
+
+uint32 ObjectMgr::AddCreData(uint32 entry, uint32 team, uint32 mapId, float x, float y, float z, float o, uint32 spawntimedelay)
+{
+    CreatureInfo const *cInfo = GetCreatureTemplate(entry);
+    if(!cInfo)
+        return 0;
+
+    uint32 guid = GenerateLowGuid(HIGHGUID_UNIT);
+    CreatureData& data = NewOrExistCreatureData(guid);
+    data.id = entry;
+    data.mapid = mapId;
+    data.displayid = 0;
+    data.equipmentId = cInfo->equipmentId;
+    data.posX = x;
+    data.posY = y;
+    data.posZ = z;
+    data.orientation = o;
+    data.spawntimesecs = spawntimedelay;
+    data.spawndist = 0;
+    data.currentwaypoint = 0;
+    data.curhealth = 1;
+    data.curmana = 1;
+    data.is_dead = false;
+    data.movementType = cInfo->MovementType;
+    data.spawnMask = 1;
+    data.phaseMask = PHASEMASK_NORMAL;
+    data.dbData = false;
+
+    AddCreatureToGrid(guid, &data);
+
+    // Spawn if necessary (loaded grids only)
+    if(Map * map = const_cast<Map*>(sMapMgr.CreateBaseMap(mapId)))
+    {
+        // We use spawn coords to spawn
+        if(!map->Instanceable() && !map->IsRemovalGrid(x, y))
+        {
+            Creature* creature = new Creature;
+            if(!creature->LoadFromDB(guid, map))
+            {
+                sLog.outError("AddCreature: cannot add creature entry %u to map", entry);
+                delete creature;
+                return 0;
+            }
+            map->Add(creature);
+        }
+    }
+
+    return guid;
+}
+
 void ObjectMgr::LoadGameobjects()
 {
     uint32 count = 0;
