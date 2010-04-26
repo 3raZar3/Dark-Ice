@@ -3921,7 +3921,11 @@ bool Unit::AddAura(Aura *Aur)
             for(AuraMap::iterator i2 = m_Auras.lower_bound(spair); i2 != m_Auras.upper_bound(spair); ++i2)
             {
                 Aura* aur2 = i2->second;
-                if(aur2->GetCasterGUID()==Aur->GetCasterGUID())
+                bool vehicle = false;
+                if(Unit *caster = Aur->GetCaster())
+                    if(caster->GetVehicleGUID())
+                        vehicle = true;
+                if(aur2->GetCasterGUID()==Aur->GetCasterGUID() || vehicle)
                 {
                     // Aura can stack on self -> Stack it;
                     if(aurSpellInfo->StackAmount)
@@ -8792,7 +8796,14 @@ bool Unit::Attack(Unit *victim, bool meleeAttack)
 
     // player (also npc?) cannot attack on vehicle
     if(GetTypeId()==TYPEID_PLAYER && GetVehicleGUID())
-        return false;
+    {
+        Vehicle *pVehicle = GetMap()->GetVehicle(GetVehicleGUID());
+        if(!pVehicle)
+            return false;
+
+        if(!(pVehicle->GetVehicleFlags() & VF_ALLOW_MELEE))
+            return false;
+    }
 
     // player (also npc?) cannot attack on vehicle
     if(GetTypeId()==TYPEID_UNIT && ((Creature*)this)->isVehicle() && GetCharmerGUID())

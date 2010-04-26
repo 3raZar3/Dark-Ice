@@ -486,6 +486,9 @@ bool IsPositiveEffect(uint32 spellId, SpellEffectIndex effIndex)
     SpellEntry const *spellproto = sSpellStore.LookupEntry(spellId);
     if (!spellproto) return false;
 
+    if(spellproto->Id == 56266)
+        return false;
+
     switch(spellId)
     {
         case 47540:                                         // Penance start dummy aura - Rank 1
@@ -593,7 +596,16 @@ bool IsPositiveEffect(uint32 spellId, SpellEffectIndex effIndex)
                         }
                     }
                     break;
-                case SPELL_AURA_PROC_TRIGGER_SPELL:
+                case SPELL_AURA_PERIODIC_TRIGGER_SPELL_WITH_VALUE:
+                    {
+                        if(spellproto->SpellFamilyName == SPELLFAMILY_PRIEST && spellproto->SpellIconID == 548)
+                            return false;
+                    }
+                    //Vortex
+                     if(spellproto->Id == 56266)
+                         return false;
+                    break;
+                    case SPELL_AURA_PROC_TRIGGER_SPELL:
                     // many positive auras have negative triggered spells at damage for example and this not make it negative (it can be canceled for example)
                     break;
                 case SPELL_AURA_MOD_STUN:                   //have positive and negative spells, we can't sort its correctly at this moment.
@@ -688,6 +700,11 @@ bool IsPositiveEffect(uint32 spellId, SpellEffectIndex effIndex)
                 }   break;
                 case SPELL_AURA_FORCE_REACTION:
                     if(spellproto->Id==42792)               // Recently Dropped Flag (prevent cancel)
+                        return false;
+                    break;
+                case SPELL_AURA_CONTROL_VEHICLE:
+                    //Vortex
+                    if(spellproto->Id == 56266)
                         return false;
                     break;
                 default:

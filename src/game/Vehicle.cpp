@@ -83,7 +83,7 @@ void Vehicle::Update(uint32 diff)
     if(m_regenUpdateTimer <= diff)
     {
         RegeneratePower(getPowerType());
-        m_regenUpdateTimer = 100;
+        m_regenTimer = 1000;
     }
     else
         m_regenUpdateTimer -= diff;
@@ -104,9 +104,15 @@ void Vehicle::RegeneratePower(Powers power)
     if(m_vehicleInfo->m_powerType == POWER_TYPE_PYRITE)
         return;
 
-    addvalue = 1.0;
+    addvalue = 10.0;
 
     ModifyPower(power, (int32)addvalue);
+
+    WorldPacket data(SMSG_POWER_UPDATE);
+    data.append(GetPackGUID());
+    data << uint8(power);
+    data << uint32(addvalue+curValue);
+    SendMessageToSet(&data, true);
 }
 
 bool Vehicle::Create(uint32 guidlow, Map *map, uint32 phaseMask, uint32 Entry, uint32 vehicleId, uint32 team, const CreatureData *data)
@@ -150,6 +156,7 @@ bool Vehicle::Create(uint32 guidlow, Map *map, uint32 phaseMask, uint32 Entry, u
     if(map->IsDungeon() && ((InstanceMap*)map)->GetInstanceData())
     {
         ((InstanceMap*)map)->GetInstanceData()->OnCreatureCreate(this);
+    SetHealth(GetMaxHealth());
     }
     
     if(m_vehicleInfo->m_powerType == POWER_TYPE_STEAM)

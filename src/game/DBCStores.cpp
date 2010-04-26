@@ -452,6 +452,12 @@ void LoadDBCStores(const std::string& dataPath)
         #endif
     }
 
+    //Surge of power spells should be longer
+    SpellEntry *sfix4 = const_cast<SpellEntry*>(sSpellStore.LookupEntry(57407));
+    sfix4->DurationIndex = 28;
+    SpellEntry *sfix5 = const_cast<SpellEntry*>(sSpellStore.LookupEntry(60936));
+    sfix5->DurationIndex = 28;
+
     for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
     {
         SkillLineAbilityEntry const *skillLine = sSkillLineAbilityStore.LookupEntry(j);
