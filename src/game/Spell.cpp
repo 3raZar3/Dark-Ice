@@ -4538,10 +4538,10 @@ SpellCastResult Spell::CheckCast(bool strict)
 		{
             return SPELL_FAILED_NOT_ON_TAXI;
 		}			
-		else if(m_caster->GetVehicleGUID())
-		{
-			if(!(m_caster->m_SeatData.s_flags & SF_CAN_CAST))
-				return SPELL_FAILED_NOT_MOUNTED;
+        else if(m_caster->GetVehicleGUID())
+        {
+            if(!(m_caster->m_SeatData.s_flags & SF_CAN_CAST))
+                return SPELL_FAILED_NOT_MOUNTED;
 		}
         else if ((sWorld.getConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE)) && (m_spellInfo->Id==55884))
         {
