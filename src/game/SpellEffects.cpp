@@ -5839,6 +5839,25 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     ((Player*)unitTarget)->ModifyMoney(50000000);
                     break;
                 }
+                case 48762:                                 // A Fall from Grace: Scarlet Raven Priest Image - Master
+                {
+                   if (!unitTarget)
+                       return;
+
+                   unitTarget->CastSpell(unitTarget,(unitTarget->getGender() == 1) ? 48761 : 48763,true);
+                    return;
+
+                }
+                case 48769:                                 // A Fall from Grace: Quest Completion Script
+                {
+                   if (!unitTarget)
+                       return;
+
+                   if (unitTarget->HasAura(48761))
+                       unitTarget->RemoveAurasDueToSpell(48761);
+                   if (unitTarget->HasAura(48763))
+                   return;
+                }
                 case 47097:                                 // Surge Needle Teleporter
                 {
                     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
