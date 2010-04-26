@@ -2928,13 +2928,8 @@ void Spell::cast(bool skipCheck)
         // Remove used for cast item if need (it can be already NULL after TakeReagents call
         // in case delayed spell remove item at cast delay start
         TakeCastItem();
-		if(m_caster->GetTypeId() != TYPEID_PLAYER && ((Creature*)m_caster)->isVehicle() && NeedsComboPoints(m_spellInfo))
-		{
-			if(m_caster->GetTypeId() == TYPEID_PLAYER)
-				((Player*)m_caster)->ClearComboPoints();
-			else
-				((Player*)m_caster->GetCharmer())->ClearComboPoints();
-		}
+        if(m_caster->GetTypeId() != TYPEID_PLAYER && ((Creature*)m_caster)->isVehicle() && NeedsComboPoints(m_spellInfo))
+                ((Player*)m_caster->GetCharmer())->ClearComboPoints();
 
         // fill initial spell damage from caster for delayed casted spells
         for(std::list<TargetInfo>::iterator ihit = m_UniqueTargetInfo.begin(); ihit != m_UniqueTargetInfo.end(); ++ihit)
