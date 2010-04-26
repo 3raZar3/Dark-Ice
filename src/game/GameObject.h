@@ -358,15 +358,15 @@ struct GameObjectInfo
         {
             uint32 intactNumHits;                           //0
             uint32 creditProxyCreature;                     //1
-            uint32 empty1;                                  //2
+            uint32 state1Name;                                  //2
             uint32 intactEvent;                             //3
-            uint32 empty2;                                  //4
+            uint32 damagedDisplayId;                                  //4
             uint32 damagedNumHits;                          //5
             uint32 empty3;                                  //6
             uint32 empty4;                                  //7
             uint32 empty5;                                  //8
             uint32 damagedEvent;                            //9
-            uint32 empty6;                                  //10
+            uint32 destroyedDisplayId;                                  //10
             uint32 empty7;                                  //11
             uint32 empty8;                                  //12
             uint32 empty9;                                  //13
@@ -505,6 +505,15 @@ struct GameObjectInfo
     }
 };
 
+union GameObjectValue
+{
+    //33 GAMEOBJECT_TYPE_DESTRUCTIBLE_BUILDING
+    struct
+    {
+        uint32 health;
+    }destructibleBuilding;
+};
+
 // GCC have alternative #pragma pack() syntax and old gcc version not support pack(pop), also any gcc version not support it at some platform
 #if defined( __GNUC__ )
 #pragma pack()
@@ -579,7 +588,9 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
 
         bool Create(uint32 guidlow, uint32 name_id, Map *map, uint32 phaseMask, float x, float y, float z, float ang, float rotation0, float rotation1, float rotation2, float rotation3, uint32 animprogress, GOState go_state, uint32 artKit = 0);
         void Update(uint32 p_time);
-        GameObjectInfo const* GetGOInfo() const;
+        GameObjectInfo const* GetGOInfo() const { return m_goInfo; }
+        GameObjectData const* GetGOData() const { return m_goData; }
+        GameObjectValue * GetGOValue() const { return m_goValue; }
 
         bool IsTransport() const;
 
@@ -698,6 +709,9 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
 
         GameObject* LookupFishingHoleAround(float range);
 
+		void TakenDamage(uint32 damage, Unit* who = NULL);
+        void Rebuild();
+
         GridReference<GameObject> &GetGridRef() { return m_gridRef; }
 
         bool isActiveObject() const { return false; }
@@ -719,6 +733,8 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
 
         uint32 m_DBTableGuid;                               ///< For new or temporary gameobjects is 0 for saved it is lowguid
         GameObjectInfo const* m_goInfo;
+		GameObjectData const* m_goData;
+        GameObjectValue * const m_goValue;
         uint64 m_rotation;
     private:
         void SwitchDoorOrButton(bool activate, bool alternative = false);

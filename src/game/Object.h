@@ -476,7 +476,7 @@ class MANGOS_DLL_SPEC WorldObject : public Object
         Map const* GetBaseMap() const;
 
         void SetZoneScript();
-        ZoneScript * GetZoneScript() const { return m_zoneScript; }
+        ZoneScript *GetZoneScript() const { return m_zoneScript; }
 
         void AddToClientUpdateList();
         void RemoveFromClientUpdateList();

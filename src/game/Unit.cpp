@@ -1872,14 +1872,13 @@ void Unit::CalculateAbsorbAndResist(Unit *pCaster, SpellSchoolMask schoolMask, D
     // Magic damage, check for resists
     if ((schoolMask & SPELL_SCHOOL_MASK_NORMAL)==0)
     {
-        float victimResistance = float(pVictim->GetResistance(GetFirstSchoolInMask(schoolMask)));
+        float victimResistance = float(pCaster->GetResistance(GetFirstSchoolInMask(schoolMask)));
         victimResistance += float(GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_TARGET_RESISTANCE, schoolMask));
         if(victimResistance < 0.0f)
             victimResistance = 0.0f;
 
-        // http://elitistjerks.com/f15/t44675-resistance_mechanics_wotlk/
-        float resistConst = pVictim->getLevel() * 5.0f;
-        if(pVictim->GetTypeId()==TYPEID_UNIT && ((Creature*)pVictim)->isWorldBoss())
+        float resistConst = pCaster->getLevel() * 5.0f;
+        if(pCaster->GetTypeId()==TYPEID_UNIT && ((Creature*)pCaster)->isWorldBoss())
             resistConst = 510.0f;
 
         float averageResist = victimResistance / (victimResistance + resistConst);
@@ -1900,10 +1899,16 @@ void Unit::CalculateAbsorbAndResist(Unit *pCaster, SpellSchoolMask schoolMask, D
             discreteResistProbability[1] = 5.0f * averageResist;
             discreteResistProbability[2] = 2.5f * averageResist;
         }
-        if (damagetype == DOT && m == 4)
-            *resist += uint32(damage - 1);
-        else
-            *resist += uint32(damage * m / 4);
+
+        float psum = 0.0f;
+        uint32 i = 0;
+        float norm = rand_norm_f();
+
+        while (norm >= psum && i < 11)
+            psum += discreteResistProbability[i++];
+
+        *resist += uint32(damage * (i>0?i-1:0) / 10.0f);
+
         if(*resist > damage)
             *resist = damage;
     }

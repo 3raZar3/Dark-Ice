@@ -109,7 +109,7 @@ void Vehicle::RegeneratePower(Powers power)
     ModifyPower(power, (int32)addvalue);
 
     WorldPacket data(SMSG_POWER_UPDATE);
-    data.append(GetPackGUID());
+    data << GetPackGUID();
     data << uint8(power);
     data << uint32(addvalue+curValue);
     SendMessageToSet(&data, true);

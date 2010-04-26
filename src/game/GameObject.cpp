@@ -39,7 +39,7 @@
 #include "Util.h"
 #include "ScriptCalls.h"
 
-GameObject::GameObject() : WorldObject()
+GameObject::GameObject() : WorldObject(), m_goValue(new GameObjectValue)
 {
     m_objectType |= TYPEMASK_GAMEOBJECT;
     m_objectTypeId = TYPEID_GAMEOBJECT;
@@ -55,6 +55,7 @@ GameObject::GameObject() : WorldObject()
     m_spellId = 0;
     m_cooldownTime = 0;
     m_goInfo = NULL;
+	m_goData = NULL;
 
     m_DBTableGuid = 0;
     m_rotation = 0;
@@ -65,6 +66,7 @@ GameObject::GameObject() : WorldObject()
 
 GameObject::~GameObject()
 {
+	delete m_goValue;
 }
 
 void GameObject::AddToWorld()
@@ -648,7 +650,8 @@ bool GameObject::LoadFromDB(uint32 guid, Map *map)
         }
     }
 
-    return true;
+    m_goData = data;
+	return true;
 }
 
 void GameObject::DeleteFromDB()
@@ -660,10 +663,6 @@ void GameObject::DeleteFromDB()
     WorldDatabase.PExecuteLog("DELETE FROM gameobject_battleground WHERE guid = '%u'", m_DBTableGuid);
 }
 
-GameObjectInfo const *GameObject::GetGOInfo() const
-{
-    return m_goInfo;
-}
 
 /*********************************************************/
 /***                    QUEST SYSTEM                   ***/
@@ -1489,6 +1488,63 @@ void GameObject::UpdateRotationFields(float rotation2 /*=0.0f*/, float rotation3
 
     SetFloatValue(GAMEOBJECT_PARENTROTATION+2, rotation2);
     SetFloatValue(GAMEOBJECT_PARENTROTATION+3, rotation3);
+}
+
+void GameObject::TakenDamage(uint32 damage, Unit *who)
+{
+    GameObjectInfo const* info = GetGOInfo();
+    if (!m_goValue->destructibleBuilding.health)
+        return;
+
+	Player* pwho = NULL;
+    if(who && who->GetTypeId() == TYPEID_PLAYER)
+      pwho = (Player*)who;
+
+    if(who && who->GetTypeId() == TYPEID_UNIT && ((Creature*)who)->isVehicle())
+      pwho = (Player*)who->GetCharmerOrOwner();
+
+	if (m_goValue->destructibleBuilding.health > damage)
+        m_goValue->destructibleBuilding.health -= damage;
+    else
+        m_goValue->destructibleBuilding.health = 0;
+
+    if (HasFlag(GAMEOBJECT_FLAGS, GO_FLAG_DAMAGED)) // from damaged to destroyed
+    {
+        if(!m_goValue->destructibleBuilding.health)
+        {
+            RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_DAMAGED);
+            SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_DESTROYED);
+            SetUInt32Value(GAMEOBJECT_DISPLAYID, m_goInfo->destructibleBuilding.destroyedDisplayId);
+            //EventInform(m_goInfo->destructibleBuilding.destroyedEvent);
+            if(pwho)
+            {
+                /*if(BattleGround* bg = pwho->GetBattleGround())
+                    bg->EventPlayerDamagedGO(pwho, this, m_goInfo->destructibleBuilding.destroyedEvent);*/
+            }
+        }
+    }
+    else // from intact to damaged
+    {
+        if (m_goValue->destructibleBuilding.health <= m_goInfo->destructibleBuilding.damagedNumHits)
+        {
+            if (!info->destructibleBuilding.destroyedDisplayId)
+                m_goValue->destructibleBuilding.health = 0;
+            else if (!m_goValue->destructibleBuilding.health)
+                m_goValue->destructibleBuilding.health = 1;
+
+            SetFlag(GAMEOBJECT_FLAGS, GO_FLAG_DAMAGED);
+            SetUInt32Value(GAMEOBJECT_DISPLAYID, m_goInfo->destructibleBuilding.damagedDisplayId);
+            //EventInform(m_goInfo->destructibleBuilding.damagedEvent);
+        }
+    }
+}
+
+void GameObject::Rebuild()
+{
+    RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_DAMAGED + GO_FLAG_DESTROYED);
+    SetUInt32Value(GAMEOBJECT_DISPLAYID, m_goInfo->displayId);
+    m_goValue->destructibleBuilding.health = m_goInfo->destructibleBuilding.intactNumHits + m_goInfo->destructibleBuilding.damagedNumHits;
+    //EventInform(m_goInfo->destructibleBuilding.rebuildingEvent);
 }
 
 bool GameObject::IsHostileTo(Unit const* unit) const

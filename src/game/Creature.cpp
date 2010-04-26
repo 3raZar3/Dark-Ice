@@ -44,6 +44,8 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 #include "Vehicle.h"
+#include "Object.h"
+#include "ZoneScript.h"
 
 // apply implementation of the singletons
 #include "Policies/SingletonImp.h"
