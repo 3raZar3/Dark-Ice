@@ -822,7 +822,7 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_PVP_TOKEN_RESTRICTION,"PvPToken.MapRestriction", 4);
 
     if(getConfig(CONFIG_PVP_TOKEN_ITEMCOUNT) < 1)
-    setConfig(CONFIG_PVP_TOKEN_ITEMCOUNT,"PvPToken.ItemCount",1);
+		setConfig(CONFIG_PVP_TOKEN_ITEMCOUNT,"PvPToken.ItemCount",1);
 	
     setConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE, "Custom.AllowFlyingMountsEverywhere", false);
 	setConfig(CONFIG_BOOL_MAIL_ITEM_REFUNDABLE, "Custom.MailItemRefundable", false);
@@ -831,6 +831,13 @@ void World::LoadConfigSettings(bool reload)
 	setConfig(CONFIG_BOOL_DK_NO_QUESTS_FOR_TP, "Custom.DeathKnightNoQuestsForTP", false);
 	setConfig(CONFIG_BOOL_PVP_ANNOUNCER, "Custom.PvPAnnouncer", false);
 	setConfig(CONFIG_BOOL_DUALSPEC_AT_CREATE, "Custom.DualSpecAtCreate", false);
+	setConfig(CONFIG_BOOL_EXTRA_SANCTUARY, "Custom.AddExtraSanctuary", false);
+	setConfig(CONFIG_BOOL_EXTRA_PVP, "Custom.AddExtraPvPZones", false);
+	setConfig(CONFIG_UINT32_SANCTUARY_ID, "Custom.SanctuaryZone", 0);
+	setConfig(CONFIG_UINT32_PVP_ID_1, "Custom.PvPZone1", 0);
+	setConfig(CONFIG_UINT32_PVP_ID_2, "Custom.PvPZone2", 0);
+	setConfig(CONFIG_UINT32_PVP_ID_3, "Custom.PvPZone3", 0);
+	setConfig(CONFIG_UINT32_PVP_ID_4, "Custom.PvPZone4", 0);
 	
 
     m_VisibleUnitGreyDistance = sConfig.GetFloatDefault("Visibility.Distance.Grey.Unit", 1);
