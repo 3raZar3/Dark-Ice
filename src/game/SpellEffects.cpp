@@ -1745,15 +1745,17 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     return;
 
                 uint32 original_rage = m_caster->GetPower(POWER_RAGE);
-                uint32 rage = original_rage;
 
                 // This is needed to proper cast of 20647
                 SpellEntry const *executeInfo = sSpellStore.LookupEntry(20647);
                 if(!original_rage)
                     m_caster->SetPower(POWER_RAGE,executeInfo->manaCost);
 
+                uint32 rage = original_rage;
+                uint32 lastrage=0;
+
                 // up to max 30 rage cost
-                if (int32(rage) > (300 - GetPowerCost()))
+                if (rage > (300 - GetPowerCost()))
                     rage = (300 - GetPowerCost());
 
                 // Glyph of Execution bonus
@@ -1780,7 +1782,7 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 if(rageLeft < lastrage)
                     rageLeft = lastrage;
 
-                m_caster->SetPower(POWER_RAGE,rageLeft);
+                m_caster->SetPower(POWER_RAGE,original_rage - rage);
                 return;
             }
             // Slam
