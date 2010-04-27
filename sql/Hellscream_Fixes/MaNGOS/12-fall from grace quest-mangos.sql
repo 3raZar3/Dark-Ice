@@ -18,4 +18,3 @@ INSERT INTO quest_start_scripts VALUES
 DELETE FROM quest_end_scripts WHERE id = 12274;
 INSERT INTO quest_end_scripts VALUES 
 (12274,1,15,48765,0,0,0,0,0,0);
-
