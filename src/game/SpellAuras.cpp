@@ -8261,6 +8261,17 @@ void Aura::PeriodicDummyTick()
                         case 2: m_target->CastSpell(m_target, 55739, true); break;
                     }
                     return;
+               case 66118:                                 // Leeching Swarm
+               case 67630:
+               case 68646:
+               case 68647:
+               {
+                   int32 damage = (m_modifier.m_amount * m_target->GetHealth()) / 100;
+                   if (damage < 250)
+                       damage = 250;
+                   m_target->CastCustomSpell(m_target, 66240, &damage, NULL, NULL, true, NULL, this);
+                   return;
+                }
 // Exist more after, need add later
                 default:
                     break;
