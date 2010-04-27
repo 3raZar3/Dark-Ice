@@ -2198,6 +2198,9 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
     // needed by Aura 292
     if (GetGUID() == guid.GetRawValue())
         return ((Creature*)this);
+    // not in interactive state
+    if (hasUnitState(UNIT_STAT_CAN_NOT_REACT))
+        return NULL;
 
     // exist (we need look pets also for some interaction (quest/etc)
     Creature *unit = ObjectAccessor::GetCreatureOrPetOrVehicle(*this,guid);
@@ -2247,6 +2250,10 @@ GameObject* Player::GetGameObjectIfCanInteractWith(ObjectGuid guid, uint32 gameo
 {
     // some basic checks
     if (guid.IsEmpty() || !IsInWorld() || isInFlight())
+        return NULL;
+
+    // not in interactive state
+    if (hasUnitState(UNIT_STAT_CAN_NOT_REACT))
         return NULL;
 
     if (GameObject *go = GetMap()->GetGameObject(guid))
