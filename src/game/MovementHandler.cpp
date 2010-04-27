@@ -578,7 +578,9 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         }
          
         // Check for walking upwards a mountain while not beeing able to do that
-        if ((tg_z > 85.0f))
+        // if ((tg_z > 85.0f)) <-- original check
+        // New check by Darky88 
+        if((delta_z < -2.3f) && (tg_z > 2.37f))
         {
             Anti__CheatOccurred(CurTime,"Mount hack",tg_z,NULL,delta,delta_z);
         }
@@ -598,6 +600,8 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
             // Air-Jump-Detection definitively needs a better way to be detected...
             if((movementInfo.GetMovementFlags() & (MOVEFLAG_CAN_FLY | MOVEFLAG_FLYING | MOVEFLAG_ROOT)) != 0) // Fly Hack
             {
+              // Fix Aura 55164 by KAPATEJIb
+              if (!GetPlayer()->HasAura(55164))
                 Anti__CheatOccurred(CurTime,"Fly hack",
                                     ((uint8)(GetPlayer()->HasAuraType(SPELL_AURA_FLY))) +
                                     ((uint8)(GetPlayer()->HasAuraType(SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED))*2),
