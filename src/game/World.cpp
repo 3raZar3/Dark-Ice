@@ -823,7 +823,7 @@ void World::LoadConfigSettings(bool reload)
 
     if(getConfig(CONFIG_PVP_TOKEN_ITEMCOUNT) < 1)
 		setConfig(CONFIG_PVP_TOKEN_ITEMCOUNT,"PvPToken.ItemCount",1);
-	
+
     setConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE, "Custom.AllowFlyingMountsEverywhere", false);
 	setConfig(CONFIG_BOOL_MAIL_ITEM_REFUNDABLE, "Custom.MailItemRefundable", false);
 	setConfig(CONFIG_MIN_LEVEL_DUALSPEC, "Custom.MinLevelDualSpec", 40);
@@ -838,7 +838,11 @@ void World::LoadConfigSettings(bool reload)
 	setConfig(CONFIG_UINT32_PVP_ID_2, "Custom.PvPZone2", 0);
 	setConfig(CONFIG_UINT32_PVP_ID_3, "Custom.PvPZone3", 0);
 	setConfig(CONFIG_UINT32_PVP_ID_4, "Custom.PvPZone4", 0);
-	
+	setConfig(CONFIG_BOOL_LIMIT_ALLOWED_MOUNTS, "Custom.LimitAllowedMounts", false);
+	setConfig(CONFIG_UINT32_ALLOWED_MOUNT1, "Custom.AllowedMount1", 0);
+	setConfig(CONFIG_UINT32_ALLOWED_MOUNT2, "Custom.AllowedMount2", 0);
+	setConfig(CONFIG_UINT32_ALLOWED_MOUNT3, "Custom.AllowedMount3", 0);
+	setConfig(CONFIG_BOOL_ALL_WEAPONS_MAX_SKILL, "Custom.AllWeaponSkillsAtMax", 0);
 
     m_VisibleUnitGreyDistance = sConfig.GetFloatDefault("Visibility.Distance.Grey.Unit", 1);
     if(m_VisibleUnitGreyDistance >  MAX_VISIBILITY_DISTANCE)

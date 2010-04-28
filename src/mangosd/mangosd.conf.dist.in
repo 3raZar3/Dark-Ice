@@ -1911,6 +1911,54 @@ CharDelete.KeepDays = 30
 #		  If enabled, Death Knights will get their TP from leveling instead of having to do the start quests
 #	  Default : 0
 #
+#	  Custom.AddExtraSanctuary = 0
+#		  If enabled, You can set one extra zone as "Sanctuary" where players are safe from PvP
+#	  Default : 0
+#	  
+#	  Custom.AddExtraPvPZones = 0
+#	  	  If enabled, You can set one extra zone as "PvPZone" where players can PvP (Arena-like)
+#	  Default : 0
+#
+#	  Custom.SanctuaryZone = 0
+#	  	  Zone ID that turns into a Sanctuary after enabling "Custom.AddExtraSanctuary"
+#	  Default : 0
+#
+#	  Custom.PvPZone1 = 0
+#	  	  First Zone ID that turns into an Arena-like zone after enabling "Custom.AddExtraPvPZones"
+#	  Default : 0
+#
+#	  Custom.PvPZone2 = 0
+#	  	  Second Zone ID that turns into an Arena-like zone after enabling "Custom.AddExtraPvPZones"
+#	  Default : 0
+#
+#	  Custom.PvPZone3 = 0
+#	  	  Third Zone ID that turns into an Arena-like zone after enabling "Custom.AddExtraPvPZones"
+#	  Default : 0
+#
+#	  Custom.PvPZone4 = 0
+#	  	  Fourth Zone ID that turns into an Arena-like zone after enabling "Custom.AddExtraPvPZones"
+#	  Default : 0
+#
+#	  Custom.LimitAllowedMounts = 0
+#	  	  If enabled together with Custom.AllowFlyingMountsEverywhere, only the mount IDs stated in Custom.AllowedMount1, Custom.AllowedMount2 and Custom.AllowedMount3 can be used
+#	  Default : 0
+#
+#	  Custom.AllowedMount1 = 0
+#	  	  First allowed Mount ID
+#	  Default : 0
+#
+#	  Custom.AllowedMount2 = 0
+#	  	  Second allowed Mount ID
+#	  Default : 0
+#
+#	  Custom.AllowedMount3 = 0
+#	  	  Third allowed Mount ID
+#	  Default : 0
+#
+#	  Custom.AllWeaponSkillsAtMax = 0
+#	  	  If enabled, at character creation, all characters will have ALL weapon skills at level 450 (for funservers / pvp servers)
+#	  Default : 0
+#
 ###################################################################################################################
 
 Custom.AllowFlyingMountsEverywhere = 0
@@ -1927,3 +1975,8 @@ Custom.PvPZone1 = 0
 Custom.PvPZone2 = 0
 Custom.PvPZone3 = 0
 Custom.PvPZone4 = 0
+Custom.LimitAllowedMounts = 0
+Custom.AllowedMount1 = 0
+Custom.AllowedMount2 = 0
+Custom.AllowedMount3 = 0
+Custom.AllWeaponSkillsAtMax = 0

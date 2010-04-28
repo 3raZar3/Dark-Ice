@@ -10905,7 +10905,7 @@ uint8 Player::CanUseItem( Item *pItem, bool not_loading ) const
                 for(int i = 0; i < 5; i++)
                 {
                     SpellEntry const *sEntry = sSpellStore.LookupEntry(iProto->Spells[i].SpellId);
-                    if (sEntry)
+					if (sEntry)
                     {
                         Player* player = ((Player*)this);
                         if(isFlyingSpell(sEntry))
@@ -22890,6 +22890,12 @@ bool Player::CanUseFlyingMounts(SpellEntry const* sEntry)
 {
     if(!GetFlyingMountTimer())
         return false;
+
+	if (sWorld.getConfig(CONFIG_BOOL_LIMIT_ALLOWED_MOUNTS))
+	{
+			if ((sEntry->Id == (sWorld.getConfig(CONFIG_UINT32_ALLOWED_MOUNT1))) || (sEntry->Id == (sWorld.getConfig(CONFIG_UINT32_ALLOWED_MOUNT2))) || (sEntry->Id == (sWorld.getConfig(CONFIG_UINT32_ALLOWED_MOUNT3))))
+					return false;
+	}
 
     uint32 v_map = GetVirtualMapForMapAndZone(GetMapId(), GetZoneId());
     MapEntry const* mapEntry = sMapStore.LookupEntry(v_map);

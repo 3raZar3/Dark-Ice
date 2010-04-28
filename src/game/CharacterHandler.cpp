@@ -742,8 +742,27 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
 	{
 		pCurrChar->SetDrunkValue(23000);
 	}
-	else pCurrChar->SetDrunkValue(0);
-		
+	if (pCurrChar->GetDrunkValue() >= 10000)
+		pCurrChar->SetDrunkValue(0);
+	
+	if (sWorld.getConfig(CONFIG_BOOL_ALL_WEAPONS_MAX_SKILL))
+	{
+		pCurrChar->SetSkill(SKILL_UNARMED, 450, 450);
+		pCurrChar->SetSkill(SKILL_2H_SWORDS, 450, 450);
+		pCurrChar->SetSkill(SKILL_GUNS, 450, 450);
+		pCurrChar->SetSkill(SKILL_BOWS, 450, 450);
+		pCurrChar->SetSkill(SKILL_AXES, 450, 450);
+		pCurrChar->SetSkill(SKILL_SWORDS, 450, 450);
+		pCurrChar->SetSkill(SKILL_STAVES, 450, 450);
+		pCurrChar->SetSkill(SKILL_2H_MACES, 450, 450);
+		pCurrChar->SetSkill(SKILL_2H_AXES, 450, 450);
+		pCurrChar->SetSkill(SKILL_DAGGERS, 450, 450);
+		pCurrChar->SetSkill(SKILL_THROWN, 450, 450);
+		pCurrChar->SetSkill(SKILL_CROSSBOWS, 450, 450);
+		pCurrChar->SetSkill(SKILL_POLEARMS, 450, 450);
+		pCurrChar->SetSkill(SKILL_FIST_WEAPONS, 450, 450);
+	}
+	
     pCurrChar->SendInitialPacketsBeforeAddToMap();
 
     //Show cinematic at the first time that player login
