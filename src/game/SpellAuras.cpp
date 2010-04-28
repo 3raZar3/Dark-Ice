@@ -2660,6 +2660,20 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
         // Arcane Missiles
         if (m_spellProto->SpellFamilyName == SPELLFAMILY_MAGE && (m_spellProto->SpellFamilyFlags & UI64LIT(0x0000000000000800)))
 
+        // Vampiric Touch
+        if ((GetSpellProto()->SpellFamilyFlags & UI64LIT(0x40000000000)) && m_removeMode==AURA_REMOVE_BY_DISPEL)
+        {
+            Unit* caster = GetCaster();
+            if (!caster)
+                return;
+
+            int32 basepoints = GetSpellProto()->EffectBasePoints[1] * 8;
+            basepoints = caster->SpellDamageBonusDone(m_target, GetSpellProto(), basepoints, DOT);
+            basepoints = m_target->SpellDamageBonusTaken(caster, GetSpellProto(), basepoints, DOT);
+            m_target->CastCustomSpell(m_target, 64085, &basepoints, NULL, NULL, false, NULL, this, GetCasterGUID());
+            return;
+        }
+
         if (m_removeMode == AURA_REMOVE_BY_DEATH)
         {
             //Remove arcane blast

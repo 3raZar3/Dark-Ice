@@ -4369,7 +4369,6 @@ void Unit::RemoveSingleAuraDueToSpellByDispel(uint32 spellId, uint64 casterGUID,
             }
         }
     }
-
     RemoveSingleSpellAurasByCasterSpell(spellId, casterGUID, AURA_REMOVE_BY_DISPEL);
 }
 
