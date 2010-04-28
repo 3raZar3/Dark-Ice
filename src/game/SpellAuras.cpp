@@ -2532,8 +2532,13 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                 {
                     // prevent double apply bonuses
                     if (m_target->GetTypeId() != TYPEID_PLAYER || !((Player*)m_target)->GetSession()->PlayerLoading())
+                    {
                         if (Unit* caster = GetCaster())
-                            m_modifier.m_amount = caster->SpellHealingBonus(m_target, GetSpellProto(), m_modifier.m_amount, SPELL_DIRECT_DAMAGE);
+                        {
+                            m_modifier.m_amount = caster->SpellHealingBonusDone(m_target, GetSpellProto(), m_modifier.m_amount, SPELL_DIRECT_DAMAGE);
+                            m_modifier.m_amount = m_target->SpellHealingBonusTaken(caster, GetSpellProto(), m_modifier.m_amount, SPELL_DIRECT_DAMAGE);
+                        }
+                    }
                     return;
                 }
                 break;
@@ -3010,15 +3015,20 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                 }
             }
 
-            // Lifebloom
+           // Lifebloom
             if (GetSpellProto()->SpellFamilyFlags & UI64LIT(0x1000000000))
             {
                 if (apply)
                 {
                     if (Unit* caster = GetCaster())
+                    {
                         // prevent double apply bonuses
                         if (m_target->GetTypeId() != TYPEID_PLAYER || !((Player*)m_target)->GetSession()->PlayerLoading())
-                            m_modifier.m_amount = caster->SpellHealingBonus(m_target, GetSpellProto(), m_modifier.m_amount, SPELL_DIRECT_DAMAGE);
+                        {
+                            m_modifier.m_amount = caster->SpellHealingBonusDone(m_target, GetSpellProto(), m_modifier.m_amount, SPELL_DIRECT_DAMAGE);
+                            m_modifier.m_amount = m_target->SpellHealingBonusTaken(caster, GetSpellProto(), m_modifier.m_amount, SPELL_DIRECT_DAMAGE);
+                        }
+                    }
                 }
                 else
                 {
@@ -5157,8 +5167,8 @@ void Aura::HandlePeriodicHeal(bool apply, bool /*Real*/)
         if (m_spellProto->SpellIconID == 329 && m_spellProto->SpellVisual[0] == 7625)
         {
             int32 ap = int32 (0.22f * caster->GetTotalAttackPowerValue(BASE_ATTACK));
-            int32 holy = caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellProto))
-                + caster->SpellBaseDamageBonusForVictim(GetSpellSchoolMask(m_spellProto), m_target);
+            int32 holy = caster->SpellBaseDamageBonusDone(GetSpellSchoolMask(m_spellProto))
+                + m_target->SpellBaseDamageBonusTaken(GetSpellSchoolMask(m_spellProto));
             holy = int32(holy * 377 / 1000);
             m_modifier.m_amount += ap > holy ? ap : holy;
         }
@@ -5324,8 +5334,8 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
                 {
                     // AP * 0.025 + SPH * 0.013 bonus per tick
                     float ap = caster->GetTotalAttackPowerValue(BASE_ATTACK);
-                    int32 holy = caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellProto)) +
-                                 caster->SpellBaseDamageBonusForVictim(GetSpellSchoolMask(m_spellProto), GetTarget());
+                    int32 holy = caster->SpellBaseDamageBonusDone(GetSpellSchoolMask(m_spellProto)) +
+                                 GetTarget()->SpellBaseDamageBonusTaken(GetSpellSchoolMask(m_spellProto));
                     m_modifier.m_amount += int32(GetStackAmount()) * (int32(ap * 0.025f) + int32(holy * 13 / 1000));
                     return;
                 }
@@ -7311,15 +7321,15 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
                     if (m_spellProto->SpellFamilyFlags & UI64LIT(0x0000000000000001))
                     {
                         //+80.68% from +spell bonus
-                        DoneActualBenefit = caster->SpellBaseHealingBonus(GetSpellSchoolMask(m_spellProto)) * 0.8068f;
+                        DoneActualBenefit = caster->SpellBaseHealingBonusDone(GetSpellSchoolMask(m_spellProto)) * 0.8068f;
                         //Borrowed Time
                         Unit::AuraList const& borrowedTime = caster->GetAurasByType(SPELL_AURA_DUMMY);
                         for(Unit::AuraList::const_iterator itr = borrowedTime.begin(); itr != borrowedTime.end(); ++itr)
-                        {
+{
                             SpellEntry const* i_spell = (*itr)->GetSpellProto();
                             if(i_spell->SpellFamilyName==SPELLFAMILY_PRIEST && i_spell->SpellIconID == 2899 && i_spell->EffectMiscValue[(*itr)->GetEffIndex()] == 24)
                             {
-                                DoneActualBenefit += caster->SpellBaseHealingBonus(GetSpellSchoolMask(m_spellProto)) * (*itr)->GetModifier()->m_amount / 100;
+                                DoneActualBenefit += DoneActualBenefit * (*itr)->GetModifier()->m_amount / 100;
                                 break;
                             }
                         }
@@ -7330,17 +7340,17 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
                     // Frost Ward, Fire Ward
                     if (m_spellProto->SpellFamilyFlags & UI64LIT(0x0000000000000108))
                         //+10% from +spell bonus
-                        DoneActualBenefit = caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellProto)) * 0.1f;
+                        DoneActualBenefit = caster->SpellBaseDamageBonusDone(GetSpellSchoolMask(m_spellProto)) * 0.1f;
                     // Ice Barrier
                     else if (m_spellProto->SpellFamilyFlags & UI64LIT(0x0000000100000000))
                         //+80.67% from +spell bonus
-                        DoneActualBenefit = caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellProto)) * 0.8067f;
+                        DoneActualBenefit = caster->SpellBaseDamageBonusDone(GetSpellSchoolMask(m_spellProto)) * 0.8067f;
                     break;
                 case SPELLFAMILY_WARLOCK:
                     // Shadow Ward
                     if (m_spellProto->SpellFamilyFlags2 & 0x00000040)
                         //+30% from +spell bonus
-                        DoneActualBenefit = caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellProto)) * 0.30f;
+                        DoneActualBenefit = caster->SpellBaseDamageBonusDone(GetSpellSchoolMask(m_spellProto)) * 0.30f;
                     break;
                 case SPELLFAMILY_PALADIN:
                     // Sacred Shield
@@ -7348,7 +7358,7 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
                     if (m_spellProto->SpellFamilyFlags & UI64LIT(0x0008000000000000))
                     {
                         // +75% from spell power
-                        DoneActualBenefit = caster->SpellBaseHealingBonus(GetSpellSchoolMask(m_spellProto)) * 0.75f;
+                        DoneActualBenefit = caster->SpellBaseHealingBonusDone(GetSpellSchoolMask(m_spellProto)) * 0.75f;
                     }
                     break;
                 default:
@@ -7500,12 +7510,12 @@ void Aura::PeriodicTick()
 
                 // SpellDamageBonus for magic spells
                 if(GetSpellProto()->DmgClass == SPELL_DAMAGE_CLASS_NONE || GetSpellProto()->DmgClass == SPELL_DAMAGE_CLASS_MAGIC)
-                    pdamage = pCaster->SpellDamageBonus(m_target, GetSpellProto(), pdamage, DOT, GetStackAmount());
+                    pdamage = m_target->SpellDamageBonusTaken(pCaster, GetSpellProto(), pdamage, DOT, GetStackAmount());
                 // MeleeDamagebonus for weapon based spells
                 else
                 {
                     WeaponAttackType attackType = GetWeaponAttackType(GetSpellProto());
-                    pdamage = pCaster->MeleeDamageBonus(m_target, pdamage, attackType, GetSpellProto(), DOT, GetStackAmount());
+                    pdamage = m_target->MeleeDamageBonusTaken(pCaster, pdamage, attackType, GetSpellProto(), DOT, GetStackAmount());
                 }
 
                 // Calculate armor mitigation if it is a physical spell
@@ -7600,15 +7610,29 @@ void Aura::PeriodicTick()
 
             uint32 pdamage = m_modifier.m_amount > 0 ? m_modifier.m_amount : 0;
 
-            //Calculate armor mitigation if it is a physical spell
-            if (GetSpellSchoolMask(GetSpellProto()) & SPELL_SCHOOL_MASK_NORMAL)
+            // Calculate armor mitigation if it is a physical spell
+            // But not for bleed mechanic spells
+            if (GetSpellSchoolMask(GetSpellProto()) & SPELL_SCHOOL_MASK_NORMAL &&
+                GetEffectMechanic(GetSpellProto(), m_effIndex) != MECHANIC_BLEED)
             {
                 uint32 pdamageReductedArmor = pCaster->CalcArmorReducedDamage(m_target, pdamage);
                 cleanDamage.damage += pdamage - pdamageReductedArmor;
                 pdamage = pdamageReductedArmor;
             }
 
-            pdamage = pCaster->SpellDamageBonus(m_target, GetSpellProto(), pdamage, DOT, GetStackAmount());
+            // Curse of Agony damage-per-tick calculation
+            if (GetSpellProto()->SpellFamilyName==SPELLFAMILY_WARLOCK && (GetSpellProto()->SpellFamilyFlags & UI64LIT(0x0000000000000400)) && GetSpellProto()->SpellIconID==544)
+            {
+                // 1..4 ticks, 1/2 from normal tick damage
+                if (GetAuraTicks() <= 4)
+                    pdamage = pdamage/2;
+                // 9..12 ticks, 3/2 from normal tick damage
+                else if(GetAuraTicks() >= 9)
+                    pdamage += (pdamage + 1) / 2; // +1 prevent 0.5 damage possible lost at 1..4 ticks
+                // 5..8 ticks have normal tick damage
+            }
+
+            // This method can modify pdamage
             bool isCrit = IsCritFromAbilityAura(pCaster, pdamage);
 
             // send critical in hit info for threat calculation
@@ -7655,7 +7679,7 @@ void Aura::PeriodicTick()
             if(Player *modOwner = pCaster->GetSpellModOwner())
                 modOwner->ApplySpellMod(GetId(), SPELLMOD_MULTIPLE_VALUE, multiplier);
 
-            int32 heal = pCaster->SpellHealingBonus(pCaster, GetSpellProto(), int32(new_damage * multiplier), DOT, GetStackAmount());
+            int32 heal = pCaster->SpellHealingBonusTaken(pCaster, GetSpellProto(), int32(new_damage * multiplier), DOT, GetStackAmount());
 
             int32 gain = pCaster->DealHeal(pCaster, heal, GetSpellProto());
             pCaster->getHostileRefManager().threatAssist(pCaster, gain * 0.5f, GetSpellProto());
@@ -7703,7 +7727,7 @@ void Aura::PeriodicTick()
                 }
             }
 
-            pdamage = pCaster->SpellHealingBonus(m_target, GetSpellProto(), pdamage, DOT, GetStackAmount());
+            pdamage = m_target->SpellHealingBonusTaken(pCaster, GetSpellProto(), pdamage, DOT, GetStackAmount());
 
             // This method can modify pdamage
             bool isCrit = IsCritFromAbilityAura(pCaster, pdamage);
@@ -8534,7 +8558,7 @@ void Aura::HandleManaShield(bool apply, bool Real)
                     {
                         // Mana Shield
                         // +50% from +spd bonus
-                        DoneActualBenefit = caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellProto)) * 0.5f;
+                        DoneActualBenefit = caster->SpellBaseDamageBonusDone(GetSpellSchoolMask(m_spellProto)) * 0.5f;
                         break;
                     }
                     break;
