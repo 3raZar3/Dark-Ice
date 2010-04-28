@@ -16,3 +16,7 @@ WHERE entry=26773;
 DELETE FROM creature_ai_scripts WHERE id=2677301;
 INSERT INTO creature_ai_scripts VALUES
 (2677301,26773,8,0,100,0,50546,-1,0,0,16,26773,50546,6,41,0,0,0,0,0,0,0,'The Focus on the Beach Kill Credit Bunny - Quest Credit after spell hit');
+
+DELETE FROM spell_script_target WHERE entry=50546;
+INSERT INTO spell_script_target VALUES
+(50546,1,26773);
