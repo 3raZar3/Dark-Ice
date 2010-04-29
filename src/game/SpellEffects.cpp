@@ -1752,7 +1752,7 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 if(!original_rage)
                     m_caster->SetPower(POWER_RAGE,executeInfo->manaCost);
 
-                uint32 rage = original_rage;
+                int32 rage = original_rage;
 
                 // up to max 30 rage cost
                 if (rage > (300 - GetPowerCost()))
