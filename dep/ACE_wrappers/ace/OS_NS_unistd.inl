@@ -980,7 +980,7 @@ ACE_OS::swab (const void *src,
   const char *tmp = static_cast<const char*> (src);
   char *from = const_cast<char *> (tmp);
   char *to = static_cast<char *> (dest);
-  ::swab (from, to, length);
+  ::swab (from, to, int(length));
 #elif defined (ACE_HAS_CONST_CHAR_SWAB)
   const char *from = static_cast<const char*> (src);
   char *to = static_cast<char *> (dest);
