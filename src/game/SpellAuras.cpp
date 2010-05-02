@@ -7423,7 +7423,7 @@ void Aura::PeriodicTick()
                 return;
 
             Unit *pCaster = GetCaster();
-            if(!pCaster || !m_target || !pCaster->IsInWorld() || !m_target->IsInWorld())
+            if(!pCaster)
                 return;
 
             if( GetSpellProto()->Effect[GetEffIndex()] == SPELL_EFFECT_PERSISTENT_AREA_AURA &&
@@ -7726,8 +7726,7 @@ void Aura::PeriodicTick()
                 if( BattleGround *bg = ((Player*)pCaster)->GetBattleGround() )
                     bg->UpdatePlayerScore(((Player*)pCaster), SCORE_HEALING_DONE, gain);
 
-            if (m_target->CanHaveThreatList())
-        m_target->getHostileRefManager().threatAssist(pCaster, float(gain) * 0.5f, GetSpellProto());
+            m_target->getHostileRefManager().threatAssist(pCaster, float(gain) * 0.5f, GetSpellProto());
 
             SpellEntry const* spellProto = GetSpellProto();
 
