@@ -608,6 +608,10 @@ void Map::MessageDistBroadcast(WorldObject *obj, WorldPacket *msg, float dist)
 
 bool Map::loaded(const GridPair &p) const
 {
+  // crash guard if x, y coordinates are outside grids
+  if ( (p.x_coord >= MAX_NUMBER_OF_GRIDS) || (p.y_coord >= MAX_NUMBER_OF_GRIDS) )
+    return false;  // consider already loaded, skip
+
     return ( getNGrid(p.x_coord, p.y_coord) && isGridObjectDataLoaded(p.x_coord, p.y_coord) );
 }
 
