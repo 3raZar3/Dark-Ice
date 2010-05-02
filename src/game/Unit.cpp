@@ -12250,7 +12250,10 @@ void Unit::AddThreat(Unit* pVictim, float threat /*= 0.0f*/, bool crit /*= false
                             break;
                         }
 
-    // Only mobs can manage threat lists
+    if(!pVictim || !pVictim->isAlive())
+        return;
+
+    //Only mobs can manage threat lists
     if(CanHaveThreatList())
         m_ThreatManager.addThreat(pVictim, threat, crit, schoolMask, threatSpell);
 }
