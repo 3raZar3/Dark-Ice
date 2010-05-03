@@ -17,7 +17,8 @@
 /* ScriptData
 SDName: Boss_Nadox
 SD%Complete: 90%
-SDComment: TODO: some more research on guardian aura needed, BroodRage needs core and db support
+SDComment: hack for Guardian Aura
+TODO: some more research on guardian aura needed, BroodRage needs core and db support
 SDCategory: Ahn'kahet
 EndScriptData */
 
@@ -109,20 +110,20 @@ struct MANGOS_DLL_DECL boss_nadoxAI : public ScriptedAI
     bool m_bIsRegularMode;
 
     bool   m_bBerserk;
-    bool   m_bGuardianSummoned;
     uint8  m_uiGuardianCount;
     uint32 m_uiBroodPlagueTimer;
     uint32 m_uiBroodRageTimer;
     uint32 m_uiSummonTimer;
+    uint64 m_uiGuardianGUID;
 
     void Reset()
     {
-        m_bBerserk = false;
-        m_bGuardianSummoned = false;
-        m_uiGuardianCount = 3;
-        m_uiSummonTimer = 5000;
+        m_bBerserk           = false;
+        m_uiGuardianCount    = 3;
+        m_uiSummonTimer      = 5000;
         m_uiBroodPlagueTimer = 15000;
-        m_uiBroodRageTimer = 20000;
+        m_uiBroodRageTimer   = 20000;
+        m_uiGuardianGUID     = 0;
     }
 
     Creature* SelectRandomCreatureOfEntryInRange(uint32 uiEntry, float fRange)
@@ -159,18 +160,30 @@ struct MANGOS_DLL_DECL boss_nadoxAI : public ScriptedAI
         DoScriptText(SAY_DEATH, m_creature);
     }
 
+    void DamageTaken(Unit* pDoneBy, uint32& uiDamage) 
+    {
+        Unit* pGuardian = Unit::GetUnit(*m_creature, m_uiGuardianGUID);
+        if(pGuardian && pGuardian->isAlive())
+            uiDamage = 0;
+    }
+
     void UpdateAI(const uint32 uiDiff)
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
-        if (!m_bGuardianSummoned && m_creature->GetHealthPercent() < 50.0f)
+        if (m_creature->GetHealth()*4 < m_creature->GetMaxHealth()*m_uiGuardianCount)
         {
-            // guardian is summoned at 50% of boss HP
-            if (Creature* pGuardianEgg = SelectRandomCreatureOfEntryInRange(NPC_AHNKAHAR_GUARDIAN_EGG, 75.0f))
-                pGuardianEgg->CastSpell(pGuardianEgg, SPELL_SUMMON_SWARM_GUARDIAN, false);
+            //m_uiGuardianGUID = 0;
+            // guardian is summoned at 75%, 50% and 25% of boss HP
+            if (Creature* pGuardianEgg = SelectRandomCreatureOfEntryInRange(NPC_AHNKAHAR_GUARDIAN_EGG, 75.0))
+            {
+                // pGuardianEgg->CastSpell(pGuardianEgg, SPELL_SUMMON_SWARM_GUARDIAN, false);
+                Creature* pGuardian = pGuardianEgg->SummonCreature(NPC_AHNKAHAR_GUARDIAN, pGuardianEgg->GetPositionX(), pGuardianEgg->GetPositionY(), pGuardianEgg->GetPositionZ(), 0, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 3*MINUTE*IN_MILLISECONDS);
+                m_uiGuardianGUID = pGuardian->GetGUID();
+            }
 
-            m_bGuardianSummoned = true;
+            --m_uiGuardianCount;
         }
 
         if (m_uiSummonTimer < uiDiff)
@@ -178,7 +191,11 @@ struct MANGOS_DLL_DECL boss_nadoxAI : public ScriptedAI
             DoScriptText(rand()%2?SAY_SUMMON_EGG_1:SAY_SUMMON_EGG_2, m_creature);
 
             if (Creature* pSwarmerEgg = SelectRandomCreatureOfEntryInRange(NPC_AHNKAHAR_SWARM_EGG, 75.0))
-                pSwarmerEgg->CastSpell(pSwarmerEgg, SPELL_SUMMON_SWARMERS, false);
+            {
+                // pSwarmerEgg->CastSpell(pSwarmerEgg, SPELL_SUMMON_SWARMERS, false);
+                pSwarmerEgg->SummonCreature(NPC_AHNKAHAR_SWARMER, pSwarmerEgg->GetPositionX(), pSwarmerEgg->GetPositionY(), pSwarmerEgg->GetPositionZ(), 0, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 3*MINUTE*IN_MILLISECONDS);
+                pSwarmerEgg->SummonCreature(NPC_AHNKAHAR_SWARMER, pSwarmerEgg->GetPositionX(), pSwarmerEgg->GetPositionY(), pSwarmerEgg->GetPositionZ(), 0, TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, 3*MINUTE*IN_MILLISECONDS);
+            }
 
             m_uiSummonTimer = 10000;
         }
@@ -188,19 +205,19 @@ struct MANGOS_DLL_DECL boss_nadoxAI : public ScriptedAI
         if (m_uiBroodPlagueTimer < uiDiff)
         {
             if (Unit* pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
-                DoCastSpellIfCan(pTarget, m_bIsRegularMode ? SPELL_BROOD_PLAGUE : SPELL_BROOD_PLAGUE_H);
+                DoCast(pTarget, m_bIsRegularMode ? SPELL_BROOD_PLAGUE : SPELL_BROOD_PLAGUE_H);
 
             m_uiBroodPlagueTimer = 20000;
         }
         else
             m_uiBroodPlagueTimer -= uiDiff;
 
-        if (!m_bIsRegularMode)
+        if(!m_bIsRegularMode)
         {
             if (m_uiBroodRageTimer < uiDiff)
             {
                 if (Creature* pRageTarget = SelectRandomCreatureOfEntryInRange(NPC_AHNKAHAR_SWARMER, 50.0))
-                    DoCastSpellIfCan(pRageTarget, SPELL_BROOD_RAGE);
+                    DoCast(pRageTarget, SPELL_BROOD_RAGE);
 
                 m_uiBroodRageTimer = 20000;
             }
@@ -211,7 +228,7 @@ struct MANGOS_DLL_DECL boss_nadoxAI : public ScriptedAI
         if (!m_bBerserk && (m_creature->GetPositionZ() < 24.0))
         {
             m_bBerserk = true;
-            DoCastSpellIfCan(m_creature, SPELL_BERSERK);
+            DoCast(m_creature, SPELL_BERSERK);
         }
 
         DoMeleeAttackIfReady();
