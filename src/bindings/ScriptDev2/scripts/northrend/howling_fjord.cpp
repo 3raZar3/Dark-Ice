@@ -36,7 +36,7 @@ EndContentData */
 ## Deathstalker Razael ##
 #######################*/
 
-#define GOSSIP_ITEM_DEATHSTALKER_RAZAEL "Hochexekutor Anselm verlangt einen Bericht \303\274ber die Situation."
+#define GOSSIP_ITEM_DEATHSTALKER_RAZAEL "High Executor Anselm requests your report."
 
 enum
 {
@@ -79,7 +79,7 @@ bool GossipSelect_npc_deathstalker_razael(Player* pPlayer, Creature* pCreature, 
 ## Dark Ranger Lyana ##
 #####################*/
 
-#define GOSSIP_ITEM_DARK_RANGER_LYANA "Hochexekutor Anselm erbittet Euren Bericht."
+#define GOSSIP_ITEM_DARK_RANGER_LYANA "High Executor Anselm requests your report."
 
 enum
 {
@@ -121,8 +121,8 @@ bool GossipSelect_npc_dark_ranger_lyana(Player* pPlayer, Creature* pCreature, ui
 ## McGoyver ##
 ############*/
 
-#define GOSSIP_ITEM_MCGOYVER1 "Walt sent me to pick up some dark iron ingots." //GMDB TODO
-#define GOSSIP_ITEM_MCGOYVER2 "Yarp." //GMDB TODO
+#define GOSSIP_ITEM_MCGOYVER1 "Walt sent me to pick up some dark iron ingots." 
+#define GOSSIP_ITEM_MCGOYVER2 "Yarp." 
 
 enum
 {
