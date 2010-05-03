@@ -24,9 +24,68 @@ EndScriptData */
 /* ContentData
 npc_kyle_the_frenzied
 npc_skorn_whitecloud
+npc_plains_vision
 EndContentData */
 
 #include "precompiled.h"
+#include "escort_ai.h"
+
+/*######
+# npc_plains_vision
+######*/
+
+enum
+{
+    QUEST_RITE_OF_VISION	= 772,
+	NPC_PLAIN_VISION		= 2983
+};
+
+struct MANGOS_DLL_DECL npc_plains_visionAI : public npc_escortAI
+{
+    npc_plains_visionAI(Creature* pCreature) : npc_escortAI(pCreature)
+    {
+        Start(false, false);
+        Reset();
+    }
+
+	uint64 playerGUID;
+
+	void Reset()
+	{
+		playerGUID = 0;
+	}
+
+    void MoveInLineOfSight(Unit* pWho)
+    {
+        if ((playerGUID==0) && pWho->GetTypeId() == TYPEID_PLAYER)
+		{
+			if (((Player*)pWho)->GetQuestStatus(QUEST_RITE_OF_VISION) == QUEST_STATUS_INCOMPLETE)
+				playerGUID = ((Player*)pWho)->GetGUID();
+		}
+	}
+
+
+    void WaypointReached(uint32 uiPointId)
+    {
+        switch(uiPointId)
+        {
+			case 50:
+				if (Unit* pUnit = Unit::GetUnit(*m_creature,playerGUID))
+				{
+					if(pUnit->GetTypeId() == TYPEID_PLAYER)
+						((Player*)pUnit)->GroupEventHappens(QUEST_RITE_OF_VISION,m_creature);
+				}
+				m_creature->setDeathState(JUST_DIED);
+				m_creature->RemoveCorpse();
+                break;
+        }
+    }
+};
+
+CreatureAI* GetAI_npc_plains_vision(Creature* pCreature)
+{
+    return new npc_plains_visionAI(pCreature);
+}
 
 /*######
 # npc_kyle_the_frenzied
@@ -143,6 +202,7 @@ struct MANGOS_DLL_DECL npc_kyle_the_frenziedAI : public ScriptedAI
             }
             else
                 m_uiEventTimer -= diff;
+
         }
     }
 };
@@ -162,7 +222,7 @@ bool GossipHello_npc_skorn_whitecloud(Player* pPlayer, Creature* pCreature)
         pPlayer->PrepareQuestMenu(pCreature->GetGUID());
 
     if (!pPlayer->GetQuestRewardStatus(770))
-        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Tell me a story, Skorn.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF);
+        pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Erz\303\244hlt mir eine Geschichte, Skorn.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF);
 
     pPlayer->SEND_GOSSIP_MENU(522, pCreature->GetGUID());
 
@@ -177,11 +237,17 @@ bool GossipSelect_npc_skorn_whitecloud(Player* pPlayer, Creature* pCreature, uin
     return true;
 }
 
+
 void AddSC_mulgore()
 {
     Script *newscript;
 
-    newscript = new Script;
+	newscript = new Script;
+    newscript->Name = "npc_plains_vision";
+    newscript->GetAI = &GetAI_npc_plains_vision;
+    newscript->RegisterSelf();
+
+	newscript = new Script;
     newscript->Name = "npc_kyle_the_frenzied";
     newscript->GetAI = &GetAI_npc_kyle_the_frenzied;
     newscript->RegisterSelf();
