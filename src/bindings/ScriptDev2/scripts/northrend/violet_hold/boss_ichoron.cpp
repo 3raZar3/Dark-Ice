@@ -1,4 +1,4 @@
-/* Copyright (C) 2006 - 2010 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+/* Copyright (C) 2006 - 2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -24,7 +24,6 @@ EndScriptData */
 
 #include "precompiled.h"
 #include "def_violet_hold.h"
-
 
 enum
 {
@@ -159,12 +158,13 @@ struct MANGOS_DLL_DECL boss_ichoronAI : public ScriptedAI
 
     void UpdateAI(const uint32 uiDiff)
     {
-        if (m_pInstance->GetData(TYPE_ICHORON) == SPECIAL && !MovementStarted) {
-	m_creature->GetMotionMaster()->MovePoint(0, PortalLoc[0].x, PortalLoc[0].y, PortalLoc[0].z);
-        m_creature->AddSplineFlag(SPLINEFLAG_WALKMODE);
-        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
-        m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-        MovementStarted = true;
+        if (m_pInstance->GetData(TYPE_ICHORON) == SPECIAL && !MovementStarted)
+		{
+			m_creature->GetMotionMaster()->MovePoint(0, PortalLoc[0].x, PortalLoc[0].y, PortalLoc[0].z);
+			m_creature->AddSplineFlag(SPLINEFLAG_WALKMODE);
+			m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
+			m_creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+			MovementStarted = true;
         }
 
         //Return since we have no target
@@ -177,7 +177,7 @@ struct MANGOS_DLL_DECL boss_ichoronAI : public ScriptedAI
             {
                 if (!m_bIsExploded)
                 {
-                    if (!m_creature->HasAura(SPELL_PROTECTIVE_BUBBLE, EFFECT_INDEX_0))
+					if (!m_creature->HasAura(SPELL_PROTECTIVE_BUBBLE, EFFECT_INDEX_0))
                     {
                         DoCast(m_creature, m_bIsRegularMode ? SPELL_WATER_BLAST_H : SPELL_WATER_BLAST);
                         //DoCast(m_creature, SPELL_DRAINED);
@@ -185,7 +185,7 @@ struct MANGOS_DLL_DECL boss_ichoronAI : public ScriptedAI
                         m_uiShowup_Counter = 0;
                         DoCast(m_creature, SPELL_PROTECTIVE_BUBBLE);
                         m_creature->AttackStop();
-//                        m_creature->SetVisibility(VISIBILITY_OFF);
+						//m_creature->SetVisibility(VISIBILITY_OFF);
                         for(uint8 i = 0; i < 10; i++)
                         {
                             int tmp = urand(0, 5);

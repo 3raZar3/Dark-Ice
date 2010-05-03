@@ -24,6 +24,7 @@ EndScriptData */
 
 #include "precompiled.h"
 #include "def_violet_hold.h"
+
 enum
 {
     SPELL_TELEPORT_INSIDE                 = 62139,
@@ -702,7 +703,7 @@ struct MANGOS_DLL_DECL npc_door_sealAI : public ScriptedAI
         {
             if (SpellCorrupt_Timer <= diff)
             {
-                if (m_creature->HasAura(SPELL_CORRUPT,EFFECT_INDEX_0))
+                if (m_creature->HasAura(SPELL_CORRUPT, EFFECT_INDEX_0))
                     SpellCorrupt_Timer = 1500;
                 else
                     SpellCorrupt_Timer = 0;
@@ -844,7 +845,6 @@ CreatureAI* GetAI_npc_azure_saboteur(Creature* pCreature)
 {
     return new npc_azure_saboteurAI (pCreature);
 }
-
 CreatureAI* GetAI_mob_vh_dragons(Creature* pCreature)
 {
     return new mob_vh_dragonsAI(pCreature);

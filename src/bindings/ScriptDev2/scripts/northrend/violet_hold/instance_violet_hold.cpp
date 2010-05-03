@@ -259,7 +259,7 @@ struct MANGOS_DLL_DECL instance_violet_hold : public ScriptedInstance
                 break;
             case TYPE_DISRUPTIONS:
             m_uiDisruptions = uiData;
-//            DoUpdateWorldState(WORLD_STATE_VH_PRISON, 100-m_uiDisruptions*5);
+			//DoUpdateWorldState(WORLD_STATE_VH_PRISON, 100-m_uiDisruptions*5);
             break;
             case TYPE_LASTBOSS_ID:
             m_uiLastBossIDConst = uiData;
@@ -281,7 +281,6 @@ struct MANGOS_DLL_DECL instance_violet_hold : public ScriptedInstance
             SaveToDB();
             OUT_SAVE_INST_DATA_COMPLETE;
         }
-
     }
 
     uint32 GetData(uint32 uiType)
