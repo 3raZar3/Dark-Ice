@@ -1,0 +1,1 @@
+UPDATE `creature_template` SET `ScriptName` = 'boss_malygos' WHERE `entry` = 29655;
