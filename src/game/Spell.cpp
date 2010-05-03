@@ -5367,20 +5367,6 @@ SpellCastResult Spell::CheckPetCast(Unit* target)
 
 			if(!IsValidSingleTargetSpell(_target))
 				return SPELL_FAILED_BAD_TARGETS;
-            else
-            {
-                bool duelvsplayertar = false;
-                for(int j = 0; j < MAX_EFFECT_INDEX; ++j)
-                {
-                                                            //TARGET_DUELVSPLAYER is positive AND negative
-                    duelvsplayertar |= (m_spellInfo->EffectImplicitTargetA[j] == TARGET_DUELVSPLAYER);
-                }
-                if(m_caster->IsFriendlyTo(target) && !duelvsplayertar && !IsDispelSpell(m_spellInfo) && 
-                    !(m_caster->isCharmed() && IsAreaOfEffectSpell(m_spellInfo)))
-                {
-                    return SPELL_FAILED_BAD_TARGETS;
-                }
-            }
         }
                                                             //cooldown
         if(((Creature*)m_caster)->HasSpellCooldown(m_spellInfo->Id))
