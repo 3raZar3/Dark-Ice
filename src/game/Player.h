@@ -1538,11 +1538,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool LoadFromDB(uint32 guid, SqlQueryHolder *holder);
 
         void Initialize(uint32 guid);                      // AHBot
-        static bool   LoadValuesArrayFromDB(Tokens& data,uint64 guid);
-        static uint32 GetUInt32ValueFromArray(Tokens const& data, uint16 index);
-        static float  GetFloatValueFromArray(Tokens const& data, uint16 index);
-        static uint32 GetUInt32ValueFromDB(uint16 index, uint64 guid);
-        static float  GetFloatValueFromDB(uint16 index, uint64 guid);
+
         static uint32 GetZoneIdFromDB(uint64 guid);
         static uint32 GetLevelFromDB(uint64 guid);
         static bool   LoadPositionFromDB(uint32& mapid, float& x,float& y,float& z,float& o, bool& in_flight, uint64 guid);
@@ -2518,6 +2514,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void _LoadBGData(QueryResult* result);
 		void _LoadBGStatus(QueryResult* result);
         void _LoadGlyphs(QueryResult *result);
+        void _LoadIntoDataField(const char* data, uint32 startOffset, uint32 count);
 
         /*********************************************************/
         /***                   SAVE SYSTEM                     ***/

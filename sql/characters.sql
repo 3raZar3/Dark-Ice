@@ -193,7 +193,6 @@ DROP TABLE IF EXISTS `characters`;
 CREATE TABLE `characters` (
   `guid` int(11) unsigned NOT NULL default '0' COMMENT 'Global Unique Identifier',
   `account` int(11) unsigned NOT NULL default '0' COMMENT 'Account Identifier',
-  `data` longtext,
   `name` varchar(12) NOT NULL default '',
   `race` tinyint(3) unsigned NOT NULL default '0',
   `class` tinyint(3) unsigned NOT NULL default '0',
@@ -252,7 +251,6 @@ CREATE TABLE `characters` (
   `power7` int(10) UNSIGNED NOT NULL default '0',
   `specCount` tinyint(3) UNSIGNED NOT NULL default '1',
   `activeSpec` tinyint(3) UNSIGNED NOT NULL default '0',
-<<<<<<< HEAD:sql/characters.sql
   `exploredZones` longtext,
   `equipmentCache` longtext,
   `ammoId` int(10) UNSIGNED NOT NULL default '0',
@@ -261,8 +259,6 @@ CREATE TABLE `characters` (
   `deleteInfos_Account` int(11) UNSIGNED default NULL,
   `deleteInfos_Name` varchar(12) default NULL,
   `deleteDate` bigint(20) default NULL,
-=======
->>>>>>> d65cf5b... Remove character data blob.:sql/characters.sql
   PRIMARY KEY  (`guid`),
   KEY `idx_account` (`account`),
   KEY `idx_online` (`online`),
