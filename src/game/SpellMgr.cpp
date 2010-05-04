@@ -281,6 +281,10 @@ SpellSpecific GetSpellSpecific(uint32 spellId)
             // Warlock (Demon Armor | Demon Skin | Fel Armor)
             if (spellInfo->SpellFamilyFlags & UI64LIT(0x2000002000000000) || spellInfo->SpellFamilyFlags2 & 0x00000010)
                 return SPELL_WARLOCK_ARMOR;
+           
+            // Unstable Affliction & Immolate
+            if (spellInfo->SpellFamilyFlags & UI64LIT(0x10000000004))
+                return SPELL_UA_IMMOLATE;
 
             break;
         }
@@ -368,6 +372,7 @@ bool IsSingleFromSpellSpecificPerTargetPerCaster(SpellSpecific spellSpec1,SpellS
         case SPELL_POSITIVE_SHOUT:
         case SPELL_JUDGEMENT:
         case SPELL_HAND:
+        case SPELL_UA_IMMOLATE:
             return spellSpec1==spellSpec2;
         default:
             return false;
