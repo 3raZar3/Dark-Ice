@@ -1588,7 +1588,8 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         case TARGET_TOTEM_AIR:
         case TARGET_TOTEM_FIRE:
         case TARGET_SELF:
-        case TARGET_SELF2:
+        case TARGET_AREAEFFECT_CUSTOM_2:
+        case TARGET_SELF2:		
         {
             // used for targeting gameobjects
             targetUnitMap.push_back(m_caster);
