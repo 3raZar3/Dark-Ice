@@ -3,7 +3,7 @@ this page to thank and acknowledge credits to those that  helped ,worked or thin
 this list  is not complete and is a work in progress as the list of names and commits get bigger everyday
 
 our boss darkrulerz
-
+myself - the one fallen from grace
 1.mangos dev team
 2. insider42
 3. xeross
