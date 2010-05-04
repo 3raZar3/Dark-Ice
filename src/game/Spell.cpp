@@ -1588,7 +1588,6 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         case TARGET_TOTEM_AIR:
         case TARGET_TOTEM_FIRE:
         case TARGET_SELF:
-        case TARGET_AREAEFFECT_CUSTOM_2:
         case TARGET_SELF2:		
         {
             // used for targeting gameobjects
@@ -1790,7 +1789,6 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             FillAreaTargets(targetUnitMap, m_targets.m_destX, m_targets.m_destY, radius, PUSH_DEST_CENTER, SPELL_TARGETS_AOE_DAMAGE);
             break;
         case TARGET_AREAEFFECT_INSTANT:
-		case TARGET_AREAEFFECT_CUSTOM:
 		case TARGET_AREAEFFECT_CUSTOM_2:
         {
             SpellTargets targetB = SPELL_TARGETS_AOE_DAMAGE;
