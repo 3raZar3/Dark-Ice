@@ -184,6 +184,10 @@ bool IsNoStackAuraDueToAura(uint32 spellId_1, SpellEffectIndex effIndex_1, uint3
         spellInfo_1->EffectApplyAuraName[effIndex_1] != spellInfo_2->EffectApplyAuraName[effIndex_2])
         return false;
 
+    // Potion of Wild Magic stacks with everything
+    if (spellId_1 == 53909 || spellId_2 == 53909)
+      return false;
+
     return true;
 }
 
@@ -1897,6 +1901,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 			if (spellInfo_2->SpellFamilyName == SPELLFAMILY_HUNTER && spellInfo_1->SpellIconID == 316 && spellInfo_2->SpellIconID == 316)
 				return false;			
             break;
+            // [Greater] Blessing of Kings and Blessing of Forgotten Kings
+            if ((spellId_1 == 20217 || spellId_1 == 25898) && spellId_2 == 69378)
+              return true;
+              break; 
         case SPELLFAMILY_SHAMAN:
             if( spellInfo_2->SpellFamilyName == SPELLFAMILY_SHAMAN )
             {
