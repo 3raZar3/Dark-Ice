@@ -56,6 +56,7 @@
 #include "SkillDiscovery.h"
 #include "Formulas.h"
 #include "Vehicle.h"
+#include "GridNotifiers.h"
 
 pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
 {
