@@ -1,0 +1,37 @@
+ -=== Info: ===-
+
+  This text holds the names of the ones who have helped and/or worked on things that we are now using.
+We have used their work (or a portion of it) to build this great core and bring you the core straight
+from the depths of Hell itself.
+
+  /!\NOTE/!\ This is a work in progress as the list of names gets bigger each day. /!\NOTE/!\
+
+  You can always get support, find out the latest news and/or contribute to our project
+                              at: www.hellscream-wow.com
+
+ -=== Credits and Thank You flies out to: ===-
+
+ 1. Hellscream Network development and staff team.
+ 2. MaNGOS development team.
+ 3. YTDB/Yurity/UDB development team.
+ 4. ScriptDev2/ScriptDevZero development team.
+ 3. Insider42.
+ 4. Xeross.
+ 5. RSA.
+ 6. Janu.
+ 7. Tassadar.
+ 8. Trapnet.
+ 9. Gimli.
+10. Laise.
+11. Kero99.
+12. Ancient.
+13. Blueboy.
+14. Scrappydoo
+15. Feanordev.
+16. Sixsixnine.
+17. Przemratajczak.
+18. GriffonHeart.
+19. MrLama.
+20. Selector.
+
+ -=== Last Updated: 05/05/2010 ===-
