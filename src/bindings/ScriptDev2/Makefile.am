@@ -71,7 +71,6 @@ scripts/guards/highlord_bolvar_fordragon.cpp \
 scripts/guards/officers.cpp \
 scripts/guards/overlord_saurfang.cpp \
 scripts/guards/thrall.cpp \
-
 scripts/eastern_kingdoms/alterac_mountains.cpp \
 scripts/eastern_kingdoms/arathi_highlands.cpp \
 scripts/eastern_kingdoms/blasted_lands.cpp \
