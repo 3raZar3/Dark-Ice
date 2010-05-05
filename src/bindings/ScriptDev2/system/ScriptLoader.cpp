@@ -27,6 +27,18 @@ extern void AddSC_example_escort();
 extern void AddSC_example_gossip_codebox();
 extern void AddSC_example_misc();
 
+//guards
+extern void AddSC_ancient_of_war();
+extern void AddSC_archbishop_benedictus();
+extern void AddSC_g_marcus_jonathan();
+extern void AddSC_high_fire_mage();
+extern void AddSC_high_sorcerer_andromath();
+extern void AddSC_highlord_bolvar_fordragon();
+extern void AddSC_city_officer();
+extern void AddSC_overlord_saurfang();
+extern void AddSC_thrall();
+
+
 //world
 extern void AddSC_areatrigger_scripts();
 extern void AddSC_boss_emeriss();

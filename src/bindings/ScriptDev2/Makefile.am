@@ -62,6 +62,16 @@ scripts/custom/custom_npc_teleportmaster.cpp \
 scripts/custom/custom_npc_titlemaster.cpp \
 scripts/custom/custom_npc_tokenvendor.cpp \
 scripts/custom/custom_script_training_dummy.cpp \
+scripts/guards/ancient_of_war.cpp \
+scripts/guards/archbishop_benedictus.cpp \
+scripts/guards/g_marcus_jonathan.cpp \
+scripts/guards/high_fire_mage.cpp \
+scripts/guards/high_sorcerer_andromath.cpp \
+scripts/guards/highlord_bolvar_fordragon.cpp \
+scripts/guards/officers.cpp \
+scripts/guards/overlord_saurfang.cpp \
+scripts/guards/thrall.cpp \
+
 scripts/eastern_kingdoms/alterac_mountains.cpp \
 scripts/eastern_kingdoms/arathi_highlands.cpp \
 scripts/eastern_kingdoms/blasted_lands.cpp \
