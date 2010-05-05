@@ -2,6 +2,9 @@
  * This program is free software licensed under GPL version 2
  * Please see the included DOCS/LICENSE.TXT for more information */
 
+#ifndef DEF_BOSS_SPELL_WORKER_H
+#define DEF_BOSS_SPELL_WORKER_H
+
 #include "Player.h"
 #include "SpellAuras.h"
 #include "Unit.h"
@@ -9,8 +12,6 @@
 #include "Database/DatabaseEnv.h"
 #include "../ScriptMgr.h"
 
-#ifndef DEF_BOSS_SPELL_WORKER_H
-#define DEF_BOSS_SPELL_WORKER_H
 
 enum
 {
@@ -169,11 +170,6 @@ class MANGOS_DLL_DECL BossSpellWorker
              return _BSWDoCast(FindSpellIDX(SpellID), pTarget);
              };
 
-        Unit*  SelectUnit(SelectAggroTarget target = SELECT_TARGET_RANDOM, uint32 uiPosition = 0)
-             {
-             return  _SelectUnit(target, uiPosition);
-             };
-
         Unit* SelectLowHPFriendly(float fRange = 40.0f, uint32 uiMinHPDiff = 0);
 
         uint8 bossSpellCount()
@@ -210,8 +206,6 @@ class MANGOS_DLL_DECL BossSpellWorker
         CanCastResult _DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32 uiCastFlags = 0, uint64 uiOriginalCasterGUID = 0);
 
         CanCastResult _CanCastSpell(Unit* pTarget, const SpellEntry *pSpell, bool isTriggered = false);
-
-        Unit*         _SelectUnit(SelectAggroTarget target, uint32 uiPosition);
 
         bool          _doRemove(uint8 m_uiSpellIdx, Unit* pTarget = NULL, SpellEffectIndex index = EFFECT_INDEX_0);
 
