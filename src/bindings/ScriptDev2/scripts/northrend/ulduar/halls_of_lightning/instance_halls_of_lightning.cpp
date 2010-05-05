@@ -36,7 +36,6 @@ struct MANGOS_DLL_DECL instance_halls_of_lightning : public ScriptedInstance
     instance_halls_of_lightning(Map* pMap) : ScriptedInstance(pMap) {Initialize();};
 
     uint32 m_auiEncounter[MAX_ENCOUNTER];
-    std::string strInstData;
 
     uint64 m_uiGeneralBjarngrimGUID;
     uint64 m_uiIonarGUID;
@@ -92,6 +91,7 @@ struct MANGOS_DLL_DECL instance_halls_of_lightning : public ScriptedInstance
                 m_uiBjarngrimDoorGUID = pGo->GetGUID();
                 if (m_auiEncounter[0] == DONE)
                     pGo->SetGoState(GO_STATE_ACTIVE);
+                break;
             case GO_VOLKHAN_DOOR:
                 m_uiVolkhanDoorGUID = pGo->GetGUID();
                 if (m_auiEncounter[1] == DONE)
@@ -144,24 +144,6 @@ struct MANGOS_DLL_DECL instance_halls_of_lightning : public ScriptedInstance
                 m_auiEncounter[3] = uiData;
                 break;
         }
-
-        if (uiData == DONE)
-        {
-            OUT_SAVE_INST_DATA;
-
-            std::ostringstream saveStream;
-            saveStream << m_auiEncounter[0] << " " << m_auiEncounter[1] << " " << m_auiEncounter[2] << " " << m_auiEncounter[3];
-
-            strInstData = saveStream.str();
-
-            SaveToDB();
-            OUT_SAVE_INST_DATA_COMPLETE;
-        }
-    }
-
-    const char* Save()
-    {
-        return strInstData.c_str();
     }
 
     uint32 GetData(uint32 uiType)
@@ -194,28 +176,6 @@ struct MANGOS_DLL_DECL instance_halls_of_lightning : public ScriptedInstance
                 return m_uiLokenGUID;
         }
         return 0;
-    }
-
-    void Load(const char* in)
-    {
-        if (!in)
-        {
-            OUT_LOAD_INST_DATA_FAIL;
-            return;
-        }
-
-        OUT_LOAD_INST_DATA(in);
-
-        std::istringstream loadStream(in);
-        loadStream >> m_auiEncounter[0] >> m_auiEncounter[1] >> m_auiEncounter[2] >> m_auiEncounter[3];
-
-        for(uint8 i = 0; i < MAX_ENCOUNTER; ++i)
-        {
-            if (m_auiEncounter[i] == IN_PROGRESS)
-                m_auiEncounter[i] = NOT_STARTED;
-        }
-
-        OUT_LOAD_INST_DATA_COMPLETE;
     }
 };
 

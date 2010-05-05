@@ -97,6 +97,24 @@ class AllCreaturesOfEntryInRange
         float m_fRange;
 };
 
+class CreatureWithEntryInRangeNotInCombatCheck
+{
+	public:
+		CreatureWithEntryInRangeNotInCombatCheck(WorldObject const& obj, uint32 entry, float range) : i_obj(obj), i_entry(entry), i_range(range) {}
+		bool operator() (Creature* u)
+		{
+			if (u->GetEntry() == i_entry && u->isAlive() && u->isInCombat() && i_obj.IsWithinDist(u, i_range, false))
+				return true;
+
+			return false;
+		}
+
+	private:
+		WorldObject const& i_obj;
+		uint32 i_entry;
+		float  i_range;
+};
+
 class PlayerAtMinimumRangeAway
 {
     public:
