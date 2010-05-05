@@ -38,6 +38,9 @@ base/simple_ai.cpp \
 base/simple_ai.h \
 include/precompiled.cpp \
 include/precompiled.h \
+include/sc_boss_spell_worker.cpp \
+include/sc_boss_spell_worker.h \
+
 include/sc_creature.cpp \
 include/sc_creature.h \
 include/sc_gossip.h \
