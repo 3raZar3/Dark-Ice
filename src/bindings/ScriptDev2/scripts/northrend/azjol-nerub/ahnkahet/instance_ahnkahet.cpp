@@ -173,9 +173,9 @@ struct MANGOS_DLL_DECL instance_ahnkahet : public ScriptedInstance
         switch(uiType)
         {
             case TYPE_TALDARAM:
-                return m_auiEncounter[0];
-            case TYPE_JEDOGA:
                 return m_auiEncounter[1];
+            case TYPE_JEDOGA:
+                return m_auiEncounter[2];
         }
         return 0;
     }

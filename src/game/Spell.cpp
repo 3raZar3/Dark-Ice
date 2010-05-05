@@ -1588,7 +1588,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         case TARGET_TOTEM_AIR:
         case TARGET_TOTEM_FIRE:
         case TARGET_SELF:
-        case TARGET_SELF2:
+        case TARGET_SELF2:		
         {
             // used for targeting gameobjects
             targetUnitMap.push_back(m_caster);
@@ -1789,7 +1789,6 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             FillAreaTargets(targetUnitMap, m_targets.m_destX, m_targets.m_destY, radius, PUSH_DEST_CENTER, SPELL_TARGETS_AOE_DAMAGE);
             break;
         case TARGET_AREAEFFECT_INSTANT:
-		case TARGET_AREAEFFECT_CUSTOM:
 		case TARGET_AREAEFFECT_CUSTOM_2:
         {
             SpellTargets targetB = SPELL_TARGETS_AOE_DAMAGE;
@@ -1801,6 +1800,55 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
 
             // exclude caster
             targetUnitMap.remove(m_caster);
+            break;
+        }
+        case TARGET_AREAEFFECT_CUSTOM:
+        {
+            if (m_spellInfo->Effect[effIndex] == SPELL_EFFECT_PERSISTENT_AREA_AURA)
+                break;
+            else if (m_spellInfo->Effect[effIndex] == SPELL_EFFECT_SUMMON)
+            {
+                targetUnitMap.push_back(m_caster);
+                break;
+            }
+
+            UnitList tempTargetUnitMap;
+            SpellScriptTargetBounds bounds = sSpellMgr.GetSpellScriptTargetBounds(m_spellInfo->Id);
+            // fill real target list if no spell script target defined
+            FillAreaTargets(bounds.first != bounds.second ? tempTargetUnitMap : targetUnitMap, m_targets.m_destX, m_targets.m_destY, radius, PUSH_DEST_CENTER, SPELL_TARGETS_ALL);
+           
+            if (!tempTargetUnitMap.empty())
+            {
+                for (UnitList::const_iterator iter = tempTargetUnitMap.begin(); iter != tempTargetUnitMap.end(); ++iter)
+                {
+                    if ((*iter)->GetTypeId() != TYPEID_UNIT)
+                        continue;
+
+                    for(SpellScriptTarget::const_iterator i_spellST = bounds.first; i_spellST != bounds.second; ++i_spellST)
+                    {
+                        // only creature entries supported for this target type
+                        if (i_spellST->second.type == SPELL_TARGET_TYPE_GAMEOBJECT)
+                            continue;
+
+                        if ((*iter)->GetEntry() == i_spellST->second.targetEntry)
+                        {
+                            targetUnitMap.push_back((*iter));
+                            break;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // remove not targetable units if spell has no script targets
+                for (UnitList::iterator itr = targetUnitMap.begin(); itr != targetUnitMap.end(); )
+                {
+                    if (!(*itr)->isTargetableForAttack(m_spellInfo->AttributesEx3 & SPELL_ATTR_EX3_CAST_ON_DEAD))
+                        targetUnitMap.erase(itr++);
+                    else
+                        ++itr;
+                }
+            }
             break;
         }
         case TARGET_ALL_ENEMY_IN_AREA_INSTANT:
@@ -2823,6 +2871,9 @@ void Spell::cast(bool skipCheck)
         }
         case SPELLFAMILY_DRUID:
         {
+           if (m_spellInfo->SpellIconID == 2852 && (m_spellInfo->AttributesEx & 0x28020)) // Berserk
+               AddPrecastSpell(58923); // Hit 3 targets at once with mangle in dire bear form
+
             // Faerie Fire (Feral)
             if (m_spellInfo->Id == 16857 && m_caster->m_form != FORM_CAT)
                 AddTriggeredSpell(60089);
@@ -4218,6 +4269,9 @@ void Spell::CastPreCastSpells(Unit* target)
 
 SpellCastResult Spell::CheckCast(bool strict)
 {
+   // Ebonweave
+   if(m_spellInfo->Id==56002 && m_caster->GetAreaId()==4167) return SPELL_CAST_OK;
+
     // check cooldowns to prevent cheating (ignore passive spells, that client side visual only)
     if (m_caster->GetTypeId()==TYPEID_PLAYER && !(m_spellInfo->Attributes & SPELL_ATTR_PASSIVE) &&
         ((Player*)m_caster)->HasSpellCooldown(m_spellInfo->Id) && !m_caster->isIgnoreUnitState(m_spellInfo))
@@ -5364,20 +5418,6 @@ SpellCastResult Spell::CheckPetCast(Unit* target)
 
 			if(!IsValidSingleTargetSpell(_target))
 				return SPELL_FAILED_BAD_TARGETS;
-            else
-            {
-                bool duelvsplayertar = false;
-                for(int j = 0; j < MAX_EFFECT_INDEX; ++j)
-                {
-                                                            //TARGET_DUELVSPLAYER is positive AND negative
-                    duelvsplayertar |= (m_spellInfo->EffectImplicitTargetA[j] == TARGET_DUELVSPLAYER);
-                }
-                if(m_caster->IsFriendlyTo(target) && !duelvsplayertar && !IsDispelSpell(m_spellInfo) && 
-                    !(m_caster->isCharmed() && IsAreaOfEffectSpell(m_spellInfo)))
-                {
-                    return SPELL_FAILED_BAD_TARGETS;
-                }
-            }
         }
                                                             //cooldown
         if(((Creature*)m_caster)->HasSpellCooldown(m_spellInfo->Id))

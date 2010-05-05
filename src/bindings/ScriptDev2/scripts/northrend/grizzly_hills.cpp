@@ -17,7 +17,7 @@
 /* ScriptData
 SDName: Grizzly_Hills
 SD%Complete: 80
-SDComment: Quest support: 12247
+SDComment: Quest support: 12247, 12231
 SDCategory: Grizzly Hills
 EndScriptData */
 
@@ -27,11 +27,11 @@ EndContentData */
 
 #include "precompiled.h"
 
-#define GOSSIP_ITEM1 "You're free to go Orsonn, but first tell me what's wrong with the furbolg."
-#define GOSSIP_ITEM2 "What happened then?"
-#define GOSSIP_ITEM3 "Thank you, Son of Ursoc. I'll see what can be done."
-#define GOSSIP_ITEM4 "Who was this stranger?"
-#define GOSSIP_ITEM5 "Thank you, Kodian. I'll do what I can."
+#define GOSSIP_ITEM1 "Ihr seid frei zu gehen, Orsonn, aber erz\303\244hlt mir zuerst, was mit den Furbolg nicht stimmt."
+#define GOSSIP_ITEM2 "Was ist dann passiert?"
+#define GOSSIP_ITEM3 "Habt Dank, Sohn des Ursoc. Ich werde sehen, was ich tun kann."
+#define GOSSIP_ITEM4 "Dieser Fremde, wer war das?"
+#define GOSSIP_ITEM5 "Habt Dank, Kodian. Ich werde tun, was ich kann."
 
 enum
 {
@@ -49,7 +49,8 @@ enum
     NPC_ORSONN_CREDIT           = 27322,
     NPC_KODIAN_CREDIT           = 27321,
 
-    QUEST_CHILDREN_OF_URSOC     = 12247
+    QUEST_CHILDREN_OF_URSOC			= 12247,
+	QUEST_THE_BEAR_GODS_OFFSPRING	= 12231
 };
 
 bool GossipHello_npc_orsonn_and_kodian(Player* pPlayer, Creature* pCreature)
@@ -57,12 +58,12 @@ bool GossipHello_npc_orsonn_and_kodian(Player* pPlayer, Creature* pCreature)
     if (pCreature->isQuestGiver())
         pPlayer->PrepareQuestMenu(pCreature->GetGUID());
 
-    if (pPlayer->GetQuestStatus(QUEST_CHILDREN_OF_URSOC) == QUEST_STATUS_INCOMPLETE)
+    if (pPlayer->GetQuestStatus(QUEST_CHILDREN_OF_URSOC) == QUEST_STATUS_INCOMPLETE || pPlayer->GetQuestStatus(QUEST_THE_BEAR_GODS_OFFSPRING) == QUEST_STATUS_INCOMPLETE)
     {
         switch(pCreature->GetEntry())
         {
             case NPC_ORSONN:
-                if (!pPlayer->GetReqKillOrCastCurrentCount(QUEST_CHILDREN_OF_URSOC, NPC_ORSONN_CREDIT))
+                if (!pPlayer->GetReqKillOrCastCurrentCount(QUEST_CHILDREN_OF_URSOC, NPC_ORSONN_CREDIT) || !pPlayer->GetReqKillOrCastCurrentCount(QUEST_THE_BEAR_GODS_OFFSPRING, NPC_ORSONN_CREDIT))
                 {
                     pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM1, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+1);
                     pPlayer->SEND_GOSSIP_MENU(GOSSIP_TEXTID_ORSONN1, pCreature->GetGUID());
@@ -70,7 +71,7 @@ bool GossipHello_npc_orsonn_and_kodian(Player* pPlayer, Creature* pCreature)
                 }
                 break;
             case NPC_KODIAN:
-                if (!pPlayer->GetReqKillOrCastCurrentCount(QUEST_CHILDREN_OF_URSOC, NPC_KODIAN_CREDIT))
+                if (!pPlayer->GetReqKillOrCastCurrentCount(QUEST_CHILDREN_OF_URSOC, NPC_KODIAN_CREDIT) || !pPlayer->GetReqKillOrCastCurrentCount(QUEST_THE_BEAR_GODS_OFFSPRING, NPC_KODIAN_CREDIT))
                 {
                     pPlayer->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, GOSSIP_ITEM4, GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF+4);
                     pPlayer->SEND_GOSSIP_MENU(GOSSIP_TEXTID_KODIAN1, pCreature->GetGUID());

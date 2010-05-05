@@ -24,17 +24,17 @@ struct MANGOS_DLL_DECL boss_scourgelord_tyrannusAI : public ScriptedAI
 
     void Reset()
     {
-        if(pInstance) pInstance->SetData(TYPE_TYRANNUS, NOT_STARTED);
+        if(pInstance) pInstance->SetData(TYPE_TyRANNUS, NOT_STARTED);
     }
 
-    void Aggro(Unit *who)
+    void Aggro(Unit *who) 
     {
-        if(pInstance) pInstance->SetData(TYPE_TYRANNUS, IN_PROGRESS);
+        if(pInstance) pInstance->SetData(TYPE_TyRANNUS, IN_PROGRESS);
     }
 
     void JustDied(Unit *killer)
     {
-        if(pInstance) pInstance->SetData(TYPE_TYRANNUS, DONE);
+        if(pInstance) pInstance->SetData(TYPE_TyRANNUS, DONE);
     }
 
     void UpdateAI(const uint32 diff)

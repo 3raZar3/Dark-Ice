@@ -233,18 +233,27 @@ void Map::InitVisibilityDistance()
 template<class T>
 void Map::AddToGrid(T* obj, NGridType *grid, Cell const& cell)
 {
+    if (!grid)
+        return;
+
     (*grid)(cell.CellX(), cell.CellY()).template AddGridObject<T>(obj);
 }
 
 template<>
 void Map::AddToGrid(Player* obj, NGridType *grid, Cell const& cell)
 {
+    if (!grid)
+        return;
+
     (*grid)(cell.CellX(), cell.CellY()).AddWorldObject(obj);
 }
 
 template<>
 void Map::AddToGrid(Corpse *obj, NGridType *grid, Cell const& cell)
 {
+    if (!grid)
+        return;
+
     // add to world object registry in grid
     if(obj->GetType()!=CORPSE_BONES)
     {
@@ -260,6 +269,9 @@ void Map::AddToGrid(Corpse *obj, NGridType *grid, Cell const& cell)
 template<>
 void Map::AddToGrid(Creature* obj, NGridType *grid, Cell const& cell)
 {
+    if (!grid)
+        return;
+
     // add to world object registry in grid
     if(obj->isPet() || obj->isVehicle())
     {
@@ -277,18 +289,27 @@ void Map::AddToGrid(Creature* obj, NGridType *grid, Cell const& cell)
 template<class T>
 void Map::RemoveFromGrid(T* obj, NGridType *grid, Cell const& cell)
 {
+    if (!grid)
+        return;
+
     (*grid)(cell.CellX(), cell.CellY()).template RemoveGridObject<T>(obj);
 }
 
 template<>
 void Map::RemoveFromGrid(Player* obj, NGridType *grid, Cell const& cell)
 {
+    if (!grid)
+        return;
+
     (*grid)(cell.CellX(), cell.CellY()).RemoveWorldObject(obj);
 }
 
 template<>
 void Map::RemoveFromGrid(Corpse *obj, NGridType *grid, Cell const& cell)
 {
+    if (!grid)
+        return;
+
     // remove from world object registry in grid
     if(obj->GetType()!=CORPSE_BONES)
     {
@@ -587,6 +608,10 @@ void Map::MessageDistBroadcast(WorldObject *obj, WorldPacket *msg, float dist)
 
 bool Map::loaded(const GridPair &p) const
 {
+  // crash guard if x, y coordinates are outside grids
+  if ( (p.x_coord >= MAX_NUMBER_OF_GRIDS) || (p.y_coord >= MAX_NUMBER_OF_GRIDS) )
+    return false;  // consider already loaded, skip
+
     return ( getNGrid(p.x_coord, p.y_coord) && isGridObjectDataLoaded(p.x_coord, p.y_coord) );
 }
 
@@ -871,10 +896,7 @@ Map::CreatureRelocation(Creature *creature, float x, float y, float z, float ang
     // delay creature move for grid/cell to grid/cell moves
     if (old_cell.DiffCell(new_cell) || old_cell.DiffGrid(new_cell))
     {
-        #ifdef MANGOS_DEBUG
-        if ((sLog.getLogFilter() & LOG_FILTER_CREATURE_MOVES) == 0)
-            sLog.outDebug("Creature (GUID: %u Entry: %u) added to moving list from grid[%u,%u]cell[%u,%u] to grid[%u,%u]cell[%u,%u].", creature->GetGUIDLow(), creature->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
-        #endif
+        DEBUG_FILTER_LOG(LOG_FILTER_CREATURE_MOVES, "Creature (GUID: %u Entry: %u) added to moving list from grid[%u,%u]cell[%u,%u] to grid[%u,%u]cell[%u,%u].", creature->GetGUIDLow(), creature->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
 
          // hack for eye of acherus part 1
             if(creature->isCharmed())
@@ -920,10 +942,7 @@ Map::CreatureRelocation(Creature *creature, float x, float y, float z, float ang
             if(!CreatureRespawnRelocation(creature))
             {
                 // ... or unload (if respawn grid also not loaded)
-                #ifdef MANGOS_DEBUG
-                if((sLog.getLogFilter() & LOG_FILTER_CREATURE_MOVES)==0)
-                    sLog.outDebug("Creature (GUID: %u Entry: %u ) can't be move to unloaded respawn grid.",creature->GetGUIDLow(),creature->GetEntry());
-                #endif
+                DEBUG_FILTER_LOG(LOG_FILTER_CREATURE_MOVES, "Creature (GUID: %u Entry: %u ) can't be move to unloaded respawn grid.",creature->GetGUIDLow(),creature->GetEntry());
                 creature->SetNeedNotify();
             }
         }
@@ -945,10 +964,7 @@ bool Map::CreatureCellRelocation(Creature *c, Cell new_cell)
         // if in same cell then none do
         if(old_cell.DiffCell(new_cell))
         {
-            #ifdef MANGOS_DEBUG
-            if((sLog.getLogFilter() & LOG_FILTER_CREATURE_MOVES)==0)
-                sLog.outDebug("Creature (GUID: %u Entry: %u) moved in grid[%u,%u] from cell[%u,%u] to cell[%u,%u].", c->GetGUIDLow(), c->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.CellX(), new_cell.CellY());
-            #endif
+            DEBUG_FILTER_LOG(LOG_FILTER_CREATURE_MOVES, "Creature (GUID: %u Entry: %u) moved in grid[%u,%u] from cell[%u,%u] to cell[%u,%u].", c->GetGUIDLow(), c->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.CellX(), new_cell.CellY());
 
             if( !old_cell.DiffGrid(new_cell) )
             {
@@ -959,10 +975,7 @@ bool Map::CreatureCellRelocation(Creature *c, Cell new_cell)
         }
         else
         {
-            #ifdef MANGOS_DEBUG
-            if((sLog.getLogFilter() & LOG_FILTER_CREATURE_MOVES)==0)
-                sLog.outDebug("Creature (GUID: %u Entry: %u) move in same grid[%u,%u]cell[%u,%u].", c->GetGUIDLow(), c->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY());
-            #endif
+            DEBUG_FILTER_LOG(LOG_FILTER_CREATURE_MOVES, "Creature (GUID: %u Entry: %u) move in same grid[%u,%u]cell[%u,%u].", c->GetGUIDLow(), c->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY());
         }
 
         return true;
@@ -973,10 +986,7 @@ bool Map::CreatureCellRelocation(Creature *c, Cell new_cell)
     {
         EnsureGridLoadedAtEnter(new_cell);
 
-        #ifdef MANGOS_DEBUG
-        if((sLog.getLogFilter() & LOG_FILTER_CREATURE_MOVES)==0)
-            sLog.outDebug("Active creature (GUID: %u Entry: %u) moved from grid[%u,%u]cell[%u,%u] to grid[%u,%u]cell[%u,%u].", c->GetGUIDLow(), c->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
-        #endif
+        DEBUG_FILTER_LOG(LOG_FILTER_CREATURE_MOVES, "Active creature (GUID: %u Entry: %u) moved from grid[%u,%u]cell[%u,%u] to grid[%u,%u]cell[%u,%u].", c->GetGUIDLow(), c->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
 
         RemoveFromGrid(c,getNGrid(old_cell.GridX(), old_cell.GridY()),old_cell);
         AddToGrid(c,getNGrid(new_cell.GridX(), new_cell.GridY()),new_cell);
@@ -987,10 +997,7 @@ bool Map::CreatureCellRelocation(Creature *c, Cell new_cell)
     // in diff. loaded grid normal creature
     if(loaded(GridPair(new_cell.GridX(), new_cell.GridY())))
     {
-        #ifdef MANGOS_DEBUG
-        if((sLog.getLogFilter() & LOG_FILTER_CREATURE_MOVES)==0)
-            sLog.outDebug("Creature (GUID: %u Entry: %u) moved from grid[%u,%u]cell[%u,%u] to grid[%u,%u]cell[%u,%u].", c->GetGUIDLow(), c->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
-        #endif
+        DEBUG_FILTER_LOG(LOG_FILTER_CREATURE_MOVES, "Creature (GUID: %u Entry: %u) moved from grid[%u,%u]cell[%u,%u] to grid[%u,%u]cell[%u,%u].", c->GetGUIDLow(), c->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
 
         RemoveFromGrid(c,getNGrid(old_cell.GridX(), old_cell.GridY()),old_cell);
         {
@@ -1002,10 +1009,7 @@ bool Map::CreatureCellRelocation(Creature *c, Cell new_cell)
     }
 
     // fail to move: normal creature attempt move to unloaded grid
-    #ifdef MANGOS_DEBUG
-    if((sLog.getLogFilter() & LOG_FILTER_CREATURE_MOVES)==0)
-        sLog.outDebug("Creature (GUID: %u Entry: %u) attempt move from grid[%u,%u]cell[%u,%u] to unloaded grid[%u,%u]cell[%u,%u].", c->GetGUIDLow(), c->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
-    #endif
+    DEBUG_FILTER_LOG(LOG_FILTER_CREATURE_MOVES, "Creature (GUID: %u Entry: %u) attempt move from grid[%u,%u]cell[%u,%u] to unloaded grid[%u,%u]cell[%u,%u].", c->GetGUIDLow(), c->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
     return false;
 }
 
@@ -1020,10 +1024,7 @@ bool Map::CreatureRespawnRelocation(Creature *c)
     c->CombatStop();
     c->GetMotionMaster()->Clear();
 
-    #ifdef MANGOS_DEBUG
-    if((sLog.getLogFilter() & LOG_FILTER_CREATURE_MOVES)==0)
-        sLog.outDebug("Creature (GUID: %u Entry: %u) will moved from grid[%u,%u]cell[%u,%u] to respawn grid[%u,%u]cell[%u,%u].", c->GetGUIDLow(), c->GetEntry(), c->GetCurrentCell().GridX(), c->GetCurrentCell().GridY(), c->GetCurrentCell().CellX(), c->GetCurrentCell().CellY(), resp_cell.GridX(), resp_cell.GridY(), resp_cell.CellX(), resp_cell.CellY());
-    #endif
+    DEBUG_FILTER_LOG(LOG_FILTER_CREATURE_MOVES, "Creature (GUID: %u Entry: %u) will moved from grid[%u,%u]cell[%u,%u] to respawn grid[%u,%u]cell[%u,%u].", c->GetGUIDLow(), c->GetEntry(), c->GetCurrentCell().GridX(), c->GetCurrentCell().GridY(), c->GetCurrentCell().CellX(), c->GetCurrentCell().CellY(), resp_cell.GridX(), resp_cell.GridY(), resp_cell.CellX(), resp_cell.CellY());
 
     // teleport it to respawn point (like normal respawn if player see)
     if(CreatureCellRelocation(c,resp_cell))

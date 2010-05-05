@@ -989,7 +989,7 @@ void Aura::_AddAura()
     // Try find slot for aura
     uint8 slot = NULL_AURA_SLOT;
     // Lookup for some spell auras (and get slot from it)
-    for(uint8 i = 0; i < m_effIndex; ++i)
+    for(uint8 i = 0; i < MAX_EFFECT_INDEX; ++i)
     {
         Unit::spellEffectPair spair = Unit::spellEffectPair(GetId(), SpellEffectIndex(i));
         for(Unit::AuraMap::const_iterator itr = m_target->GetAuras().lower_bound(spair); itr != m_target->GetAuras().upper_bound(spair); ++itr)
@@ -2291,7 +2291,14 @@ void Aura::TriggerSpell()
             case 33525:
                 target->CastSpell(target, trigger_spell_id, true, NULL, this, casterGUID);
                 return;
-            // Beacon of Light
+            // Rod of Purification - for quest 10839 (Veil Skith: Darkstone of Terokk)
+            case 38736:
+            {
+                if(Unit* caster = GetCaster())
+                    caster->CastSpell(target, trigger_spell_id, true, NULL, this);
+                return;
+            }				
+			// Beacon of Light
             case 53563:
                 // original caster must be target (beacon)
                 target->CastSpell(target, trigger_spell_id, true, NULL, this, target->GetGUID());
@@ -2907,7 +2914,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                     int32 bp0 = m_modifier.m_amount;
 
                     if (Unit* caster = GetCaster())
-                        m_target->CastCustomSpell(caster,48210,&bp0,NULL,NULL,true);
+                        m_target->CastCustomSpell(caster,48210,&bp0,NULL,NULL,true,NULL,this,GetCasterGUID());
                 }
             }
             break;
@@ -6229,7 +6236,6 @@ void Aura::HandleShapeshiftBoosts(bool apply)
     {
         case FORM_CAT:
             spellId1 = 3025;
-            HotWSpellId = 24900;
             MasterShaperSpellId = 48420;
             break;
         case FORM_TREE:
@@ -6246,13 +6252,11 @@ void Aura::HandleShapeshiftBoosts(bool apply)
         case FORM_BEAR:
             spellId1 = 1178;
             spellId2 = 21178;
-            HotWSpellId = 24899;
             MasterShaperSpellId = 48418;
             break;
         case FORM_DIREBEAR:
             spellId1 = 9635;
             spellId2 = 21178;
-            HotWSpellId = 24899;
             MasterShaperSpellId = 48418;
             break;
         case FORM_BATTLESTANCE:
@@ -6410,7 +6414,7 @@ void Aura::HandleShapeshiftBoosts(bool apply)
             }
 
             // Heart of the Wild
-            if (HotWSpellId)
+            if (form == FORM_CAT || form == FORM_BEAR || form == FORM_DIREBEAR)
             {
                 Unit::AuraList const& mModTotalStatPct = m_target->GetAurasByType(SPELL_AURA_MOD_TOTAL_STAT_PERCENTAGE);
                 for(Unit::AuraList::const_iterator i = mModTotalStatPct.begin(); i != mModTotalStatPct.end(); ++i)
@@ -6418,10 +6422,26 @@ void Aura::HandleShapeshiftBoosts(bool apply)
                     if ((*i)->GetSpellProto()->SpellIconID == 240 && (*i)->GetModifier()->m_miscvalue == 3)
                     {
                         int32 HotWMod = (*i)->GetModifier()->m_amount;
-                        if(GetModifier()->m_miscvalue == FORM_CAT)
-                            HotWMod /= 2;
+                        HotWMod /= 2;
 
-                        m_target->CastCustomSpell(m_target, HotWSpellId, &HotWMod, NULL, NULL, true, NULL, this);
+                        if (form == FORM_CAT)
+                          {
+                            if (HotWMod == 2)       {HotWSpellId = 30902;}
+                            else if (HotWMod == 4)  {HotWSpellId = 30903;}
+                            else if (HotWMod == 6)  {HotWSpellId = 30904;}
+                            else if (HotWMod == 8)  {HotWSpellId = 30905;}
+                            else if (HotWMod == 10) {HotWSpellId = 30906;}
+                           }
+                         else
+                           {
+                             if (HotWMod == 2)       {HotWSpellId = 19255;}
+                             else if (HotWMod == 4)  {HotWSpellId = 19256;}
+                             else if (HotWMod == 6)  {HotWSpellId = 19257;}
+                             else if (HotWMod == 8)  {HotWSpellId = 19258;}
+                             else if (HotWMod == 10) {HotWSpellId = 19259;}
+                            }
+
+                        m_target->CastCustomSpell(m_target, HotWSpellId, NULL, NULL, NULL, true, NULL, this);
                         break;
                     }
                 }
@@ -6430,6 +6450,35 @@ void Aura::HandleShapeshiftBoosts(bool apply)
     }
     else
     {
+       // Heart of the Wild (delete aura)
+       if (form == FORM_CAT || form == FORM_BEAR || form == FORM_DIREBEAR)
+       {
+            Unit::AuraList const& mModTotalStatPct = m_target->GetAurasByType(SPELL_AURA_MOD_TOTAL_STAT_PERCENTAGE);
+            for(Unit::AuraList::const_iterator i = mModTotalStatPct.begin(); i != mModTotalStatPct.end(); ++i)
+            {
+                if ((*i)->GetSpellProto()->SpellIconID == 240 && (*i)->GetModifier()->m_miscvalue == 3)
+                {
+                    int32 HotWMod = (*i)->GetModifier()->m_amount / 2;
+                    if (form == FORM_CAT)
+                    {
+                        if (HotWMod == 2)       {HotWSpellId = 30902;}
+                        else if (HotWMod == 4)  {HotWSpellId = 30903;}
+                        else if (HotWMod == 6)  {HotWSpellId = 30904;}
+                        else if (HotWMod == 8)  {HotWSpellId = 30905;}
+                        else if (HotWMod == 10) {HotWSpellId = 30906;}
+                    }
+                    else
+                    {
+                        if (HotWMod == 2)       {HotWSpellId = 19255;}
+                        else if (HotWMod == 4)  {HotWSpellId = 19256;}
+                        else if (HotWMod == 6)  {HotWSpellId = 19257;}
+                        else if (HotWMod == 8)  {HotWSpellId = 19258;}
+                        else if (HotWMod == 10) {HotWSpellId = 19259;}
+                    }
+                    m_target->RemoveAurasDueToSpell(HotWSpellId);
+                 }
+             }
+        }
         if(spellId1)
             m_target->RemoveAurasDueToSpell(spellId1);
         if(spellId2)

@@ -16,10 +16,15 @@
 
 /* ScriptData
 SDName: Boss Ionar
-SD%Complete: 80%
-SDComment: Timer check
+SD%Complete: 95%
+SDComment: Originaly by sd2 modified by ScrappyDoo (c) Andeeria
 SDCategory: Halls of Lightning
 EndScriptData */
+
+/* TODO
+Balls of Lighting need support with visual effect -> baals fly anywhere but  hit the target
+
+*/
 
 #include "precompiled.h"
 #include "halls_of_lightning.h"
@@ -38,7 +43,7 @@ enum
     SPELL_BALL_LIGHTNING_H                  = 59800,
     SPELL_STATIC_OVERLOAD_N                 = 52658,
     SPELL_STATIC_OVERLOAD_H                 = 59795,
-
+ 
     SPELL_DISPERSE                          = 52770,
     SPELL_SUMMON_SPARK                      = 52746,
     SPELL_SPARK_DESPAWN                     = 52776,
@@ -67,18 +72,15 @@ struct MANGOS_DLL_DECL boss_ionarAI : public ScriptedAI
     }
 
     ScriptedInstance* m_pInstance;
-
     std::list<uint64> m_lSparkGUIDList;
 
     bool m_bIsRegularMode;
-
     bool m_bIsSplitPhase;
+
     uint32 m_uiSplit_Timer;
     uint32 m_uiSparkAtHomeCount;
-
     uint32 m_uiStaticOverload_Timer;
     uint32 m_uiBallLightning_Timer;
-
     uint32 m_uiHealthAmountModifier;
 
     void Reset()
@@ -86,13 +88,12 @@ struct MANGOS_DLL_DECL boss_ionarAI : public ScriptedAI
         m_lSparkGUIDList.clear();
 
         m_bIsSplitPhase = true;
-        m_uiSplit_Timer = 25000;
-        m_uiSparkAtHomeCount = 0;
+        m_uiSplit_Timer             = 25000;
+        m_uiSparkAtHomeCount        = 0;
+        m_uiStaticOverload_Timer    = urand(5000, 6000);
+        m_uiBallLightning_Timer     = urand(10000, 11000);
 
-        m_uiStaticOverload_Timer = urand(5000, 6000);
-        m_uiBallLightning_Timer = urand(10000, 11000);
-
-        m_uiHealthAmountModifier = 1;
+        m_uiHealthAmountModifier    = 1;
 
         if (m_creature->GetVisibility() == VISIBILITY_OFF)
             m_creature->SetVisibility(VISIBILITY_ON);
@@ -188,8 +189,7 @@ struct MANGOS_DLL_DECL boss_ionarAI : public ScriptedAI
                     if (pSpark->GetMotionMaster()->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
                         pSpark->GetMotionMaster()->MovementExpired();
 
-                    pSpark->SetSpeedRate(MOVE_RUN,2);
-
+                    pSpark->SetSpeedRate(MOVE_RUN, pSpark->GetCreatureInfo()->speed_walk * 2);
                     pSpark->GetMotionMaster()->MovePoint(POINT_CALLBACK, m_creature->GetPositionX(), m_creature->GetPositionY(), m_creature->GetPositionZ());
                 }
             }
@@ -268,23 +268,23 @@ struct MANGOS_DLL_DECL boss_ionarAI : public ScriptedAI
         if (m_uiStaticOverload_Timer < uiDiff)
         {
             if (Unit* pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
-                DoCastSpellIfCan(pTarget, m_bIsRegularMode ? SPELL_STATIC_OVERLOAD_N : SPELL_STATIC_OVERLOAD_H);
-
-            m_uiStaticOverload_Timer = urand(5000, 6000);
+                pTarget->CastSpell(pTarget, m_bIsRegularMode ? SPELL_STATIC_OVERLOAD_N : SPELL_STATIC_OVERLOAD_H, true);
+            m_uiStaticOverload_Timer = urand(9000, 10000);
         }
         else
             m_uiStaticOverload_Timer -= uiDiff;
 
         if (m_uiBallLightning_Timer < uiDiff)
         {
-            DoCastSpellIfCan(m_creature->getVictim(), m_bIsRegularMode ? SPELL_BALL_LIGHTNING_N : SPELL_BALL_LIGHTNING_H);
+            if (Unit* pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0))
+                m_creature->CastSpell(pTarget, m_bIsRegularMode ? SPELL_BALL_LIGHTNING_N : SPELL_BALL_LIGHTNING_H, false);
             m_uiBallLightning_Timer = urand(10000, 11000);
         }
-        else
+        else 
             m_uiBallLightning_Timer -= uiDiff;
 
         // Health check
-        if (m_creature->GetHealthPercent() < float(100 - 20*m_uiHealthAmountModifier))
+        if ((m_creature->GetHealth()*100 / m_creature->GetMaxHealth()) < (100-(20*m_uiHealthAmountModifier)))
         {
             ++m_uiHealthAmountModifier;
 
@@ -293,7 +293,7 @@ struct MANGOS_DLL_DECL boss_ionarAI : public ScriptedAI
             if (m_creature->IsNonMeleeSpellCasted(false))
                 m_creature->InterruptNonMeleeSpells(false);
 
-            DoCastSpellIfCan(m_creature, SPELL_DISPERSE);
+            DoCast(m_creature, SPELL_DISPERSE);
         }
 
         DoMeleeAttackIfReady();

@@ -184,6 +184,10 @@ bool IsNoStackAuraDueToAura(uint32 spellId_1, SpellEffectIndex effIndex_1, uint3
         spellInfo_1->EffectApplyAuraName[effIndex_1] != spellInfo_2->EffectApplyAuraName[effIndex_2])
         return false;
 
+    // Potion of Wild Magic stacks with everything
+    if (spellId_1 == 53909 || spellId_2 == 53909)
+      return false;
+
     return true;
 }
 
@@ -277,6 +281,10 @@ SpellSpecific GetSpellSpecific(uint32 spellId)
             // Warlock (Demon Armor | Demon Skin | Fel Armor)
             if (spellInfo->SpellFamilyFlags & UI64LIT(0x2000002000000000) || spellInfo->SpellFamilyFlags2 & 0x00000010)
                 return SPELL_WARLOCK_ARMOR;
+           
+            // Unstable Affliction & Immolate
+            if (spellInfo->SpellFamilyFlags & UI64LIT(0x10000000004))
+                return SPELL_UA_IMMOLATE;
 
             break;
         }
@@ -364,6 +372,7 @@ bool IsSingleFromSpellSpecificPerTargetPerCaster(SpellSpecific spellSpec1,SpellS
         case SPELL_POSITIVE_SHOUT:
         case SPELL_JUDGEMENT:
         case SPELL_HAND:
+        case SPELL_UA_IMMOLATE:
             return spellSpec1==spellSpec2;
         default:
             return false;
@@ -1897,6 +1906,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
 			if (spellInfo_2->SpellFamilyName == SPELLFAMILY_HUNTER && spellInfo_1->SpellIconID == 316 && spellInfo_2->SpellIconID == 316)
 				return false;			
             break;
+            // [Greater] Blessing of Kings and Blessing of Forgotten Kings
+            if ((spellId_1 == 20217 || spellId_1 == 25898) && spellId_2 == 69378)
+              return true;
+              break; 
         case SPELLFAMILY_SHAMAN:
             if( spellInfo_2->SpellFamilyName == SPELLFAMILY_SHAMAN )
             {
@@ -2456,7 +2469,9 @@ void SpellMgr::LoadSpellScriptTarget()
                 spellProto->EffectImplicitTargetA[i] == TARGET_SCRIPT_COORDINATES ||
                 spellProto->EffectImplicitTargetB[i] == TARGET_SCRIPT_COORDINATES ||
                 spellProto->EffectImplicitTargetA[i] == TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT ||
-                spellProto->EffectImplicitTargetB[i] == TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT )
+                spellProto->EffectImplicitTargetB[i] == TARGET_FOCUS_OR_SCRIPTED_GAMEOBJECT ||
+                spellProto->EffectImplicitTargetA[i] == TARGET_AREAEFFECT_CUSTOM ||
+                spellProto->EffectImplicitTargetB[i] == TARGET_AREAEFFECT_CUSTOM)
             {
                 targetfound = true;
                 break;

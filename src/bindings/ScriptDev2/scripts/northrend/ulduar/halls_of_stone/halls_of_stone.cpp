@@ -1,4 +1,4 @@
-/* Copyright (C) 2006 - 2010 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+/* Copyright (C) 2006 - 2009 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -118,8 +118,8 @@ enum
     QUEST_HALLS_OF_STONE               = 13207,
 };
 
-#define GOSSIP_ITEM_START               "Brann, it would be our honor!"
-#define GOSSIP_ITEM_PROGRESS            "Let's move Brann, enough of the history lessons!"
+#define GOSSIP_ITEM_START               "Brann, es w\303\244re uns eine Ehre!"
+#define GOSSIP_ITEM_PROGRESS            "Lasst uns auf aufbrechen, genug Geschichtsunterricht!"
 
 struct Locations
 {

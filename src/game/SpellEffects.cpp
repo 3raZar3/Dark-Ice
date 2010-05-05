@@ -56,6 +56,9 @@
 #include "SkillDiscovery.h"
 #include "Formulas.h"
 #include "Vehicle.h"
+#include "GridNotifiers.h"
+#include "GridNotifiersImpl.h"
+#include "CellImpl.h"
 
 pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
 {
@@ -1560,6 +1563,33 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 {
                     // Runeforging Credit
                     m_caster->CastSpell(m_caster, 54586, true);
+                    return;
+                }
+                case 53808:                                 // Pygmy Oil
+                {
+                    const SpellEntry *pSpellShrink = sSpellStore.LookupEntry(53805);
+                    const SpellEntry *pSpellTransf = sSpellStore.LookupEntry(53806);
+
+                    if (!pSpellTransf || !pSpellShrink)
+                        return;
+
+                    if (Aura* pAura = m_caster->GetAura(pSpellShrink->Id, EFFECT_INDEX_0))
+                    {
+                        uint8 stackNum = pAura->GetStackAmount();
+
+                        // chance to become pygmified (5, 10, 15 etc)
+                        if (roll_chance_i(stackNum*5))
+                        {
+                            m_caster->RemoveAurasDueToSpell(pSpellShrink->Id);
+                            m_caster->CastSpell(m_caster, pSpellTransf, true);
+                            return;
+                        }
+                    }
+
+                    if (m_caster->HasAura(pSpellTransf->Id, EFFECT_INDEX_0))
+                        return;
+
+                    m_caster->CastSpell(m_caster, pSpellShrink, true);
                     return;
                 }
                 case 55004:                                 // Nitro Boosts
@@ -6311,8 +6341,9 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                         // Serpent Sting - Instantly deals 40% of the damage done by your Serpent Sting.
                         if ((familyFlag & UI64LIT(0x0000000000004000)) && aura->GetEffIndex() == EFFECT_INDEX_0)
                         {
-                            // m_amount already include RAP bonus
-                            basePoint = aura->GetModifier()->m_amount * aura->GetAuraMaxTicks() * 40 / 100;
+                            // m_amount does not include RAP bonus - must be calculated 
+                            basePoint = m_caster->MeleeDamageBonus(target, aura->GetModifier()->m_amount, RANGED_ATTACK, aura->GetSpellProto(), DOT, aura->GetStackAmount());
+              basePoint = basePoint * (aura->GetAuraMaxDuration() / aura->GetModifier()->periodictime) * 40 / 100; 
                             spellId = 53353;                // Chimera Shot - Serpent
                         }
 

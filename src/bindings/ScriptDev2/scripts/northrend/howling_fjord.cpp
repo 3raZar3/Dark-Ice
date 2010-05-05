@@ -17,9 +17,18 @@
 /* ScriptData
 SDName: Howling_Fjord
 SD%Complete: ?
-SDComment: Quest support: 11221, 11483
+SDComment: Quest support: 11221, 11483, 11170
 SDCategory: Howling Fjord
-EndScriptData */
+
+
+/* ContentData
+npc_apothecary_lysander
+npc_deathstalker_razael
+npc_dark_ranger_lyana
+npc_mcgoyver
+EndContentData */
+
+/* EndScriptData */
 
 #include "precompiled.h"
 
@@ -112,8 +121,8 @@ bool GossipSelect_npc_dark_ranger_lyana(Player* pPlayer, Creature* pCreature, ui
 ## McGoyver ##
 ############*/
 
-#define GOSSIP_ITEM_MCGOYVER1 "Walt sent me to pick up some dark iron ingots."
-#define GOSSIP_ITEM_MCGOYVER2 "Yarp."
+#define GOSSIP_ITEM_MCGOYVER1 "Walt sent me to pick up some dark iron ingots." 
+#define GOSSIP_ITEM_MCGOYVER2 "Yarp." 
 
 enum
 {
@@ -172,6 +181,156 @@ bool GossipSelect_npc_mcgoyver(Player* pPlayer, Creature* pCreature, uint32 uiSe
     return true;
 }
 
+/*#####################
+## Apothecary Lysander ##
+#####################*/
+
+enum apothecary_lysander
+{
+	QUEST_TEST_AT_SEA			= 11170,
+	NPC_APOTHECARY_RAVIEN		= 23782,
+	APOTHECARY_RAVIEN_1			= -1050020,
+	APOTHECARY_LYSANDER_2		= -1050021,
+	APOTHECARY_RAVIEN_3			= -1050022,
+	APOTHECARY_LYSANDER_4		= -1050023,
+	APOTHECARY_RAVIEN_5			= -1050024,
+	APOTHECARY_LYSANDER_6		= -1050025,
+	APOTHECARY_LYSANDER_7		= -1050026,
+	APOTHECARY_LYSANDER_8		= -1050027,
+	APOTHECARY_LYSANDER_9		= -1050028,
+	APOTHECARY_RAVIEN_10		= -1050029
+};
+
+struct MANGOS_DLL_DECL npc_apothecary_lysanderAI : public ScriptedAI
+{
+	npc_apothecary_lysanderAI(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
+
+	bool TestAtSeaEvent;
+	uint32 m_uiEventPhase;
+	uint32 m_uiEventTimer;
+	Creature* pApothecaryRavien;
+
+	void Reset()
+	{
+		TestAtSeaEvent = false;
+		m_uiEventPhase = 0;
+		m_uiEventTimer = 0;
+	}
+
+	void StartTestAtSea(Creature* ApothecaryRavien)
+	{
+		pApothecaryRavien = ApothecaryRavien;
+		TestAtSeaEvent = true;
+	}
+
+	void UpdateAI(const uint32 uiDiff)
+	{
+		if (TestAtSeaEvent)
+		{
+			if (m_uiEventTimer >= uiDiff)
+			{
+				m_uiEventTimer -= uiDiff;
+				return;
+			}
+			switch(m_uiEventPhase)
+			{
+				case 0: 
+					pApothecaryRavien->GetMotionMaster()->MovePoint(0, 1950.81f, -6147.646f, 24.259497f);
+					m_uiEventPhase = 1;
+					m_uiEventTimer = 8000;
+					break;
+				case 1:
+					pApothecaryRavien->SetFacingToObject(m_creature);
+					m_creature->SetFacingToObject(pApothecaryRavien);
+					DoScriptText(APOTHECARY_RAVIEN_1,pApothecaryRavien);
+					m_uiEventPhase = 2;
+					m_uiEventTimer = 6000;
+					break;
+				case 2:
+					DoScriptText(APOTHECARY_LYSANDER_2,m_creature);
+					m_uiEventPhase = 3;
+					m_uiEventTimer = 6000;
+					break;
+				case 3:
+					DoScriptText(APOTHECARY_RAVIEN_3,pApothecaryRavien);
+					m_uiEventPhase = 4;
+					m_uiEventTimer = 6000;
+					break;
+				case 4:
+					DoScriptText(APOTHECARY_LYSANDER_4,m_creature);
+					m_uiEventPhase = 5;
+					m_uiEventTimer = 6000;
+					break;
+				case 5:
+					DoScriptText(APOTHECARY_RAVIEN_5,pApothecaryRavien);
+					m_uiEventPhase = 6;
+					m_uiEventTimer = 6000;
+					break;
+				case 6:
+					DoScriptText(APOTHECARY_LYSANDER_6,m_creature);
+					m_uiEventPhase = 7;
+					m_uiEventTimer = 6000;
+					break;
+				case 7:
+					DoScriptText(APOTHECARY_LYSANDER_7,m_creature);
+					m_uiEventPhase = 8;
+					m_uiEventTimer = 6000;
+					break;
+				case 8:
+					DoScriptText(APOTHECARY_LYSANDER_8,m_creature);
+					m_uiEventPhase = 9;
+					m_uiEventTimer = 6000;
+					break;
+				case 9:
+					DoScriptText(APOTHECARY_LYSANDER_9,m_creature);
+					m_uiEventPhase = 10;
+					m_uiEventTimer = 6000;
+					break;
+				case 10:
+					DoScriptText(APOTHECARY_RAVIEN_10,pApothecaryRavien);
+					m_uiEventPhase = 11;
+					m_uiEventTimer = 6000;
+					break;
+				case 11:
+					pApothecaryRavien->GetMotionMaster()->MoveTargetedHome();
+					m_creature->GetMotionMaster()->MoveTargetedHome();
+					m_uiEventPhase = 12;
+					m_uiEventTimer = 8000;
+					break;
+				case 12:
+					pApothecaryRavien->setDeathState(JUST_DIED);
+					pApothecaryRavien->RemoveCorpse();
+					Reset();
+					break;
+			}
+		}
+	}
+};
+
+bool QuestComplete_npc_apothecary_lysander(Player* pPlayer, Creature* pCreature, const Quest* pQuest, uint32 item)
+{
+	debug_log("SD2: Quest Test at Sea");
+	if (pQuest->GetQuestId() == QUEST_TEST_AT_SEA)
+	{
+		if (Creature* pApothecaryRavien=pCreature->SummonCreature(NPC_APOTHECARY_RAVIEN, 1964.275f, -6149.898f, 24.6196f, 2.941f, TEMPSUMMON_DEAD_DESPAWN, 150000))
+		{	
+			if (npc_apothecary_lysanderAI* pLysanderAI = dynamic_cast<npc_apothecary_lysanderAI*>(pCreature->AI()))
+			{  
+				if (!pLysanderAI->TestAtSeaEvent)
+					pLysanderAI->StartTestAtSea(pApothecaryRavien);
+				return true;
+			}
+		}
+	}
+	return true;
+}
+
+CreatureAI* GetAI_npc_apothecary_lysander(Creature* pCreature)
+{
+    return new npc_apothecary_lysanderAI(pCreature);
+}
+
+
 void AddSC_howling_fjord()
 {
     Script* newscript;
@@ -192,5 +351,11 @@ void AddSC_howling_fjord()
     newscript->Name = "npc_mcgoyver";
     newscript->pGossipHello = &GossipHello_npc_mcgoyver;
     newscript->pGossipSelect = &GossipSelect_npc_mcgoyver;
+    newscript->RegisterSelf();
+
+	newscript = new Script;
+    newscript->Name = "npc_apothecary_lysander";
+    newscript->GetAI = &GetAI_npc_apothecary_lysander;
+	newscript->pChooseReward  = &QuestComplete_npc_apothecary_lysander;
     newscript->RegisterSelf();
 }

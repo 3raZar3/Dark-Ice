@@ -67,15 +67,15 @@ struct MANGOS_DLL_DECL instance_pit_of_saron : public ScriptedInstance
             case NPC_GAFROST:  m_uiGafrostGUID = pCreature->GetGUID(); break;
             case NPC_KRICK:    m_uiKrickGUID = pCreature->GetGUID(); break;
             case NPC_ICK:      m_uiIckGUID = pCreature->GetGUID(); break;
-            case NPC_TYRANNUS: m_uiTyrannusGUID = pCreature->GetGUID(); break;
+            case NPC_TyRANNUS: m_uiTyrannusGUID = pCreature->GetGUID(); break;
         }
     }
 
     void OnObjectCreate(GameObject* pGo)
     {
-        switch(pGo->GetEntry())
+        /*switch(pGo->GetEntry())
         {
-        }
+        }*/
     }
     void SetData(uint32 uiType, uint32 uiData)
     {
@@ -84,7 +84,7 @@ struct MANGOS_DLL_DECL instance_pit_of_saron : public ScriptedInstance
             case TYPE_GAFROST: m_auiEncounter[0] = uiData; break;
             case TYPE_KRICK: m_auiEncounter[1] = uiData; break;
             case TYPE_ICK: m_auiEncounter[2] = uiData; break;
-            case TYPE_TYRANNUS: m_auiEncounter[3] = uiData; break;
+            case TYPE_TyRANNUS: m_auiEncounter[3] = uiData; break;
         }
 
         if (uiData == DONE)
@@ -115,7 +115,7 @@ struct MANGOS_DLL_DECL instance_pit_of_saron : public ScriptedInstance
             case TYPE_GAFROST: return m_auiEncounter[0];
             case TYPE_KRICK: return m_auiEncounter[1];
             case TYPE_ICK: return m_auiEncounter[2];
-            case TYPE_TYRANNUS: return m_auiEncounter[3];
+            case TYPE_TyRANNUS: return m_auiEncounter[3];
         }
         return 0;
     }
@@ -127,7 +127,7 @@ struct MANGOS_DLL_DECL instance_pit_of_saron : public ScriptedInstance
             case NPC_GAFROST:  return m_uiGafrostGUID;
             case NPC_KRICK:    return m_uiKrickGUID;
             case NPC_ICK:      return m_uiIckGUID;
-            case NPC_TYRANNUS: return m_uiTyrannusGUID;
+            case NPC_TyRANNUS: return m_uiTyrannusGUID;
         }
         return 0;
     }

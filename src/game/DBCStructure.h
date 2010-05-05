@@ -19,7 +19,9 @@
 #ifndef MANGOS_DBCSTRUCTURE_H
 #define MANGOS_DBCSTRUCTURE_H
 
+#include "Common.h"
 #include "DBCEnums.h"
+#include "Path.h"
 #include "Platform/Define.h"
 
 #include <map>
@@ -590,7 +592,7 @@ struct BattlemasterListEntry
     char*   name[16];                                       // 11-26
     //uint32 nameFlags                                      // 27 string flag, unused
     uint32 maxGroupSize;                                    // 28 maxGroupSize, used for checking if queue as group
-    //uint32 HolidayWorldStateId;                           // 29 new 3.1
+    uint32 HolidayWorldStateId;                             // 29 new 3.1
     uint32 minLevel;                                        // 30, min level (sync with PvPDifficulty.dbc content)
     uint32 maxLevel;                                        // 31, max level (sync with PvPDifficulty.dbc content)
 };
@@ -1686,8 +1688,8 @@ struct TaxiPathNodeEntry
     float     z;                                            // 6        m_LocZ
     uint32    actionFlag;                                   // 7        m_flags
     uint32    delay;                                        // 8        m_delay
-                                                            // 9        m_arrivalEventID
-                                                            // 10       m_departureEventID
+    uint32    arrivalEventID;                               // 9        m_arrivalEventID
+    uint32    departureEventID;                             // 10       m_departureEventID
 };
 
 struct TotemCategoryEntry
@@ -1866,7 +1868,17 @@ struct TaxiPathBySourceAndDestination
 typedef std::map<uint32,TaxiPathBySourceAndDestination> TaxiPathSetForSource;
 typedef std::map<uint32,TaxiPathSetForSource> TaxiPathSetBySource;
 
-typedef std::vector<TaxiPathNodeEntry const*> TaxiPathNodeList;
+struct TaxiPathNodePtr
+{
+    TaxiPathNodePtr() : i_ptr(NULL) {}
+    TaxiPathNodePtr(TaxiPathNodeEntry const* ptr) : i_ptr(ptr) {}
+
+    TaxiPathNodeEntry const* i_ptr;
+
+    operator TaxiPathNodeEntry const& () const { return *i_ptr; }
+};
+
+typedef Path<TaxiPathNodePtr,TaxiPathNodeEntry const> TaxiPathNodeList;
 typedef std::vector<TaxiPathNodeList> TaxiPathNodesByPath;
 
 #define TaxiMaskSize 12

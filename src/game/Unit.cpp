@@ -295,6 +295,10 @@ void Unit::Update( uint32 p_time )
     // Spells must be processed with event system BEFORE they go to _UpdateSpells.
     // Or else we may have some SPELL_STATE_FINISHED spells stalled in pointers, that is bad.
     m_Events.Update( p_time );
+
+    if(!IsInWorld())
+        return;
+
     _UpdateSpells( p_time );
 
     CleanupDeletedAuras();
@@ -408,27 +412,6 @@ void Unit::SendMonsterMove(float NewPosX, float NewPosY, float NewPosZ, SplineTy
         player->GetSession()->SendPacket(&data);
     else
         SendMessageToSet( &data, true );
-}
-
-void Unit::SendMonsterMoveByPath(Path const& path, uint32 start, uint32 end, SplineFlags flags)
-{
-    uint32 traveltime = uint32(path.GetTotalLength(start, end) * 32);
-
-    uint32 pathSize = end - start;
-
-    WorldPacket data( SMSG_MONSTER_MOVE, (GetPackGUID().size()+1+4+4+4+4+1+4+4+4+pathSize*4*3) );
-    data << GetPackGUID();
-    data << uint8(0);
-    data << GetPositionX();
-    data << GetPositionY();
-    data << GetPositionZ();
-    data << uint32(getMSTime());
-    data << uint8(SPLINETYPE_NORMAL);
-    data << uint32(flags);
-    data << uint32(traveltime);
-    data << uint32(pathSize);
-    data.append((char*)path.GetNodes(start), pathSize * 4 * 3);
-    SendMessageToSet(&data, true);
 }
 
 void Unit::SendMonsterMoveWithSpeed(float x, float y, float z, uint32 transitTime, Player* player)
@@ -1829,8 +1812,26 @@ uint32 Unit::CalcArmorReducedDamage(Unit* pVictim, const uint32 damage)
 
     // Apply Player CR_ARMOR_PENETRATION rating and percent talents
     if (GetTypeId()==TYPEID_PLAYER)
-        armor *= 1.0f - ((Player*)this)->GetArmorPenetrationPct() / 100.0f;
+    {
+        // calculate Armor Penetration constant
+        float targetLevel = (float)pVictim->getLevel(); 
+        float arPenConstant = 400.0f + 85.0f * targetLevel;
+        if (targetLevel > 59.0f)
+            arPenConstant += 382.5f * (targetLevel - 59.0f); // 85.0f * 4.5f = 382.5f 
+        // calculate  Armor Penetration cap 
+        float armorReduction = (armor + arPenConstant) / 3.0f;
+        if (armor < armorReduction)
+            armorReduction = armor;
 
+        float armorPenetrationCoeff = ((Player*)this)->GetArmorPenetrationPct() / 100.0f;
+
+        if (armorPenetrationCoeff > 1.0f)
+        armorPenetrationCoeff = 1.0f;
+
+        armorReduction *= armorPenetrationCoeff;
+        armor -= armorReduction;
+    }
+    
     if (armor < 0.0f)
         armor = 0.0f;
 
@@ -2541,6 +2542,9 @@ MeleeHitOutcome Unit::RollMeleeOutcomeAgainst(const Unit *pVictim, WeaponAttackT
 
     // Critical hit chance
     float crit_chance = GetUnitCriticalChance(attType, pVictim);
+
+    if (crit_chance < 0.0f)
+        crit_chance = 0.0f;
 
     // stunned target cannot dodge and this is check in GetUnitDodgeChance() (returned 0 in this case)
     float dodge_chance = pVictim->GetUnitDodgeChance();
@@ -3341,8 +3345,7 @@ float Unit::GetUnitCriticalChance(WeaponAttackType attackType, const Unit *pVict
     // Apply crit chance from defence skill
     crit += (int32(GetMaxSkillValueForLevel(pVictim)) - int32(pVictim->GetDefenseSkillValue(this))) * 0.04f;
 
-    if (crit < 0.0f)
-        crit = 0.0f;
+    // we need to keep this non-capped by null, because of further calculations in IsSpellCrit()
     return crit;
 }
 
@@ -3955,6 +3958,12 @@ bool Unit::AddAura(Aura *Aur)
                     RemoveAura(i2,AURA_REMOVE_BY_STACK);
                     break;
                 }
+                               // Judgements are always single
+                               else if (GetSpellSpecific(Aur->GetId()) == SPELL_JUDGEMENT)
+                               {
+                                 RemoveAura(i2,AURA_REMOVE_BY_STACK);
+                                 break;
+                               } 
 
                 bool stop = false;
 
@@ -5252,6 +5261,14 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     triggered_spell_id = 26654;
                     break;
                 }
+                // Glyph of Blocking
+                if (dummySpell->Id == 58375)
+                {
+                    triggered_spell_id = 58374;
+                    break;
+                }
+                break;
+
                 // Twisted Reflection (boss spell)
                 case 21063:
                     triggered_spell_id = 21064;
@@ -5596,6 +5613,12 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 case 63320:
                     triggered_spell_id = 63321;
                     break;
+                // Glyph of Shadowflame
+                case 63310:
+                {
+                    triggered_spell_id = 63311;
+                    break;
+                }
                 // Item - Shadowmourne Legendary
                 case 71903:
                 {
@@ -6242,6 +6265,16 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     // Deadly Interrupt Effect
                     triggered_spell_id = 32747;
                     break;
+                }
+                // Glyph of Rake
+                case 54821:
+                {
+                   if (target->GetTypeId() == TYPEID_UNIT && procSpell->SpellVisual[0] == 750 && procSpell->EffectApplyAuraName[1] == 3)
+                   {
+                       triggered_spell_id = 54820;
+                       break;
+                   }
+                   return false;
                 }
                 // Glyph of Rejuvenation
                 case 54754:
@@ -7406,8 +7439,9 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
             {
 				// prevent proc from other types than disease 
                 if (procSpell && procSpell->Dispel != DISPEL_DISEASE) 
-                    return false; 
-                if (!roll_chance_f(GetUnitCriticalChance(BASE_ATTACK, pVictim)))
+                    return false;
+                float chance = GetUnitCriticalChance(BASE_ATTACK, pVictim) > 0.0f ? GetUnitCriticalChance(BASE_ATTACK, pVictim) : 0.0f;
+                if (!roll_chance_f(chance))
                     return false;
                 basepoints[0] = triggerAmount * damage / 100;
                 triggered_spell_id = 50526;
@@ -9623,8 +9657,8 @@ uint32 Unit::SpellDamageBonusDone(Unit *pVictim, SpellEntry const *spellProto, u
                     DoneTotalMod *= (glyphAura->GetModifier()->m_amount + 100.0f)/ 100.0f; 
                 break; 
             } 
-            // Icy Touch, Howling Blast and Frost Strike
-            if (spellProto->SpellFamilyFlags & UI64LIT(0x0000000600000002))
+            // Icy Touch and Howling Blast
+            if (spellProto->SpellFamilyFlags & UI64LIT(0x0000000200000002))
             {
                 // search disease
                 bool found = false;
@@ -9898,7 +9932,7 @@ uint32 Unit::SpellDamageBonusDone(Unit *pVictim, SpellEntry const *spellProto, u
         DoneTotal += int32(DoneAdvertisedBenefit * coeff * LvlPenalty);
     }
 
-    float tmpDamage = (pdamage + DoneTotal * stack) * DoneTotalMod;
+    float tmpDamage = (int32(pdamage) + DoneTotal * int32(stack)) * DoneTotalMod;
     // apply spellmod to Done damage (flat and pct)
     if(Player* modOwner = GetSpellModOwner())
         modOwner->ApplySpellMod(spellProto->Id, damagetype == DOT ? SPELLMOD_DOT : SPELLMOD_DAMAGE, tmpDamage);
@@ -10001,7 +10035,7 @@ uint32 Unit::SpellDamageBonusTaken(Unit *pCaster, SpellEntry const *spellProto, 
         TakenTotal+= int32(TakenAdvertisedBenefit * (CastingTime / 3500.0f) * DotFactor * LvlPenalty);
     }
 
-    float tmpDamage = (pdamage + TakenTotal * stack) * TakenTotalMod;
+    float tmpDamage = (pdamage + TakenTotal * int32(stack)) * TakenTotalMod;
 
     return tmpDamage > 0 ? uint32(tmpDamage) : 0;
 }
@@ -10494,11 +10528,14 @@ uint32 Unit::SpellHealingBonusDone(Unit *pVictim, SpellEntry const *spellProto, 
     }
 
     // Done fixed damage bonus auras
-    int32 DoneAdvertisedBenefit = SpellBaseHealingBonusDone(GetSpellSchoolMask(spellProto));
+    int32 DoneAdvertisedBenefit  = SpellBaseHealingBonusDone(GetSpellSchoolMask(spellProto));
 
     float LvlPenalty = CalculateLevelPenalty(spellProto);
-
-    Player* modOwner = GetSpellModOwner();
+    // Spellmod SpellDamage
+    float SpellModSpellDamage = 100.0f;
+    if(Player* modOwner = GetSpellModOwner())
+        modOwner->ApplySpellMod(spellProto->Id, SPELLMOD_SPELL_BONUS_DAMAGE, SpellModSpellDamage);
+    SpellModSpellDamage /= 100.0f;
 
     // Check for table values
     SpellBonusEntry const* bonus = sSpellMgr.GetSpellBonusData(spellProto->Id);
@@ -10513,15 +10550,7 @@ uint32 Unit::SpellHealingBonusDone(Unit *pVictim, SpellEntry const *spellProto, 
         if (bonus->ap_bonus)
             DoneTotal += int32(bonus->ap_bonus * GetTotalAttackPowerValue(BASE_ATTACK));
 
-        // Spellmod SpellBonusDamage
-        if (modOwner)
-        {
-            coeff *= 100.0f;
-            modOwner->ApplySpellMod(spellProto->Id,SPELLMOD_SPELL_BONUS_DAMAGE,coeff);
-            coeff /= 100.0f;
-        }
-
-        DoneTotal += int32(DoneAdvertisedBenefit * coeff);
+        DoneTotal  += int32(DoneAdvertisedBenefit * coeff * SpellModSpellDamage);
     }
     // Default calculation
     else if (DoneAdvertisedBenefit)
@@ -10549,22 +10578,11 @@ uint32 Unit::SpellHealingBonusDone(Unit *pVictim, SpellEntry const *spellProto, 
                 break;
             }
         }
-
-        float coeff = (CastingTime / 3500.0f) * DotFactor * 1.88f;
-
-        // Spellmod SpellBonusDamage
-        if (modOwner)
-        {
-            coeff *= 100.0f;
-            modOwner->ApplySpellMod(spellProto->Id,SPELLMOD_SPELL_BONUS_DAMAGE,coeff);
-            coeff /= 100.0f;
-        }
-
-        DoneTotal += int32(DoneAdvertisedBenefit * coeff * LvlPenalty);
+        DoneTotal  += int32(DoneAdvertisedBenefit * (CastingTime / 3500.0f) * DotFactor * LvlPenalty * SpellModSpellDamage * 1.88f);
     }
 
     // use float as more appropriate for negative values and percent applying
-    float heal = (healamount + DoneTotal * stack)*DoneTotalMod;
+    float heal = (healamount + DoneTotal * int32(stack))*DoneTotalMod;
     // apply spellmod to Done amount
     if(Player* modOwner = GetSpellModOwner())
         modOwner->ApplySpellMod(spellProto->Id, damagetype == DOT ? SPELLMOD_DOT : SPELLMOD_DAMAGE, heal);
@@ -11002,6 +11020,36 @@ uint32 Unit::MeleeDamageBonus(Unit *pVictim, uint32 pdamage,WeaponAttackType att
         }
     }
 
+    // Frost Strike
+    if (spellProto && spellProto->SpellFamilyName == SPELLFAMILY_DEATHKNIGHT && spellProto->SpellFamilyFlags & UI64LIT(0x0000000400000000))
+    {       
+        // search disease
+        bool found = false;
+        Unit::AuraMap const& auras = pVictim->GetAuras();
+        for(Unit::AuraMap::const_iterator itr = auras.begin(); itr!=auras.end(); ++itr)
+        {
+            if(itr->second->GetSpellProto()->Dispel == DISPEL_DISEASE)
+            {
+                found = true;
+                break;
+            }
+        }
+
+        if(found)
+        {
+            // search for Glacier Rot dummy aura
+            Unit::AuraList const& dummyAuras = GetAurasByType(SPELL_AURA_DUMMY);
+            for(Unit::AuraList::const_iterator i = dummyAuras.begin(); i != dummyAuras.end(); ++i)
+            {
+                if ((*i)->GetSpellProto()->EffectMiscValue[(*i)->GetEffIndex()] == 7244)
+                {
+                    DonePercent *= ((*i)->GetModifier()->m_amount+100.0f) / 100.0f;
+                    break;
+                }
+            }
+        }
+     }
+
 
     // final calculation
     // =================
@@ -11073,7 +11121,7 @@ uint32 Unit::MeleeDamageBonus(Unit *pVictim, uint32 pdamage,WeaponAttackType att
         DoneFlat *= GetModifierValue(unitMod, TOTAL_PCT);
     }
 
-    float tmpDamage = float(int32(pdamage) + DoneFlat) * DonePercent;
+    float tmpDamage = float(int32(pdamage) + DoneFlat * int32(stack)) * DonePercent;
 
     // apply spellmod to Done damage
     if(spellProto)
@@ -11205,7 +11253,7 @@ uint32 Unit::MeleeDamageBonusTaken(Unit *pCaster, uint32 pdamage,WeaponAttackTyp
         }
     }
 
-    float tmpDamage = float(int32(pdamage) + TakenFlat * stack) * TakenPercent;
+    float tmpDamage = float(int32(pdamage) + TakenFlat * int32(stack)) * TakenPercent;
 
     // bonus result can be negative
     return tmpDamage > 0 ? uint32(tmpDamage) : 0;
@@ -12247,7 +12295,10 @@ void Unit::AddThreat(Unit* pVictim, float threat /*= 0.0f*/, bool crit /*= false
                             break;
                         }
 
-    // Only mobs can manage threat lists
+    if(!pVictim || !pVictim->isAlive())
+        return;
+
+    //Only mobs can manage threat lists
     if(CanHaveThreatList())
         m_ThreatManager.addThreat(pVictim, threat, crit, schoolMask, threatSpell);
 }

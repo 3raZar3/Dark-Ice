@@ -1489,8 +1489,8 @@ bool Player::BuildEnumData( QueryResult * result, WorldPacket * p_data )
     //    "SELECT characters.guid, characters.name, characters.race, characters.class, characters.gender, characters.playerBytes, characters.playerBytes2, characters.level, "
     //     8                9               10                     11                     12                     13                    14
     //    "characters.zone, characters.map, characters.position_x, characters.position_y, characters.position_z, guild_member.guildid, characters.playerFlags, "
-    //    15                    16                   17                     18                   19               20
-    //    "characters.at_login, character_pet.entry, character_pet.modelid, character_pet.level, characters.data, character_declinedname.genitive "
+    //    15                    16                   17                     18                   19                         20
+    //    "characters.at_login, character_pet.entry, character_pet.modelid, character_pet.level, characters.equipmentCache, character_declinedname.genitive "
 
     Field *fields = result->Fetch();
 
@@ -1579,12 +1579,11 @@ bool Player::BuildEnumData( QueryResult * result, WorldPacket * p_data )
         *p_data << uint32(petFamily);
     }
 
-    // TODO: do not access data field here
-    Tokens data = StrSplit(fields[19].GetCppString(), " ");
 
+    Tokens data = StrSplit(fields[19].GetCppString(), " ");
     for (uint8 slot = 0; slot < EQUIPMENT_SLOT_END; slot++)
     {
-        uint32 visualbase = PLAYER_VISIBLE_ITEM_1_ENTRYID + (slot * 2);
+        uint32 visualbase = slot * 2;
         uint32 item_id = GetUInt32ValueFromArray(data, visualbase);
         const ItemPrototype * proto = ObjectMgr::GetItemPrototype(item_id);
         if(!proto)
@@ -8748,6 +8747,22 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
             break;
     }
     GetSession()->SendPacket(&data);
+    SendBGWeekendWorldStates();
+}
+
+void Player::SendBGWeekendWorldStates()
+{
+    for(int i = 1; i < sSpellStore.GetNumRows(); ++i)
+    {
+        BattlemasterListEntry const * bl = sBattlemasterListStore.LookupEntry(i);
+        if(bl && bl->HolidayWorldStateId)
+        {
+           if(BattleGroundMgr::IsBGWeekend((BattleGroundTypeId)bl->id))
+              SendUpdateWorldState(bl->HolidayWorldStateId,1);
+           else 
+               SendUpdateWorldState(bl->HolidayWorldStateId,0);
+        }
+    }
 }
 
 uint32 Player::GetXPRestBonus(uint32 xp)
@@ -15331,68 +15346,36 @@ bool Player::LoadPositionFromDB(uint32& mapid, float& x,float& y,float& z,float&
     return true;
 }
 
-bool Player::LoadValuesArrayFromDB(Tokens& data, uint64 guid)
+void Player::_LoadIntoDataField(const char* data, uint32 startOffset, uint32 count)
 {
-    QueryResult *result = CharacterDatabase.PQuery("SELECT data FROM characters WHERE guid='%u'",GUID_LOPART(guid));
-    if( !result )
-        return false;
+    if(!data)
+        return;
 
-    Field *fields = result->Fetch();
+    Tokens tokens = StrSplit(data, " ");
 
-    data = StrSplit(fields[0].GetCppString(), " ");
+    if(tokens.size() != count)
+        return;
 
-    delete result;
-
-    return true;
-}
-
-uint32 Player::GetUInt32ValueFromArray(Tokens const& data, uint16 index)
-{
-    if(index >= data.size())
-        return 0;
-
-    return (uint32)atoi(data[index].c_str());
-}
-
-float Player::GetFloatValueFromArray(Tokens const& data, uint16 index)
-{
-    float result;
-    uint32 temp = Player::GetUInt32ValueFromArray(data,index);
-    memcpy(&result, &temp, sizeof(result));
-
-    return result;
-}
-
-uint32 Player::GetUInt32ValueFromDB(uint16 index, uint64 guid)
-{
-    Tokens data;
-    if(!LoadValuesArrayFromDB(data,guid))
-        return 0;
-
-    return GetUInt32ValueFromArray(data,index);
-}
-
-float Player::GetFloatValueFromDB(uint16 index, uint64 guid)
-{
-    float result;
-    uint32 temp = Player::GetUInt32ValueFromDB(index, guid);
-    memcpy(&result, &temp, sizeof(result));
-
-    return result;
+    Tokens::iterator iter;
+    uint32 index;
+    for (iter = tokens.begin(), index = 0; index < count; ++iter, ++index)
+    {
+        m_uint32Values[startOffset + index] = atol((*iter).c_str());
+    }
 }
 
 bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 {
-    //       0     1        2     3     4     5      6       7      8   9      10           11            12
-    //SELECT guid, account, data, name, race, class, gender, level, xp, money, playerBytes, playerBytes2, playerFlags,"
-    // 13          14          15          16   17           18        19         20         21         22          23           24                 25
+    //       0     1        2     3     4      5       6      7   8      9            10            11
+    //SELECT guid, account, name, race, class, gender, level, xp, money, playerBytes, playerBytes2, playerFlags,"
+    // 12          13          14          15   16           17        18         19         20         21          22           23                 24
     //"position_x, position_y, position_z, map, orientation, taximask, cinematic, totaltime, leveltime, rest_bonus, logout_time, is_logout_resting, resettalents_cost,"
-    // 26                 27       28       29       30       31         32           33            34        35    36      37                 38         39
+    // 25                 26       27       28       29       30         31           32            33        34    35      36                 37         38
     //"resettalents_time, trans_x, trans_y, trans_z, trans_o, transguid, extra_flags, stable_slots, at_login, zone, online, death_expire_time, taxi_path, dungeon_difficulty,"
-    // 40           41                42                43                    44          45          46              47           48               49              50
+    // 39           40                41                42                    43          44          45              46           47               48              49
     //"arenaPoints, totalHonorPoints, todayHonorPoints, yesterdayHonorPoints, totalKills, todayKills, yesterdayKills, chosenTitle, knownCurrencies, watchedFaction, drunk,"
-    // 51      52      53      54      55      56      57      58      59         60
-    //"health, power1, power2, power3, power4, power5, power6, power7, specCount, activeSpec FROM characters WHERE guid = '%u'", GUID_LOPART(m_guid));
+    // 50      51      52      53      54      55      56      57      58         59          60             61              62      63           64
+    //"health, power1, power2, power3, power4, power5, power6, power7, specCount, activeSpec, exploredZones, equipmentCache, ammoId, knownTitles, actionBars  FROM characters WHERE guid = '%u'", GUID_LOPART(m_guid));
     QueryResult *result = holder->GetResult(PLAYER_LOGIN_QUERY_LOADFROM);
 
     if(!result)
@@ -15416,7 +15399,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
     Object::_Create( guid, 0, HIGHGUID_PLAYER );
 
-    m_name = fields[3].GetCppString();
+    m_name = fields[2].GetCppString();
 
     // check name limitations
     if (ObjectMgr::CheckPlayerName(m_name) != CHAR_NAME_SUCCESS ||
@@ -15427,38 +15410,41 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
         return false;
     }
 
-    if(!LoadValues( fields[2].GetString()))
-    {
-        sLog.outError("Player #%d have broken data in `data` field. Can't be loaded.", GUID_LOPART(guid));
-        delete result;
-        return false;
-    }
-
     // overwrite possible wrong/corrupted guid
     SetUInt64Value(OBJECT_FIELD_GUID, MAKE_NEW_GUID(guid, 0, HIGHGUID_PLAYER));
 
     // overwrite some data fields
-    uint32 bytes0 = GetUInt32Value(UNIT_FIELD_BYTES_0) & 0xFF000000;
-    bytes0 |= fields[4].GetUInt8();                         // race
-    bytes0 |= fields[5].GetUInt8() << 8;                    // class
-    bytes0 |= fields[6].GetUInt8() << 16;                   // gender
+    uint32 bytes0 = 0;
+    bytes0 |= fields[3].GetUInt8();                         // race
+    bytes0 |= fields[4].GetUInt8() << 8;                    // class
+    bytes0 |= fields[5].GetUInt8() << 16;                   // gender
     SetUInt32Value(UNIT_FIELD_BYTES_0, bytes0);
 
-    SetUInt32Value(UNIT_FIELD_LEVEL, fields[7].GetUInt8());
-    SetUInt32Value(PLAYER_XP, fields[8].GetUInt32());
+    SetUInt32Value(UNIT_FIELD_LEVEL, fields[6].GetUInt8());
+    SetUInt32Value(PLAYER_XP, fields[7].GetUInt32());
 
-    uint32 money = fields[9].GetUInt32();
+    _LoadIntoDataField(fields[60].GetString(), PLAYER_EXPLORED_ZONES_1, PLAYER_EXPLORED_ZONES_SIZE);
+    _LoadIntoDataField(fields[63].GetString(), PLAYER__FIELD_KNOWN_TITLES, KNOWN_TITLES_SIZE*2);
+
+    SetFloatValue(UNIT_FIELD_BOUNDINGRADIUS, DEFAULT_WORLD_OBJECT_SIZE);
+    SetFloatValue(UNIT_FIELD_COMBATREACH, 1.5f);
+    SetFloatValue(UNIT_FIELD_HOVERHEIGHT, 1.0f);
+
+    uint32 money = fields[8].GetUInt32();
     if(money > MAX_MONEY_AMOUNT)
         money = MAX_MONEY_AMOUNT;
     SetMoney(money);
 
-    SetUInt32Value(PLAYER_BYTES, fields[10].GetUInt32());
-    SetUInt32Value(PLAYER_BYTES_2, fields[11].GetUInt32());
-    SetUInt32Value(PLAYER_BYTES_3, (fields[50].GetUInt16() & 0xFFFE) | fields[6].GetUInt8());
-    SetUInt32Value(PLAYER_FLAGS, fields[12].GetUInt32());
-    SetInt32Value(PLAYER_FIELD_WATCHED_FACTION_INDEX, fields[49].GetInt32());
+    SetUInt32Value(PLAYER_BYTES, fields[9].GetUInt32());
+    SetUInt32Value(PLAYER_BYTES_2, fields[10].GetUInt32());
+    SetUInt32Value(PLAYER_BYTES_3, (fields[49].GetUInt16() & 0xFFFE) | fields[5].GetUInt8());
+    SetUInt32Value(PLAYER_FLAGS, fields[11].GetUInt32());
+    SetInt32Value(PLAYER_FIELD_WATCHED_FACTION_INDEX, fields[48].GetInt32());
 
-    SetUInt64Value(PLAYER_FIELD_KNOWN_CURRENCIES, fields[48].GetUInt64());
+    SetUInt64Value(PLAYER_FIELD_KNOWN_CURRENCIES, fields[47].GetUInt64());
+
+    SetUInt32Value(PLAYER_AMMO_ID, fields[62].GetUInt32());
+    SetByteValue(PLAYER_FIELD_BYTES, 2, fields[64].GetUInt8());
 
 
     InitDisplayIds();
@@ -15494,11 +15480,11 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
     InitPrimaryProfessions();                               // to max set before any spell loaded
 
     // init saved position, and fix it later if problematic
-    uint32 transGUID = fields[31].GetUInt32();
-    Relocate(fields[13].GetFloat(),fields[14].GetFloat(),fields[15].GetFloat(),fields[17].GetFloat());
-    SetLocationMapId(fields[16].GetUInt32());
+    uint32 transGUID = fields[30].GetUInt32();
+    Relocate(fields[12].GetFloat(),fields[13].GetFloat(),fields[14].GetFloat(),fields[16].GetFloat());
+    SetLocationMapId(fields[15].GetUInt32());
 
-    uint32 difficulty = fields[39].GetUInt32();
+    uint32 difficulty = fields[38].GetUInt32();
     if(difficulty >= MAX_DUNGEON_DIFFICULTY)
         difficulty = DUNGEON_DIFFICULTY_NORMAL;
     SetDungeonDifficulty(Difficulty(difficulty));           // may be changed in _LoadGroup
@@ -15507,7 +15493,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
     _LoadArenaTeamInfo(holder->GetResult(PLAYER_LOGIN_QUERY_LOADARENAINFO));
 
-    uint32 arena_currency = fields[40].GetUInt32();
+    uint32 arena_currency = fields[39].GetUInt32();
     if (arena_currency > sWorld.getConfig(CONFIG_UINT32_MAX_ARENA_POINTS))
         arena_currency = sWorld.getConfig(CONFIG_UINT32_MAX_ARENA_POINTS);
 
@@ -15529,12 +15515,16 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
             SetArenaTeamInfoField(arena_slot, ArenaTeamInfoType(j), 0);
     }
 
-    SetUInt32Value(PLAYER_FIELD_HONOR_CURRENCY, fields[41].GetUInt32());
-    SetUInt32Value(PLAYER_FIELD_TODAY_CONTRIBUTION, fields[42].GetUInt32());
-    SetUInt32Value(PLAYER_FIELD_YESTERDAY_CONTRIBUTION, fields[43].GetUInt32());
-    SetUInt32Value(PLAYER_FIELD_LIFETIME_HONORBALE_KILLS, fields[44].GetUInt32());
-    SetUInt16Value(PLAYER_FIELD_KILLS, 0, fields[45].GetUInt16());
-    SetUInt16Value(PLAYER_FIELD_KILLS, 1, fields[46].GetUInt16());
+    uint32 honor_currency = fields[40].GetUInt32();
+    if (honor_currency > sWorld.getConfig(CONFIG_UINT32_MAX_HONOR_POINTS))
+        honor_currency = sWorld.getConfig(CONFIG_UINT32_MAX_HONOR_POINTS);
+    SetUInt32Value(PLAYER_FIELD_HONOR_CURRENCY, honor_currency);
+
+    SetUInt32Value(PLAYER_FIELD_TODAY_CONTRIBUTION, fields[41].GetUInt32());
+    SetUInt32Value(PLAYER_FIELD_YESTERDAY_CONTRIBUTION, fields[42].GetUInt32());
+    SetUInt32Value(PLAYER_FIELD_LIFETIME_HONORBALE_KILLS, fields[43].GetUInt32());
+    SetUInt16Value(PLAYER_FIELD_KILLS, 0, fields[44].GetUInt16());
+    SetUInt16Value(PLAYER_FIELD_KILLS, 1, fields[45].GetUInt16());
 
     _LoadBoundInstances(holder->GetResult(PLAYER_LOGIN_QUERY_LOADBOUNDINSTANCES));
 
@@ -15600,7 +15590,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
     if (transGUID != 0)
     {
-        m_movementInfo.SetTransportData(transGUID, fields[27].GetFloat(), fields[28].GetFloat(), fields[29].GetFloat(), fields[30].GetFloat(), 0, -1);
+        m_movementInfo.SetTransportData(ObjectGuid(HIGHGUID_MO_TRANSPORT,transGUID), fields[26].GetFloat(), fields[27].GetFloat(), fields[28].GetFloat(), fields[29].GetFloat(), 0, -1);
 
         if( !MaNGOS::IsValidMapCoord(
             GetPositionX() + m_movementInfo.GetTransportPos()->x, GetPositionY() + m_movementInfo.GetTransportPos()->y,
@@ -15681,7 +15671,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
     SaveRecallPosition();
 
     time_t now = time(NULL);
-    time_t logoutTime = time_t(fields[23].GetUInt64());
+    time_t logoutTime = time_t(fields[22].GetUInt64());
 
     // since last logout (in seconds)
     uint32 time_diff = uint32(now - logoutTime);
@@ -15696,27 +15686,12 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
     uint16 newDrunkenValue = uint16(soberFactor*(GetUInt32Value(PLAYER_BYTES_3) & 0xFFFE));
     SetDrunkValue(newDrunkenValue);
 
-    m_rest_bonus = fields[22].GetFloat();
-    //speed collect rest bonus in offline, in logout, far from tavern, city (section/in hour)
-    float bubble0 = 0.031f;
-    //speed collect rest bonus in offline, in logout, in tavern, city (section/in hour)
-    float bubble1 = 0.125f;
+    m_cinematic = fields[18].GetUInt32();
+    m_Played_time[PLAYED_TIME_TOTAL]= fields[19].GetUInt32();
+    m_Played_time[PLAYED_TIME_LEVEL]= fields[20].GetUInt32();
 
-    if(time_diff > 0)
-    {
-        float bubble = fields[24].GetUInt32() > 0
-            ? bubble1*sWorld.getConfig(CONFIG_FLOAT_RATE_REST_OFFLINE_IN_TAVERN_OR_CITY)
-            : bubble0*sWorld.getConfig(CONFIG_FLOAT_RATE_REST_OFFLINE_IN_WILDERNESS);
-
-        SetRestBonus(GetRestBonus()+ time_diff*((float)GetUInt32Value(PLAYER_NEXT_LEVEL_XP)/72000)*bubble);
-    }
-
-    m_cinematic = fields[19].GetUInt32();
-    m_Played_time[PLAYED_TIME_TOTAL]= fields[20].GetUInt32();
-    m_Played_time[PLAYED_TIME_LEVEL]= fields[21].GetUInt32();
-
-    m_resetTalentsCost = fields[25].GetUInt32();
-    m_resetTalentsTime = time_t(fields[26].GetUInt64());
+    m_resetTalentsCost = fields[24].GetUInt32();
+    m_resetTalentsTime = time_t(fields[25].GetUInt64());
 
     // reserve some flags
     uint32 old_safe_flags = GetUInt32Value(PLAYER_FLAGS) & ( PLAYER_FLAGS_HIDE_CLOAK | PLAYER_FLAGS_HIDE_HELM );
@@ -15724,29 +15699,29 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
     if( HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GM) )
         SetUInt32Value(PLAYER_FLAGS, 0 | old_safe_flags);
 
-    m_taxi.LoadTaxiMask( fields[18].GetString() );          // must be before InitTaxiNodesForLevel
+    m_taxi.LoadTaxiMask( fields[17].GetString() );          // must be before InitTaxiNodesForLevel
 
-    uint32 extraflags = fields[32].GetUInt32();
+    uint32 extraflags = fields[31].GetUInt32();
 
-    m_stableSlots = fields[33].GetUInt32();
+    m_stableSlots = fields[32].GetUInt32();
     if(m_stableSlots > MAX_PET_STABLES)
     {
         sLog.outError("Player can have not more %u stable slots, but have in DB %u",MAX_PET_STABLES,uint32(m_stableSlots));
         m_stableSlots = MAX_PET_STABLES;
     }
 
-    m_atLoginFlags = fields[34].GetUInt32();
+    m_atLoginFlags = fields[33].GetUInt32();
 
     // Honor system
     // Update Honor kills data
     m_lastHonorUpdateTime = logoutTime;
     UpdateHonorFields();
 
-    m_deathExpireTime = (time_t)fields[37].GetUInt64();
+    m_deathExpireTime = (time_t)fields[36].GetUInt64();
     if(m_deathExpireTime > now+MAX_DEATH_COUNT*DEATH_EXPIRE_STEP)
         m_deathExpireTime = now+MAX_DEATH_COUNT*DEATH_EXPIRE_STEP-1;
 
-    std::string taxi_nodes = fields[38].GetCppString();
+    std::string taxi_nodes = fields[37].GetCppString();
 
     // clear channel spell data (if saved at channel spell casting)
     SetChannelObjectGUID(0);
@@ -15782,6 +15757,22 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
     InitTaxiNodesForLevel();
     InitRunes();
 
+    // rest bonus can only be calculated after InitStatsForLevel()
+    m_rest_bonus = fields[21].GetFloat();
+
+    if(time_diff > 0)
+    {
+        //speed collect rest bonus in offline, in logout, far from tavern, city (section/in hour)
+        float bubble0 = 0.031f;
+        //speed collect rest bonus in offline, in logout, in tavern, city (section/in hour)
+        float bubble1 = 0.125f;
+        float bubble = fields[23].GetUInt32() > 0
+            ? bubble1*sWorld.getConfig(CONFIG_FLOAT_RATE_REST_OFFLINE_IN_TAVERN_OR_CITY)
+            : bubble0*sWorld.getConfig(CONFIG_FLOAT_RATE_REST_OFFLINE_IN_WILDERNESS);
+
+        SetRestBonus(GetRestBonus()+ time_diff*((float)GetUInt32Value(PLAYER_NEXT_LEVEL_XP)/72000)*bubble);
+    }
+
     // load skills after InitStatsForLevel because it triggering aura apply also
     _LoadSkills(holder->GetResult(PLAYER_LOGIN_QUERY_LOADSKILLS));
 
@@ -15792,8 +15783,8 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
     _LoadMailedItems(holder->GetResult(PLAYER_LOGIN_QUERY_LOADMAILEDITEMS));
     UpdateNextMailTimeAndUnreads();
 
-    m_specsCount = fields[59].GetUInt8();
-    m_activeSpec = fields[60].GetUInt8();
+    m_specsCount = fields[58].GetUInt8();
+    m_activeSpec = fields[59].GetUInt8();
 
     _LoadGlyphs(holder->GetResult(PLAYER_LOGIN_QUERY_LOADGLYPHS));
 
@@ -15831,7 +15822,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
     // check PLAYER_CHOSEN_TITLE compatibility with PLAYER__FIELD_KNOWN_TITLES
     // note: PLAYER__FIELD_KNOWN_TITLES updated at quest status loaded
-    uint32 curTitle = fields[47].GetUInt32();
+    uint32 curTitle = fields[46].GetUInt32();
     if (curTitle && !HasTitle(curTitle))
         curTitle = 0;
 
@@ -15899,11 +15890,11 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
     UpdateAllStats();
 
     // restore remembered power/health values (but not more max values)
-    uint32 savedhealth = fields[51].GetUInt32();
+    uint32 savedhealth = fields[50].GetUInt32();
     SetHealth(savedhealth > GetMaxHealth() ? GetMaxHealth() : savedhealth);
     for(uint32 i = 0; i < MAX_POWERS; ++i)
     {
-        uint32 savedpower = fields[52+i].GetUInt32();
+        uint32 savedpower = fields[51+i].GetUInt32();
         SetPower(Powers(i),savedpower > GetMaxPower(Powers(i)) ? GetMaxPower(Powers(i)) : savedpower);
     }
 
@@ -17082,13 +17073,13 @@ void Player::SaveToDB()
 
     std::ostringstream ss;
     ss << "INSERT INTO characters (guid,account,name,race,class,gender,level,xp,money,playerBytes,playerBytes2,playerFlags,"
-        "map, dungeon_difficulty, position_x, position_y, position_z, orientation, data, "
+        "map, dungeon_difficulty, position_x, position_y, position_z, orientation, "
         "taximask, online, cinematic, "
         "totaltime, leveltime, rest_bonus, logout_time, is_logout_resting, resettalents_cost, resettalents_time, "
         "trans_x, trans_y, trans_z, trans_o, transguid, extra_flags, stable_slots, at_login, zone, "
         "death_expire_time, taxi_path, arenaPoints, totalHonorPoints, todayHonorPoints, yesterdayHonorPoints, totalKills, "
         "todayKills, yesterdayKills, chosenTitle, knownCurrencies, watchedFaction, drunk, health, power1, power2, power3, "
-        "power4, power5, power6, power7, specCount, activeSpec) VALUES ("
+        "power4, power5, power6, power7, specCount, activeSpec, exploredZones, equipmentCache, ammoId, knownTitles, actionBars) VALUES ("
         << GetGUIDLow() << ", "
         << GetSession()->GetAccountId() << ", '"
         << sql_name << "', "
@@ -17109,7 +17100,7 @@ void Player::SaveToDB()
         << finiteAlways(GetPositionX()) << ", "
         << finiteAlways(GetPositionY()) << ", "
         << finiteAlways(GetPositionZ()) << ", "
-        << finiteAlways(GetOrientation()) << ", '";
+        << finiteAlways(GetOrientation()) << ", ";
     }
     else
     {
@@ -17118,16 +17109,8 @@ void Player::SaveToDB()
         << finiteAlways(GetTeleportDest().coord_x) << ", "
         << finiteAlways(GetTeleportDest().coord_y) << ", "
         << finiteAlways(GetTeleportDest().coord_z) << ", "
-        << finiteAlways(GetTeleportDest().orientation) << ", '";
+        << finiteAlways(GetTeleportDest().orientation) << ", ";
     }
-
-    uint16 i;
-    for( i = 0; i < m_valuesCount; ++i )
-    {
-        ss << GetUInt32Value(i) << " ";
-    }
-
-    ss << "', ";
 
     ss << m_taxi << ", ";                                   // string with TaxiMaskSize numbers
 
@@ -17198,8 +17181,26 @@ void Player::SaveToDB()
 
     ss << ", ";
     ss << uint32(m_specsCount) << ", ";
-    ss << uint32(m_activeSpec);
+    ss << uint32(m_activeSpec) << ", '";
+    for(uint32 i = 0; i < PLAYER_EXPLORED_ZONES_SIZE; ++i )
+    {
+        ss << GetUInt32Value(PLAYER_EXPLORED_ZONES_1 + i) << " ";
+    }
 
+    ss << "', '";
+    for(uint32 i = 0; i < EQUIPMENT_SLOT_END * 2; ++i )
+    {
+        ss << GetUInt32Value(PLAYER_VISIBLE_ITEM_1_ENTRYID + i) << " ";
+    }
+
+    ss << "',";
+    ss << GetUInt32Value(PLAYER_AMMO_ID) << ", '";
+    for(uint32 i = 0; i < KNOWN_TITLES_SIZE*2; ++i )
+    {
+        ss << GetUInt32Value(PLAYER__FIELD_KNOWN_TITLES + i) << " ";
+    }
+    ss << "',";
+    ss << uint32(GetByteValue(PLAYER_FIELD_BYTES, 2));
     ss << ")";
 
     CharacterDatabase.Execute( ss.str().c_str() );
@@ -17672,7 +17673,7 @@ void Player::_SaveStats()
 
 void Player::outDebugValues() const
 {
-    if(!sLog.IsOutDebug())                                  // optimize disabled debug output
+    if(!sLog.HasLogLevelOrHigher(LOG_LVL_DEBUG))            // optimize disabled debug output
         return;
 
     sLog.outDebug("HP is: \t\t\t%u\t\tMP is: \t\t\t%u",GetMaxHealth(), GetMaxPower(POWER_MANA));
@@ -17749,34 +17750,6 @@ void Player::SavePositionInDB(uint32 mapid, float x,float y,float z,float o,uint
     CharacterDatabase.Execute(ss.str().c_str());
 }
 
-void Player::SaveDataFieldToDB()
-{
-    std::ostringstream ss;
-    ss<<"UPDATE characters SET data='";
-
-    for(uint16 i = 0; i < m_valuesCount; ++i )
-    {
-        ss << GetUInt32Value(i) << " ";
-    }
-    ss<<"' WHERE guid='"<< GUID_LOPART(GetGUIDLow()) <<"'";
-
-    CharacterDatabase.Execute(ss.str().c_str());
-}
-
-bool Player::SaveValuesArrayInDB(Tokens const& tokens, uint64 guid)
-{
-    std::ostringstream ss2;
-    ss2 << "UPDATE characters SET data='";
-    int i = 0;
-    for (Tokens::const_iterator iter = tokens.begin(); iter != tokens.end(); ++iter, ++i)
-    {
-        ss2 << tokens[i] << " ";
-    }
-    ss2 << "' WHERE guid='" << GUID_LOPART(guid) << "'";
-
-    return CharacterDatabase.Execute(ss2.str().c_str());
-}
-
 void Player::SetUInt32ValueInArray(Tokens& tokens,uint16 index, uint32 value)
 {
     char buf[11];
@@ -17786,29 +17759,6 @@ void Player::SetUInt32ValueInArray(Tokens& tokens,uint16 index, uint32 value)
         return;
 
     tokens[index] = buf;
-}
-
-void Player::SetUInt32ValueInDB(uint16 index, uint32 value, uint64 guid)
-{
-    Tokens tokens;
-    if(!LoadValuesArrayFromDB(tokens,guid))
-        return;
-
-    if(index >= tokens.size())
-        return;
-
-    char buf[11];
-    snprintf(buf,11,"%u",value);
-    tokens[index] = buf;
-
-    SaveValuesArrayInDB(tokens,guid);
-}
-
-void Player::SetFloatValueInDB(uint16 index, float value, uint64 guid)
-{
-    uint32 temp;
-    memcpy(&temp, &value, sizeof(value));
-    Player::SetUInt32ValueInDB(index, temp, guid);
 }
 
 void Player::Customize(uint64 guid, uint8 gender, uint8 skin, uint8 face, uint8 hairStyle, uint8 hairColor, uint8 facialHair)
@@ -18566,10 +18516,7 @@ void Player::HandleStealthedUnitsDetection()
                 (*i)->SendCreateUpdateToPlayer(this);
                 m_clientGUIDs.insert(i_guid);
 
-                #ifdef MANGOS_DEBUG
-                if((sLog.getLogFilter() & LOG_FILTER_VISIBILITY_CHANGES)==0)
-                    sLog.outDebug("%s is detected in stealth by player %u. Distance = %f",i_guid.GetString().c_str(),GetGUIDLow(),GetDistance(*i));
-                #endif
+                DEBUG_FILTER_LOG(LOG_FILTER_VISIBILITY_CHANGES, "%s is detected in stealth by player %u. Distance = %f",i_guid.GetString().c_str(),GetGUIDLow(),GetDistance(*i));
 
                 // target aura duration for caster show only if target exist at caster client
                 // send data at target visibility change (adding to client)
@@ -18816,30 +18763,30 @@ void Player::ContinueTaxiFlight()
 
     float distPrev = MAP_SIZE*MAP_SIZE;
     float distNext =
-        (nodeList[0]->x-GetPositionX())*(nodeList[0]->x-GetPositionX())+
-        (nodeList[0]->y-GetPositionY())*(nodeList[0]->y-GetPositionY())+
-        (nodeList[0]->z-GetPositionZ())*(nodeList[0]->z-GetPositionZ());
+        (nodeList[0].x-GetPositionX())*(nodeList[0].x-GetPositionX())+
+        (nodeList[0].y-GetPositionY())*(nodeList[0].y-GetPositionY())+
+        (nodeList[0].z-GetPositionZ())*(nodeList[0].z-GetPositionZ());
 
     for(uint32 i = 1; i < nodeList.size(); ++i)
     {
-        TaxiPathNodeEntry const* node = nodeList[i];
-        TaxiPathNodeEntry const* prevNode = nodeList[i-1];
+        TaxiPathNodeEntry const& node = nodeList[i];
+        TaxiPathNodeEntry const& prevNode = nodeList[i-1];
 
         // skip nodes at another map
-        if (node->mapid != GetMapId())
+        if (node.mapid != GetMapId())
             continue;
 
         distPrev = distNext;
 
         distNext =
-            (node->x-GetPositionX())*(node->x-GetPositionX())+
-            (node->y-GetPositionY())*(node->y-GetPositionY())+
-            (node->z-GetPositionZ())*(node->z-GetPositionZ());
+            (node.x-GetPositionX())*(node.x-GetPositionX())+
+            (node.y-GetPositionY())*(node.y-GetPositionY())+
+            (node.z-GetPositionZ())*(node.z-GetPositionZ());
 
         float distNodes =
-            (node->x-prevNode->x)*(node->x-prevNode->x)+
-            (node->y-prevNode->y)*(node->y-prevNode->y)+
-            (node->z-prevNode->z)*(node->z-prevNode->z);
+            (node.x-prevNode.x)*(node.x-prevNode.x)+
+            (node.y-prevNode.y)*(node.y-prevNode.y)+
+            (node.z-prevNode.z)*(node.z-prevNode.z);
 
         if (distNext + distPrev < distNodes)
         {
@@ -19759,10 +19706,7 @@ void Player::UpdateVisibilityOf(WorldObject const* viewPoint, WorldObject* targe
             target->DestroyForPlayer(this);
             m_clientGUIDs.erase(t_guid);
 
-            #ifdef MANGOS_DEBUG
-            if((sLog.getLogFilter() & LOG_FILTER_VISIBILITY_CHANGES)==0)
-                sLog.outDebug("%s out of range for player %u. Distance = %f",t_guid.GetString().c_str(),GetGUIDLow(),GetDistance(target));
-            #endif
+            DEBUG_FILTER_LOG(LOG_FILTER_VISIBILITY_CHANGES, "%s out of range for player %u. Distance = %f",t_guid.GetString().c_str(),GetGUIDLow(),GetDistance(target));
         }
     }
     else
@@ -19773,10 +19717,7 @@ void Player::UpdateVisibilityOf(WorldObject const* viewPoint, WorldObject* targe
             if(target->GetTypeId()!=TYPEID_GAMEOBJECT||!((GameObject*)target)->IsTransport())
                 m_clientGUIDs.insert(target->GetObjectGuid());
 
-            #ifdef MANGOS_DEBUG
-            if((sLog.getLogFilter() & LOG_FILTER_VISIBILITY_CHANGES)==0)
-                sLog.outDebug("Object %u (Type: %u) is visible now for player %u. Distance = %f",target->GetGUIDLow(),target->GetTypeId(),GetGUIDLow(),GetDistance(target));
-            #endif
+            DEBUG_FILTER_LOG(LOG_FILTER_VISIBILITY_CHANGES, "Object %u (Type: %u) is visible now for player %u. Distance = %f",target->GetGUIDLow(),target->GetTypeId(),GetGUIDLow(),GetDistance(target));
 
             // target aura duration for caster show only if target exist at caster client
             // send data at target visibility change (adding to client)
@@ -19819,10 +19760,7 @@ void Player::UpdateVisibilityOf(WorldObject const* viewPoint, T* target, UpdateD
             target->BuildOutOfRangeUpdateBlock(&data);
             m_clientGUIDs.erase(t_guid);
 
-            #ifdef MANGOS_DEBUG
-            if((sLog.getLogFilter() & LOG_FILTER_VISIBILITY_CHANGES)==0)
-                sLog.outDebug("%s is out of range for %s. Distance = %f",t_guid.GetString().c_str(),GetObjectGuid().GetString().c_str(),GetDistance(target));
-            #endif
+            DEBUG_FILTER_LOG(LOG_FILTER_VISIBILITY_CHANGES, "%s is out of range for %s. Distance = %f", t_guid.GetString().c_str(), GetObjectGuid().GetString().c_str(), GetDistance(target));
         }
     }
     else
@@ -19833,10 +19771,7 @@ void Player::UpdateVisibilityOf(WorldObject const* viewPoint, T* target, UpdateD
             target->BuildCreateUpdateBlockForPlayer(&data, this);
             UpdateVisibilityOf_helper(m_clientGUIDs,target);
 
-            #ifdef MANGOS_DEBUG
-            if((sLog.getLogFilter() & LOG_FILTER_VISIBILITY_CHANGES)==0)
-                sLog.outDebug("%s is visible now for %s. Distance = %f",target->GetObjectGuid().GetString().c_str(),GetObjectGuid().GetString().c_str(),GetDistance(target));
-            #endif
+            DEBUG_FILTER_LOG(LOG_FILTER_VISIBILITY_CHANGES, "%s is visible now for %s. Distance = %f", target->GetObjectGuid().GetString().c_str(), GetObjectGuid().GetString().c_str(), GetDistance(target));
         }
     }
 }

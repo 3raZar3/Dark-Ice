@@ -38,6 +38,8 @@ base/simple_ai.cpp \
 base/simple_ai.h \
 include/precompiled.cpp \
 include/precompiled.h \
+include/sc_boss_spell_worker.cpp \
+include/sc_boss_spell_worker.h \
 include/sc_creature.cpp \
 include/sc_creature.h \
 include/sc_gossip.h \
@@ -60,6 +62,15 @@ scripts/custom/custom_npc_teleportmaster.cpp \
 scripts/custom/custom_npc_titlemaster.cpp \
 scripts/custom/custom_npc_tokenvendor.cpp \
 scripts/custom/custom_script_training_dummy.cpp \
+scripts/guards/ancient_of_war.cpp \
+scripts/guards/archbishop_benedictus.cpp \
+scripts/guards/g_marcus_jonathan.cpp \
+scripts/guards/high_fire_mage.cpp \
+scripts/guards/high_sorcerer_andromath.cpp \
+scripts/guards/highlord_bolvar_fordragon.cpp \
+scripts/guards/officers.cpp \
+scripts/guards/overlord_saurfang.cpp \
+scripts/guards/thrall.cpp \
 scripts/eastern_kingdoms/alterac_mountains.cpp \
 scripts/eastern_kingdoms/arathi_highlands.cpp \
 scripts/eastern_kingdoms/blasted_lands.cpp \
@@ -119,6 +130,7 @@ scripts/eastern_kingdoms/blackwing_lair/boss_razorgore.cpp \
 scripts/eastern_kingdoms/blackwing_lair/boss_vaelastrasz.cpp \
 scripts/eastern_kingdoms/blackwing_lair/boss_victor_nefarius.cpp \
 scripts/eastern_kingdoms/blackwing_lair/instance_blackwing_lair.cpp \
+scripts/eastern_kingdoms/blackwing_lair/blackwing_lair.h \
 scripts/eastern_kingdoms/deadmines/deadmines.cpp \
 scripts/eastern_kingdoms/deadmines/deadmines.h \
 scripts/eastern_kingdoms/deadmines/instance_deadmines.cpp \

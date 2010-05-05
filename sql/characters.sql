@@ -193,7 +193,6 @@ DROP TABLE IF EXISTS `characters`;
 CREATE TABLE `characters` (
   `guid` int(11) unsigned NOT NULL default '0' COMMENT 'Global Unique Identifier',
   `account` int(11) unsigned NOT NULL default '0' COMMENT 'Account Identifier',
-  `data` longtext,
   `name` varchar(12) NOT NULL default '',
   `race` tinyint(3) unsigned NOT NULL default '0',
   `class` tinyint(3) unsigned NOT NULL default '0',

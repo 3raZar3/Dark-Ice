@@ -292,8 +292,6 @@ AC_CONFIG_FILES([
    sql/Makefile
    sql/tools/Makefile
    sql/updates/Makefile
-   sql/ScriptDev2/Makefile
-   sql/ScriptDev2/Updates/Makefile
    src/Makefile
    src/tools/Makefile
    src/tools/genrevision/Makefile

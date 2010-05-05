@@ -25,7 +25,7 @@ EndScriptData */
 
 enum 
 {
-	PORTALS_COUNT = 8
+PORTALS_COUNT = 8
 };
 
 struct t_Locations
@@ -40,14 +40,14 @@ struct t_Locations
 
 static t_Locations PortalLoc[]=
 {
-{"Hammer of the world", -17.1928f, 2211.44f, 30.1158f, 0, true, true, TYPE_TELEPORT}, //
-{"Chapel Damned", -503.62f, 2211.47f, 62.8235f, 70856, false, true, TYPE_MARROWGAR}, //
-{"Cephalic shaft", -615.145f, 2211.47f, 199.972f, 70857, false, true, TYPE_DEATHWHISPER}, //
-{"The rise of deadly", -549.131f, 2211.29f, 539.29f, 70858, false, true, TYPE_FLIGHT_WAR}, //
-{"Icecrown Citadel", 4198.42f, 2769.22f, 351.065f, 70859, false, true, TYPE_SAURFANG}, //
-{"Sanctuary of blood", 4490.205566f, 2769.275635f, 403.983765f, 0, false, true, TYPE_BLOOD_COUNCIL}, //
-{"Lair of the Queen of Ice", 4356.580078f, 2565.75f, 220.401993f, 70861, false, true, TYPE_VALITHRIA}, //
-{"Frozen Throne", 529.3f, -2124.7f, 1041.0f, 70860, false, true, TYPE_SINDRAGOSA}, //
+{"Hammer of the world",-17.1928f, 2211.44f, 30.1158f,0,true,true,TYPE_TELEPORT}, //
+{"Chapel Damned",-503.62f, 2211.47f, 62.8235f,70856,false,true,TYPE_MARROWGAR},  //
+{"Cephalic shaft",-615.145f, 2211.47f, 199.972f,70857,false,true,TYPE_DEATHWHISPER}, //
+{"The rise of deadly",-549.131f, 2211.29f, 539.291f,70858,false,true,TYPE_FLIGHT_WAR}, //
+{"Icecrown Citadel",4198.42f, 2769.22f, 351.065f,70859,false,true,TYPE_SAURFANG}, //
+{"Sanctuary of blood",4490.205566f, 2769.275635f, 403.983765f,0,false,true,TYPE_BLOOD_COUNCIL}, //
+{"Lair of the Queen of Ice",4356.580078f, 2565.75f, 220.401993f,70861,false,true,TYPE_VALITHRIA}, //
+{"Frozen Throne",529.3f, -2124.7f, 1041, 70860,false,true,TYPE_SINDRAGOSA}, //
 };
 
 
