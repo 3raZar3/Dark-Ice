@@ -1,4 +1,4 @@
-/* Copyright (C) 2006 - 2010 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
+/* Copyright (C) 2009 - 2010 ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -22,37 +22,41 @@ SDCategory: Blackwing Lair
 EndScriptData */
 
 #include "precompiled.h"
+#include "blackwing_lair.h"
 
 //Razorgore Phase 2 Script
-enum
-{
-    SAY_EGGS_BROKEN1     = -1469022,
-    SAY_EGGS_BROKEN2     = -1469023,
-    SAY_EGGS_BROKEN3     = -1469024,
-    SAY_DEATH            = -1469025,
 
-    SPELL_CLEAVE         = 19632,
-    SPELL_WARSTOMP       = 24375,
-    SPELL_FIREBALLVOLLEY = 22425,
-    SPELL_CONFLAGRATION  = 23023
-};
+#define SAY_EGGS_BROKEN1        -1469022
+#define SAY_EGGS_BROKEN2        -1469023
+#define SAY_EGGS_BROKEN3        -1469024
+#define SAY_DEATH               -1469025
+
+#define SPELL_CLEAVE            22540
+#define SPELL_WARSTOMP          24375
+#define SPELL_FIREBALLVOLLEY    22425
+#define SPELL_CONFLAGRATION     23023
 
 struct MANGOS_DLL_DECL boss_razorgoreAI : public ScriptedAI
 {
-    boss_razorgoreAI(Creature* pCreature) : ScriptedAI(pCreature) {Reset();}
+    boss_razorgoreAI(Creature* pCreature) : ScriptedAI(pCreature)
+	{
+		m_pInstance = (ScriptedInstance*)pCreature->GetInstanceData();
+        Reset();
+	}
 
-    uint32 m_uiCleaveTimer;
-    uint32 m_uiWarStompTimer;
-    uint32 m_uiFireballVolleyTimer;
-    uint32 m_uiConflagrationTimer;
+	ScriptedInstance* m_pInstance;
+
+    uint32 Cleave_Timer;
+    uint32 WarStomp_Timer;
+    uint32 FireballVolley_Timer;
+    uint32 Conflagration_Timer;
 
     void Reset()
     {
-        m_uiCleaveTimer         = 15000;                       //These times are probably wrong
-        m_uiWarStompTimer       = 35000;
-        m_uiConflagrationTimer  = 12000;
-        m_uiFireballVolleyTimer = 7000;
-
+        Cleave_Timer = 15000;                               //These times are probably wrong
+        WarStomp_Timer = 35000;
+        FireballVolley_Timer = 7000;
+        Conflagration_Timer = 12000;
     }
 
     void Aggro(Unit* pWho)
@@ -60,62 +64,57 @@ struct MANGOS_DLL_DECL boss_razorgoreAI : public ScriptedAI
         m_creature->SetInCombatWithZone();
     }
 
-    void JustDied(Unit* pKiller)
+    void JustDied(Unit* Killer)
     {
         DoScriptText(SAY_DEATH, m_creature);
+        m_pInstance->SetData(TYPE_RAZORGORE,DONE);
     }
 
-    void UpdateAI(const uint32 uiDiff)
+    void UpdateAI(const uint32 diff)
     {
         if (!m_creature->SelectHostileTarget() || !m_creature->getVictim())
             return;
 
-        // Cleave
-        if (m_uiCleaveTimer < uiDiff)
+        //Cleave_Timer
+        if (Cleave_Timer < diff)
         {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_CLEAVE);
-            m_uiCleaveTimer = urand(7000, 10000);
-        }
-        else
-            m_uiCleaveTimer -= uiDiff;
+            DoCastSpellIfCan(m_creature->getVictim(),SPELL_CLEAVE);
+            Cleave_Timer = urand(7000, 10000);
+        }else Cleave_Timer -= diff;
 
-        // WarStomp
-        if (m_uiWarStompTimer < uiDiff)
+        //WarStomp_Timer
+        if (WarStomp_Timer < diff)
         {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_WARSTOMP);
-            m_uiWarStompTimer = urand(15000, 25000);
-        }
-        else
-            m_uiWarStompTimer -= uiDiff;
+            DoCastSpellIfCan(m_creature->getVictim(),SPELL_WARSTOMP);
+            WarStomp_Timer = urand(15000, 25000);
+        }else WarStomp_Timer -= diff;
 
-        // Fireball Volley
-        if (m_uiFireballVolleyTimer < uiDiff)
+        //FireballVolley_Timer
+        if (FireballVolley_Timer < diff)
         {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_FIREBALLVOLLEY);
-            m_uiFireballVolleyTimer = urand(12000, 15000);
-        }
-        else
-            m_uiFireballVolleyTimer -= uiDiff;
+            DoCastSpellIfCan(m_creature->getVictim(),SPELL_FIREBALLVOLLEY);
+            FireballVolley_Timer = urand(12000, 15000);
+        }else FireballVolley_Timer -= diff;
 
-        // Conflagration
-        if (m_uiConflagrationTimer < uiDiff)
+        //Conflagration_Timer
+        if (Conflagration_Timer < diff)
         {
-            DoCastSpellIfCan(m_creature->getVictim(), SPELL_CONFLAGRATION);
+            DoCastSpellIfCan(m_creature->getVictim(),SPELL_CONFLAGRATION);
             //We will remove this threat reduction and add an aura check.
 
             //if (m_creature->getThreatManager().getThreat(m_creature->getVictim()))
             //m_creature->getThreatManager().modifyThreatPercent(m_creature->getVictim(),-50);
 
-            m_uiConflagrationTimer = 12000;
-        }
-        else
-            m_uiConflagrationTimer -= uiDiff;
+            Conflagration_Timer = 12000;
+        }else Conflagration_Timer -= diff;
 
         // Aura Check. If the gamer is affected by confliguration we attack a random gamer.
         if (m_creature->getVictim()->HasAura(SPELL_CONFLAGRATION, EFFECT_INDEX_0))
         {
-            if (Unit* pTarget = SelectUnit(SELECT_TARGET_RANDOM, 1))
-                m_creature->TauntApply(pTarget);
+            Unit* target = NULL;
+            target = SelectUnit(SELECT_TARGET_RANDOM,1);
+            if (target)
+                m_creature->TauntApply(target);
         }
 
         DoMeleeAttackIfReady();
@@ -129,8 +128,7 @@ CreatureAI* GetAI_boss_razorgore(Creature* pCreature)
 
 void AddSC_boss_razorgore()
 {
-    Script* newscript;
-    
+    Script *newscript;
     newscript = new Script;
     newscript->Name = "boss_razorgore";
     newscript->GetAI = &GetAI_boss_razorgore;
