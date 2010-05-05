@@ -1,8 +1,10 @@
 /* Copyright (C) 2009 - 2010 by /dev/rsa for ScriptDev2 <https://scriptdev2.svn.sourceforge.net/>
  * This program is free software licensed under GPL version 2
  * Please see the included DOCS/LICENSE.TXT for more information */
+
 #include "precompiled.h"
 #include "sc_boss_spell_worker.h"
+
 #ifdef DEF_BOSS_SPELL_WORKER_H
 
 BossSpellWorker::BossSpellWorker(ScriptedAI* bossAI)
@@ -159,12 +161,12 @@ CanCastResult BossSpellWorker::_BSWSpellSelector(uint8 m_uiSpellIdx, Unit* pTarg
                    break;
 
             case CAST_ON_RANDOM:
-                   pTarget = boss->SelectAttackingTarget(ATTACKING_TARGET_RANDOM,0);
+                   pTarget = SelectUnit(SELECT_TARGET_RANDOM);
                    return _BSWCastOnTarget(pTarget, m_uiSpellIdx);
                    break;
 
             case CAST_ON_BOTTOMAGGRO:
-                   pTarget = boss->SelectAttackingTarget(ATTACKING_TARGET_BOTTOMAGGRO,0);
+                   pTarget = SelectUnit(SELECT_TARGET_RANDOM, 0);
                    return _BSWCastOnTarget(pTarget, m_uiSpellIdx);
                    break;
 
@@ -534,6 +536,38 @@ CanCastResult BossSpellWorker::_DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, 
 }
 
 // Copypasting from sc_creature.cpp :( Hung if call from bossAI->
+
+Unit*  BossSpellWorker::_SelectUnit(SelectAggroTarget target, uint32 uiPosition)
+{
+    //ThreatList m_threatlist;
+    ThreatList const& threatlist = boss->getThreatManager().getThreatList();
+    ThreatList::const_iterator itr = threatlist.begin();
+    ThreatList::const_reverse_iterator ritr = threatlist.rbegin();
+
+    if (uiPosition >= threatlist.size() || threatlist.empty())
+        return NULL;
+
+    switch (target)
+    {
+        case SELECT_TARGET_RANDOM:
+            advance(itr, uiPosition +  (rand() % (threatlist.size() - uiPosition)));
+            return Unit::GetUnit((*boss),(*itr)->getUnitGuid());
+            break;
+
+        case SELECT_TARGET_TOPAGGRO:
+            advance(itr, uiPosition);
+            return Unit::GetUnit((*boss),(*itr)->getUnitGuid());
+            break;
+
+        case SELECT_TARGET_BOTTOMAGGRO:
+            advance(ritr, uiPosition);
+            return Unit::GetUnit((*boss),(*ritr)->getUnitGuid());
+            break;
+    }
+
+    error_log("BSW: Cannot find target for spell :(");
+    return NULL;
+}
 
 Unit* BossSpellWorker::SelectLowHPFriendly(float fRange, uint32 uiMinHPDiff)
 {
