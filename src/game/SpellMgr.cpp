@@ -671,6 +671,7 @@ bool IsPositiveEffect(uint32 spellId, SpellEffectIndex effIndex)
                     switch(spellproto->Id)
                     {
                         case 802:                           // Mutate Bug, wrongly negative by target modes
+                        case 47747:                         // Charge Rifts, Nexus: Nexus (boss_anomalus)
                             return true;
                         case 36900:                         // Soul Split: Evil!
                         case 36901:                         // Soul Split: Good
@@ -1411,6 +1412,14 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
             {
                 case SPELLFAMILY_GENERIC:                   // same family case
                 {
+                    // Charge Rift spells (boss_anomalus instance Nexus: Nexus)
+                    if (spellInfo_1->SpellVisual[0] == 7921 || spellInfo_2->SpellVisual[0] == 7921)
+                        return false;
+ 
+                    // Summon Telestra Clones (visual aura) - instance Nexus 
+                    if (spellInfo_1->Id == 47710 || spellInfo_2->Id == 47710)
+                        return false;
+ 
                     // Dark Essence & Light Essence
                     if ((spellInfo_1->Id == 65684 && spellInfo_2->Id == 65686) ||
                         (spellInfo_2->Id == 65684 && spellInfo_1->Id == 65686))
