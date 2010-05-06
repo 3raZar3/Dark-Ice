@@ -25,9 +25,6 @@
 #define BG_WS_FLAG_RESPAWN_TIME   (23*IN_MILLISECONDS)
 #define BG_WS_FLAG_DROP_TIME      (10*IN_MILLISECONDS)
 #define BG_WS_TIME_LIMIT          (25*MINUTE*IN_MILLISECONDS)
-#define BG_WS_CARRIER_DEBUFF      (15*MINUTE*IN_MILLISECONDS)
-#define BG_WS_FIVE_MINUTES        (5*MINUTE*IN_MILLISECONDS)
-#define BG_WS_FOCUSED_ASSAULT     46392
 
 enum BG_WS_Sound
 {
@@ -58,7 +55,8 @@ enum BG_WS_WorldStates
     BG_WS_FLAG_CAPTURES_MAX       = 1601,
     BG_WS_FLAG_STATE_HORDE        = 2338,
     BG_WS_FLAG_STATE_ALLIANCE     = 2339,
-	BG_WS_TIME_REMAINING		  = 4248
+    BG_WS_UNK1                    = 4247, // Show time limit?
+    BG_WS_TIME_REMAINING          = 4248
 };
 
 enum BG_WS_FlagState
@@ -146,24 +144,20 @@ class BattleGroundWS : public BattleGround
         void AddPoint(uint32 TeamID, uint32 Points = 1)     { m_TeamScores[GetTeamIndexByTeamId(TeamID)] += Points; }
         void SetTeamPoint(uint32 TeamID, uint32 Points = 0) { m_TeamScores[GetTeamIndexByTeamId(TeamID)] = Points; }
         void RemovePoint(uint32 TeamID, uint32 Points = 1)  { m_TeamScores[GetTeamIndexByTeamId(TeamID)] -= Points; }
-		uint32 GetEndTimeMinutes() { return ceil(float(m_EndTimer / MINUTE / IN_MILLISECONDS)); }
-	
-	private:
+
+        uint32 GetRemainingTimeInMinutes() { return (uint32)ceil(float(m_EndTimer) / (MINUTE * IN_MILLISECONDS)); }
+    private:
         uint64 m_FlagKeepers[BG_TEAMS_COUNT];
 
         uint64 m_DroppedFlagGUID[BG_TEAMS_COUNT];
         uint8 m_FlagState[BG_TEAMS_COUNT];
         int32 m_FlagsTimer[BG_TEAMS_COUNT];
         int32 m_FlagsDropTimer[BG_TEAMS_COUNT];
-		int32 m_EndTimer;
 
         uint32 m_ReputationCapture;
         uint32 m_HonorWinKills;
         uint32 m_HonorEndKills;
+        uint32 m_EndTimer;
         uint32 m_LastCapturedFlagTeam;
-        uint32 m_LastEndTimeMinutes;
-        uint32 m_FocusedAssault;
-
-        bool m_FocusedAssaultExtra;
 };
 #endif
