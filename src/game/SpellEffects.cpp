@@ -5808,7 +5808,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                 }
                 case 45668:                                 // Ultra-Advanced Proto-Typical Shortening Blaster
                 {
-                    if (!unitTarget || unitTarget->GetTypeId() != TYPEID_UNIT)
+                    if (!unitTarget || unitTarget->GetTypeId() != TYPEID_UNIT || m_caster->GetTypeId() != TYPEID_PLAYER)
                         return;
 
                     if (roll_chance_i(25))                  // chance unknown, using 25
@@ -5834,6 +5834,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
 
                     m_caster->CastSpell(m_caster, spellPlayer[urand(0,4)], true);
                     unitTarget->CastSpell(unitTarget, spellTarget[urand(0,4)], true);
+                    ((Player*)m_caster)->KilledMonsterCredit(25505, unitTarget->GetGUID());
 
                     return;
                 }
