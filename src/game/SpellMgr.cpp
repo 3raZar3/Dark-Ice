@@ -3201,14 +3201,21 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const *spell
     }
 
     // bg spell checks
-
-    // do not allow spells to be cast in arenas
-    // - with SPELL_ATTR_EX4_NOT_USABLE_IN_ARENA flag
-    // - with greater than 15 min CD
-    if ((spellInfo->AttributesEx4 & SPELL_ATTR_EX4_NOT_USABLE_IN_ARENA) ||
-         (GetSpellRecoveryTime(spellInfo) > 15 * MINUTE * IN_MILLISECONDS && !(spellInfo->AttributesEx4 & SPELL_ATTR_EX4_USABLE_IN_ARENA)))
-        if (player && player->InArena())
+    if(player && player->InArena())
+    {
+        // do not allow spells to be cast in arenas
+        // - with SPELL_ATTR_EX4_NOT_USABLE_IN_ARENA flag
+        // - with greater than 15 min CD
+        if ((spellInfo->AttributesEx4 & SPELL_ATTR_EX4_NOT_USABLE_IN_ARENA) ||
+            (GetSpellRecoveryTime(spellInfo) > 15 * MINUTE * IN_MILLISECONDS && !(spellInfo->AttributesEx4 & SPELL_ATTR_EX4_USABLE_IN_ARENA)))   
             return SPELL_FAILED_NOT_IN_ARENA;
+
+        for(int i = EFFECT_INDEX_0; i < MAX_EFFECT_INDEX; ++i)
+        {
+            if((spellInfo->Effect[i] == SPELL_EFFECT_RESURRECT) || (spellInfo->Effect[i] == SPELL_EFFECT_RESURRECT_NEW))
+                return SPELL_FAILED_NOT_IN_ARENA;
+        }
+    }
 
     // Spell casted only on battleground
     if ((spellInfo->AttributesEx3 & SPELL_ATTR_EX3_BATTLEGROUND))
