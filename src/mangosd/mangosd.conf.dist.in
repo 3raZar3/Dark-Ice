@@ -1492,6 +1492,23 @@ SOAP.Port = 7878
 #                 2 - Ban IP
 #                 3 - Ban Account + IP
 #
+#    Anticheat.Movement.Announce
+#        Enable Announce cheater
+#        Default: 0 - off
+#                 1 - on
+#
+#    Anticheat.Movement.DetectSpeedHack
+#        Turn Speed Check on/off
+#        Default: 1 (on)
+#
+#    Anticheat.Movement.DetectWaterWalk
+#        Turn WaterWalk Check on/off
+#        Default: 1 (on)
+#
+#    Anticheat.Movement.DetectFlyHack
+#        Turn Fly Hack Check on/off
+#        Default: 1 (on)
+#
 #    Anticheat.Movement.BanTime
 #        How long the ban should last.
 #        Default: 1 Minute - 1m
@@ -1516,6 +1533,9 @@ Anticheat.Movement.AlarmTime = 5000
 Anticheat.Movement.Kill = 0
 Anticheat.Movement.Kick = 0
 Anticheat.Movement.Announce = 0
+Anticheat.Movement.DetectSpeedHack = 1
+Anticheat.Movement.DetectWaterWalk = 1
+Anticheat.Movement.DetectFlyHack = 1
 Anticheat.Movement.BanType = 0
 Anticheat.Movement.BanTime = "1m"
 Anticheat.Movement.MaxXYT = 0.04

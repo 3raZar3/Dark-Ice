@@ -494,7 +494,8 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
              
             if(delta_xyt > MaxDeltaXYT && delta<=100.0f && GetPlayer()->GetZoneId() != 2257)
             {
-                Anti__CheatOccurred(CurTime,"Speed hack",delta_xyt,LookupOpcodeName(opcode),
+                if(sWorld.GetMvAnticheatSpeedCheck())
+                   Anti__CheatOccurred(CurTime,"Speed hack",delta_xyt,LookupOpcodeName(opcode),
                                     (float)(GetPlayer()->GetMotionMaster()->GetCurrentMovementGeneratorType()),
                                     (float)(getMSTimeDiff(OldNextLenCheck-500,CurTime))/*,&movementInfo*/);
             }
@@ -509,7 +510,8 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         if (movementInfo.HasMovementFlag(MOVEFLAG_WATERWALKING) &&
            !(GetPlayer()->HasAuraType(SPELL_AURA_WATER_WALK) || GetPlayer()->HasAuraType(SPELL_AURA_GHOST)))
         {
-            Anti__CheatOccurred(CurTime,"Water walking",0.0f,NULL,0.0f,(uint32)(movementInfo.GetMovementFlags()));
+            if(sWorld.GetMvAnticheatWaterCheck())
+              Anti__CheatOccurred(CurTime,"Water walking",0.0f,NULL,0.0f,(uint32)(movementInfo.GetMovementFlags()));
         }
          
         // Check for walking upwards a mountain while not beeing able to do that
@@ -536,7 +538,8 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
             {
               // Fix Aura 55164 by KAPATEJIb
               if (!GetPlayer()->HasAura(55164))
-                Anti__CheatOccurred(CurTime,"Fly hack",
+                if(sWorld.GetMvAnticheatFlyCheck())
+                  Anti__CheatOccurred(CurTime,"Fly hack",
                                     ((uint8)(GetPlayer()->HasAuraType(SPELL_AURA_FLY))) +
                                     /* Temp. test by comment from laly  
                                     ((uint8)(GetPlayer()->HasAuraType(SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED))*2),*/

@@ -528,6 +528,10 @@ void World::LoadConfigSettings(bool reload)
     m_MvAnticheatMaxXYT                     = sConfig.GetFloatDefault("Anticheat.Movement.MaxXYT",0.04f);
     m_MvAnticheatIgnoreAfterTeleport        = (uint16)sConfig.GetIntDefault("Anticheat.Movement.IgnoreSecAfterTeleport",10);
 
+    m_MvAnticheatSpeedCheck                 = sConfig.GetBoolDefault("Anticheat.Movement.DetectSpeedHack",1);
+    m_MvAnticheatWaterCheck                 = sConfig.GetBoolDefault("Anticheat.Movement.DetectWaterWalk",1);
+    m_MvAnticheatFlyCheck                   = sConfig.GetBoolDefault("Anticheat.Movement.DetectFlyHack",1);
+
     setConfigMinMax(CONFIG_UINT32_COMPRESSION, "Compression", 1, 1, 9);
     setConfig(CONFIG_BOOL_ADDON_CHANNEL, "AddonChannel", true);
     setConfig(CONFIG_BOOL_GRID_UNLOAD, "GridUnload", true);
