@@ -2269,6 +2269,90 @@ Item* PlayerbotAI::FindItem(uint32 ItemId)
      return NULL;
 }
 
+bool PlayerbotAI::HasPick()
+{
+    QueryResult *result;
+
+    // list out equiped items
+    for( uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; slot++)
+    {
+        Item* const pItem = m_bot->GetItemByPos( INVENTORY_SLOT_BAG_0, slot );
+        if (pItem )
+	{
+            const ItemPrototype* const pItemProto = pItem->GetProto();
+            if (!pItemProto )
+                continue;
+
+            result = WorldDatabase.PQuery("SELECT TotemCategory FROM item_template WHERE entry = '%i'", pItemProto->ItemId);
+            if (result)
+            {
+                Field *fields = result->Fetch();
+                uint32 tc = fields[0].GetUInt32();
+                // sLog.outDebug("HasPick %u",tc);
+                if(tc ==  165 || tc == 167) // pick = 165, hammer = 162 or hammer pick = 167
+                    return true;
+            }
+        }
+    }
+
+    // list out items in backpack
+    for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; slot++)
+    {
+        // sLog.outDebug("[%s's]backpack slot = %u",m_bot->GetName(),slot); // 23 to 38 = 16
+        Item* const pItem = m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot); // 255, 23 to 38
+        if (pItem)
+        {
+            const ItemPrototype* const pItemProto = pItem->GetProto();
+            if (!pItemProto )
+                continue;
+
+            result = WorldDatabase.PQuery("SELECT TotemCategory FROM item_template WHERE entry = '%i'", pItemProto->ItemId);
+            if (result)
+            {
+                Field *fields = result->Fetch();
+                uint32 tc = fields[0].GetUInt32();
+                // sLog.outDebug("HasPick %u",tc);
+                if(tc ==  165 || tc == 167) // pick = 165, hammer = 162 or hammer pick = 167
+                    return true;
+            }
+        }
+    }
+
+    // list out items in other removable backpacks
+    for (uint8 bag = INVENTORY_SLOT_BAG_START; bag < INVENTORY_SLOT_BAG_END; ++bag) // 20 to 23 = 4
+    {
+        const Bag* const pBag = (Bag*) m_bot->GetItemByPos(INVENTORY_SLOT_BAG_0, bag); // 255, 20 to 23
+        if (pBag)
+        {
+            for (uint8 slot = 0; slot < pBag->GetBagSize(); ++slot)
+            {
+                // sLog.outDebug("[%s's]bag[%u] slot = %u",m_bot->GetName(),bag,slot); // 1 to bagsize = ?
+                Item* const pItem = m_bot->GetItemByPos(bag, slot); // 20 to 23, 1 to bagsize
+                if (pItem)
+                {
+                    const ItemPrototype* const pItemProto = pItem->GetProto();
+                    if (!pItemProto )
+                        continue;
+
+                    result = WorldDatabase.PQuery("SELECT TotemCategory FROM item_template WHERE entry = '%i'", pItemProto->ItemId);
+                    if (result)
+                    {
+                        Field *fields = result->Fetch();
+                        uint32 tc = fields[0].GetUInt32();
+                        // sLog.outDebug("HasPick %u",tc);
+                        if(tc ==  165 || tc == 167)
+                            return true;
+                    }
+                }
+            }
+        }
+    }
+    std::ostringstream out;
+    out << "|cffffffffI do not have a pick!";
+    TellMaster( out.str().c_str() );
+    return false;
+}
+
 // extracts all item ids in format below
 // I decided to roll my own extractor rather then use the one in ChatHandler
 // because this one works on a const string, and it handles multiple links
@@ -2817,80 +2901,111 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
         uint32 entry;
         int mapid;
         if(extractGOinfo(text, guid, entry, mapid, x, y, z))
-        {      // sLog.outDebug("find: guid : %u entry : %u x : (%f) y : (%f) z : (%f) mapid : %d",guid, entry, x, y, z, mapid);
-               m_bot->UpdateGroundPositionZ(x,y,z);
-               SetMovementOrder( MOVEMENT_STAY );
-               m_bot->GetMotionMaster()->MovePoint( mapid, x, y, z );
+        {    // sLog.outDebug("find: guid : %u entry : %u x : (%f) y : (%f) z : (%f) mapid : %d",guid, entry, x, y, z, mapid);
+             m_bot->UpdateGroundPositionZ(x,y,z);
+             SetMovementOrder( MOVEMENT_STAY );
+             m_bot->GetMotionMaster()->MovePoint( mapid, x, y, z );
         }
         else
-               SendWhisper("I have no info on that object", fromPlayer);
-     }
+             SendWhisper("I have no info on that object", fromPlayer);
+    }
 
-    // Get project: 15:40 22/03/10 rev.1 allows bots to loot gameobjects for quest items
+    // get project: 18:50 03/05/10 rev.3 allows bots to retrieve all lootable & quest items from gameobjects
     else if (text.size() > 2 && text.substr(0, 2) == "g " || text.size() > 4 && text.substr(0, 4) == "get ")
     {
         uint32 guid;
         float x,y,z;
         uint32 entry;
         int mapid;
-        if(extractGOinfo(text, guid, entry, mapid, x, y, z))
+        bool looted = false;
+        if (extractGOinfo(text, guid, entry, mapid, x, y, z))
         {
 
             //sLog.outDebug("find: guid : %u entry : %u x : (%f) y : (%f) z : (%f) mapid : %d",guid, entry, x, y, z, mapid);
             m_lootCurrent = MAKE_NEW_GUID(guid, entry, HIGHGUID_GAMEOBJECT);
             GameObject *go = m_bot->GetMap()->GetGameObject(m_lootCurrent);
-            if(!go)
+            if (!go)
             {
                 m_lootCurrent = 0;
                 return;
             }
-            SetState(BOTSTATE_LOOTING);
+
+            if ( !go->isSpawned() )
+                return;
+
             m_bot->UpdateGroundPositionZ(x,y,z);
             m_bot->GetMotionMaster()->MovePoint( mapid, x, y, z );
             m_bot->SetPosition(x, y, z, m_bot->GetOrientation());
-            m_ignoreAIUpdatesUntilTime = time(0) + 5;
             m_bot->SendLoot( m_lootCurrent, LOOT_CORPSE );
             Loot *loot = &go->loot;
             uint32 lootNum = loot->GetMaxSlotInLootFor( m_bot );
-            //sLog.outDebug( "[PlayerbotAI]: GetGOType %u - %s looting: '%s' got %d items", go->GetGoType(), m_bot->GetName(), go->GetGOInfo()->name, loot->GetMaxSlotInLootFor( m_bot ));
-            for( uint32 l=0; l<lootNum; l++ )
+            // sLog.outDebug( "[PlayerbotAI]: GetGOType %u - %s looting: '%s' got %d items", go->GetGoType(), m_bot->GetName(), go->GetGOInfo()->name, loot->GetMaxSlotInLootFor( m_bot ));
+            if(lootNum == 0) // Handle opening gameobjects that contain no items
             {
+                uint32 lockId = go->GetGOInfo()->GetLockId();
+                LockEntry const *lockInfo = sLockStore.LookupEntry(lockId);
+                if(lockInfo)
+                {
+                    for(int i = 0; i < 8; ++i)
+                    {
+                        uint32 skillId = SkillByLockType(LockType(lockInfo->Index[i]));
+                        if(skillId > 0)
+                        {
+                            if (m_bot->HasSkill(skillId)) // Has skill
+                            {
+                                uint32 reqSkillValue = lockInfo->Skill[i];
+                                uint32 SkillValue = m_bot->GetPureSkillValue(skillId);
+                                if (SkillValue >= reqSkillValue)
+                                {
+                                    // sLog.outDebug("[PlayerbotAI]i: skillId : %u SkillValue : %u reqSkillValue : %u",skillId,SkillValue,reqSkillValue);
+                                    m_bot->UpdateGatherSkill(skillId, SkillValue, reqSkillValue);
+                                    looted = true;
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            for ( uint32 l=0; l<lootNum; l++ )
+            {
+                // sLog.outDebug("[PlayerbotAI]: lootNum : %u",lootNum);
                 QuestItem *qitem=0, *ffaitem=0, *conditem=0;
                 LootItem *item = loot->LootItemInSlot( l, m_bot, &qitem, &ffaitem, &conditem );
-                if( !item )
+                if ( !item )
                     continue;
 
-                if( !qitem && item->is_blocked )
+                if ( !qitem && item->is_blocked )
                 {
                     m_bot->SendLootRelease( m_lootCurrent );
                     continue;
                 }
 
-                if( m_needItemList[item->itemid]>0 )
+                if ( m_needItemList[item->itemid]>0 )
                 {
                     ItemPosCountVec dest;
-                    if( m_bot->CanStoreNewItem( NULL_BAG, NULL_SLOT, dest, item->itemid, item->count ) == EQUIP_ERR_OK )
+                    if ( m_bot->CanStoreNewItem( NULL_BAG, NULL_SLOT, dest, item->itemid, item->count ) == EQUIP_ERR_OK )
                     {
                         Item * newitem = m_bot->StoreNewItem( dest, item->itemid, true, item->randomPropertyId);
 
-                        if( qitem )
+                        if ( qitem )
                         {
                             qitem->is_looted = true;
-                            if( item->freeforall || loot->GetPlayerQuestItems().size() == 1 )
+                            if ( item->freeforall || loot->GetPlayerQuestItems().size() == 1 )
                                 m_bot->SendNotifyLootItemRemoved( l );
                             else
                                 loot->NotifyQuestItemRemoved( qitem->index );
                         }
                         else
                         {
-                            if( ffaitem )
+                            if ( ffaitem )
                             {
                                 ffaitem->is_looted=true;
                                 m_bot->SendNotifyLootItemRemoved( l );
                             }
                             else
                             {
-                                if( conditem )
+                                if ( conditem )
                                     conditem->is_looted=true;
                                 loot->NotifyItemRemoved( l );
                             }
@@ -2898,22 +3013,57 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
                         if (!item->freeforall)
                             item->is_looted = true;
                         --loot->unlootedCount;
-                        sLog.outDebug( "[PlayerbotAI]: %s looting: needed item UpdateAchievementCriteria", m_bot->GetName());
                         m_bot->SendNewItem( newitem, uint32(item->count), false, false, true );
                         m_bot->GetAchievementMgr().UpdateAchievementCriteria( ACHIEVEMENT_CRITERIA_TYPE_LOOT_ITEM, item->itemid, item->count );
+                        looted = true;
+                    }
+                    continue;
+                }
+
+                uint32 lockId = go->GetGOInfo()->GetLockId();
+                LockEntry const *lockInfo = sLockStore.LookupEntry(lockId);
+                if(lockInfo)
+                {
+                    uint32 skillId = 0;
+                    uint32 reqSkillValue = 0;
+                    for(int i = 0; i < 8; ++i)
+                    {
+                        skillId = SkillByLockType(LockType(lockInfo->Index[i]));
+                        if(skillId > 0)
+                        {
+                            reqSkillValue = lockInfo->Skill[i];
+                            break;
+                        }
+                    }
+
+                    if (m_bot->HasSkill(skillId) || skillId == SKILL_NONE) // Has skill or skill not required
+                    {
+                        if((skillId == SKILL_MINING) && !HasPick())
+                            continue;
+
+                        ItemPosCountVec dest;
+                        if ( m_bot->CanStoreNewItem( NULL_BAG, NULL_SLOT, dest, item->itemid, item->count) == EQUIP_ERR_OK )
+                        {
+                            Item* pItem = m_bot->StoreNewItem (dest,item->itemid,true,item->randomPropertyId);
+                            uint32 SkillValue = m_bot->GetPureSkillValue(skillId);
+                            if (SkillValue >= reqSkillValue)
+                            {
+                                m_bot->SendNewItem(pItem, uint32(item->count), false, false, true);
+                                m_bot->UpdateGatherSkill(skillId, SkillValue, reqSkillValue);
+                                --loot->unlootedCount;
+                                looted = true;
+                            }
+                        }
                     }
                 }
             }
             // release loot
-            m_bot->GetSession()->DoLootRelease( m_lootCurrent );
-
-            // clear movement target, take next target on next update
-            m_bot->GetMotionMaster()->Clear();
-            m_bot->GetMotionMaster()->MoveIdle();
-            sLog.outDebug( "[PlayerbotAI]: %s looted target 0x%08X", m_bot->GetName(), m_lootCurrent );
-            SetState(BOTSTATE_NORMAL);
+            if(looted)
+                m_bot->GetSession()->DoLootRelease( m_lootCurrent );
+            else
+                m_bot->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_LOOTING);
+            // sLog.outDebug( "[PlayerbotAI]: %s looted target 0x%08X", m_bot->GetName(), m_lootCurrent );
             SetQuestNeedItems();
-            m_lootCurrent = 0;
         }
         else
             SendWhisper("I have no info on that object", fromPlayer);
@@ -3019,7 +3169,67 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
         ch.SendSysMessage(negOut.str().c_str());
     }
 
-    // Bag inventory project: 10:00 19/04/10 version 1.0
+    // survey project: 18:30 29/04/10 rev.3 filter out event triggered objects & now updates list
+    else if (text == "survey")
+    {
+        uint32 count = 0;
+        std::ostringstream detectout;
+        QueryResult *result;
+        GameEventMgr::ActiveEvents const& activeEventsList = sGameEventMgr.GetActiveEventList();
+        std::ostringstream eventFilter;
+        eventFilter << " AND (event IS NULL ";
+        bool initString = true;
+
+        for (GameEventMgr::ActiveEvents::const_iterator itr = activeEventsList.begin(); itr != activeEventsList.end(); ++itr)
+        {
+            if (initString)
+            {
+                eventFilter  <<  "OR event IN (" <<*itr;
+                initString =false;
+            }
+            else
+                eventFilter << "," << *itr;
+        }
+
+        if (!initString)
+            eventFilter << "))";
+        else
+            eventFilter << ")";
+
+        result = WorldDatabase.PQuery("SELECT gameobject.guid, id, position_x, position_y, position_z, map, "
+            "(POW(position_x - %f, 2) + POW(position_y - %f, 2) + POW(position_z - %f, 2)) AS order_ FROM gameobject "
+            "LEFT OUTER JOIN game_event_gameobject on gameobject.guid=game_event_gameobject.guid WHERE map = '%i' %s ORDER BY order_ ASC LIMIT 10",
+            m_bot->GetPositionX(), m_bot->GetPositionY(), m_bot->GetPositionZ(), m_bot->GetMapId(),eventFilter.str().c_str());
+
+      if (result)
+      {
+         do
+         {
+             Field *fields = result->Fetch();
+             uint32 guid = fields[0].GetUInt32();
+             uint32 entry = fields[1].GetUInt32();
+             float x = fields[2].GetFloat();
+             float y = fields[3].GetFloat();
+             float z = fields[4].GetFloat();
+             int mapid = fields[5].GetUInt16();
+
+             GameObject *go = m_bot->GetMap()->GetGameObject(MAKE_NEW_GUID(guid, entry, HIGHGUID_GAMEOBJECT));
+             if (!go)
+                 continue;
+
+             if ( !go->isSpawned() )
+                 continue;
+
+             detectout << "|cFFFFFF00|Hfound:" << guid << ":" << entry << ":" << x << ":" << y << ":" << z  << ":" << mapid  << ":" <<  "|h[" << go->GetGOInfo()->name << "]|h|r";
+             ++count;
+         } while (result->NextRow());
+
+         delete result;
+      }
+      SendWhisper(detectout.str().c_str(), fromPlayer);
+    }
+
+    // stats project: 10:00 19/04/10 rev.1 display bot statistics
     else if (text == "stats")
     {
          std::ostringstream out;
@@ -3072,66 +3282,6 @@ void PlayerbotAI::HandleCommand(const std::string& text, Player& fromPlayer)
          ChatHandler ch(&fromPlayer);
          ch.SendSysMessage(out.str().c_str());
     }
-    // Survey project: 19:30 17/03/10 rev.2 filter out event triggered objects
-    else if (text == "survey")
-    {
-      uint32 count = 0;
-      std::ostringstream detectout;
-      QueryResult *result;
-      GameEventMgr::ActiveEvents const& activeEventsList = sGameEventMgr.GetActiveEventList();
-
-
-        std::ostringstream eventFilter;
-        eventFilter << " AND (event IS NULL ";
-        bool initString = true;
-
-        for (GameEventMgr::ActiveEvents::const_iterator itr = activeEventsList.begin(); itr != activeEventsList.end(); ++itr)
-        {
-            if (initString)
-            {
-                eventFilter  <<  "OR event IN (" <<*itr;
-                initString =false;
-            }
-            else
-                eventFilter << "," << *itr;
-        }
-
-        if (!initString)
-            eventFilter << "))";
-        else
-            eventFilter << ")";
-
-        result = WorldDatabase.PQuery("SELECT gameobject.guid, id, position_x, position_y, position_z, map, "
-            "(POW(position_x - %f, 2) + POW(position_y - %f, 2) + POW(position_z - %f, 2)) AS order_ FROM gameobject "
-            "LEFT OUTER JOIN game_event_gameobject on gameobject.guid=game_event_gameobject.guid WHERE map = '%i' %s ORDER BY order_ ASC LIMIT 10",
-            m_bot->GetPositionX(), m_bot->GetPositionY(), m_bot->GetPositionZ(), m_bot->GetMapId(),eventFilter.str().c_str());
-
-      if (result)
-      {
-         do
-         {
-             Field *fields = result->Fetch();
-             uint32 guid = fields[0].GetUInt32();
-             uint32 entry = fields[1].GetUInt32();
-             float x = fields[2].GetFloat();
-             float y = fields[3].GetFloat();
-             float z = fields[4].GetFloat();
-             int mapid = fields[5].GetUInt16();
-
-             GameObjectInfo const * gInfo = ObjectMgr::GetGameObjectInfo(entry);
-
-             if(!gInfo)
-                 continue;
-
-             detectout << "|cFFFFFF00|Hfound:" << guid << ":" << entry << ":" << x << ":" << y << ":" << z  << ":" << mapid  << ":" <<  "|h[" << gInfo->name << "]|h|r";
-             ++count;
-         } while (result->NextRow());
-
-         delete result;
-      }
-      SendWhisper(detectout.str().c_str(), fromPlayer);
-    }
- 
     else
     {
         // if this looks like an item link, reward item it completed quest and talking to NPC
