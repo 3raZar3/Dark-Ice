@@ -34,7 +34,7 @@
 #include "World.h"
 #include "Language.h"
 
-bool WorldSession::Anti__ReportCheat(const char* Reason,float Speed,const char* Op,float Val1,uint32 Val2 /*,MovementInfo* MvInfo*/)
+bool WorldSession::Anti__ReportCheat(const char* Reason,float Speed,const char* Op,float Val1,uint32 Val2)
 {
     if(!Reason)
     {
@@ -84,12 +84,6 @@ bool WorldSession::Anti__ReportCheat(const char* Reason,float Speed,const char* 
         std::stringstream Pos;
         Pos << "OldPos: " << GetPlayer()->GetPositionX() << " " << GetPlayer()->GetPositionY() << " "
             << GetPlayer()->GetPositionZ();
-        /*if(MvInfo)
-        {
-            Pos << "\nNew: " << MvInfo->x << " " << MvInfo->y << " " << MvInfo->z << "\n"
-                << "Flags: " << MvInfo->flags << "\n"
-                << "t_guid: " << MvInfo->t_guid << " falltime: " << MvInfo->fallTime;
-        }*/
         CharacterDatabase.PExecute("INSERT INTO cheaters (player,acctid,reason,speed,count,first_date,last_date,`Op`,Val1,Val2,Map,Pos,Level) "
                                    "VALUES ('%s','%u','%s','%f','1',NOW(),NOW(),'%s','%f','%u','%u','%s','%u')",
                                    Player,Acc,Reason,Speed,Op,Val1,Val2,Map,
@@ -127,7 +121,7 @@ bool WorldSession::Anti__ReportCheat(const char* Reason,float Speed,const char* 
 }
 
 bool WorldSession::Anti__CheatOccurred(uint32 CurTime,const char* Reason,float Speed,const char* Op,
-                                float Val1,uint32 Val2/*,MovementInfo* MvInfo*/)
+                                float Val1,uint32 Val2)
 {
     if(!Reason)
     {
@@ -140,7 +134,7 @@ bool WorldSession::Anti__CheatOccurred(uint32 CurTime,const char* Reason,float S
 
     if (GetPlayer()->m_anti_alarmcount > sWorld.GetMvAnticheatAlarmCount())
     {
-        Anti__ReportCheat(Reason,Speed,Op,Val1,Val2/*,MvInfo*/);
+        Anti__ReportCheat(Reason,Speed,Op,Val1,Val2);
         if(sWorld.GetMvAnticheatAnnounce())
            sWorld.SendWorldText(LANG_ANNOUNCE_CHEAT, GetPlayer()->GetName(), Reason);
         return true;
@@ -467,12 +461,10 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         // Tangens of walking angel
         if (!(movementInfo.GetMovementFlags() & (MOVEFLAG_FLYING | MOVEFLAG_SWIMMING)))
         {
-            //Mount hack detection currently disabled
             tg_z = ((delta !=0.0f) && (delta_z > 0.0f)) ? (atan((delta_z*delta_z) / delta) * 180.0f / M_PI) : 0.0f;
         }
 
-        //antiOFF fall-damage, MOVEMENTFLAG_UNK4 seted by client if player try movement when falling and unset in this case the MOVEMENTFLAG_FALLING flag.
-         
+        //antiOFF fall-damage, MOVEMENTFLAG_UNK4 seted by client if player try movement when falling and unset in this case the MOVEMENTFLAG_FALLING flag. 
         if((GetPlayer()->m_anti_BeginFallZ == INVALID_HEIGHT) &&
            (movementInfo.GetMovementFlags() & (MOVEFLAG_FALLING | MOVEFLAG_FALLINGFAR)) != 0)
         {
@@ -487,17 +479,13 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
             GetPlayer()->m_anti_NextLenCheck = CurTime+500;
             GetPlayer()->m_anti_MovedLen = 0.0f;
             static const float MaxDeltaXYT = sWorld.GetMvAnticheatMaxXYT();
-
-#ifdef __ANTI_DEBUG__
-            SendAreaTriggerMessage("XYT: %f ; Flags: %s",delta_xyt,FlagsToStr(movementInfo.GetMovementFlags()).c_str());
-#endif //__ANTI_DEBUG__
              
             if(delta_xyt > MaxDeltaXYT && delta<=100.0f && GetPlayer()->GetZoneId() != 2257)
             {
                 if(sWorld.GetMvAnticheatSpeedCheck())
                    Anti__CheatOccurred(CurTime,"Speed hack",delta_xyt,LookupOpcodeName(opcode),
                                     (float)(GetPlayer()->GetMotionMaster()->GetCurrentMovementGeneratorType()),
-                                    (float)(getMSTimeDiff(OldNextLenCheck-500,CurTime))/*,&movementInfo*/);
+                                    (float)(getMSTimeDiff(OldNextLenCheck-500,CurTime)));
             }
         }
  
@@ -514,11 +502,11 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
               Anti__CheatOccurred(CurTime,"Water walking",0.0f,NULL,0.0f,(uint32)(movementInfo.GetMovementFlags()));
         }
          
-        // Check for walking upwards a mountain while not beeing able to do that
-        // New check by Darky88 
-        if((delta_z < -2.3f) && (tg_z > 2.37f) /* (tg_z > 85.0f) */)
+        // Check for walking upwards a mountain while not beeing able to do that, New check by Darky88 
+        if((delta_z < -2.3f) && (tg_z > 2.37f))
         {
-            Anti__CheatOccurred(CurTime,"Mountain hack",tg_z,NULL,delta,delta_z);
+            if(sWorld.GetMvAnticheatMountainCheck())
+                 Anti__CheatOccurred(CurTime,"Mountain hack",tg_z,NULL,delta,delta_z);
         }
         
         
@@ -541,8 +529,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
                 if(sWorld.GetMvAnticheatFlyCheck())
                   Anti__CheatOccurred(CurTime,"Fly hack",
                                     ((uint8)(GetPlayer()->HasAuraType(SPELL_AURA_FLY))) +
-                                    /* Temp. test by comment from laly  
-                                    ((uint8)(GetPlayer()->HasAuraType(SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED))*2),*/
+                                    /*((uint8)(GetPlayer()->HasAuraType(SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED))*2),*/
                                     ((uint8)(GetPlayer()->HasAuraType(SPELL_AURA_MOD_FLIGHT_SPEED_MOUNTED))*2),
                                     NULL,GetPlayer()->GetPositionZ()-Anti__MapZ);
             }

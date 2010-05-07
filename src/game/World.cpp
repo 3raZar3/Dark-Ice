@@ -531,6 +531,7 @@ void World::LoadConfigSettings(bool reload)
     m_MvAnticheatSpeedCheck                 = sConfig.GetBoolDefault("Anticheat.Movement.DetectSpeedHack",1);
     m_MvAnticheatWaterCheck                 = sConfig.GetBoolDefault("Anticheat.Movement.DetectWaterWalk",1);
     m_MvAnticheatFlyCheck                   = sConfig.GetBoolDefault("Anticheat.Movement.DetectFlyHack",1);
+    m_MvAnticheatMountainCheck                   = sConfig.GetBoolDefault("Anticheat.Movement.DetectMountainHack",1);
 
     setConfigMinMax(CONFIG_UINT32_COMPRESSION, "Compression", 1, 1, 9);
     setConfig(CONFIG_BOOL_ADDON_CHANNEL, "AddonChannel", true);

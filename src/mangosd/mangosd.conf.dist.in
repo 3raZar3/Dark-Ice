@@ -1509,6 +1509,10 @@ SOAP.Port = 7878
 #        Turn Fly Hack Check on/off
 #        Default: 1 (on)
 #
+#    Anticheat.Movement.DetectMountainHack
+#        Turn Speed Check on/off
+#        Default: 1 (on)
+#
 #    Anticheat.Movement.BanTime
 #        How long the ban should last.
 #        Default: 1 Minute - 1m
@@ -1536,6 +1540,7 @@ Anticheat.Movement.Announce = 0
 Anticheat.Movement.DetectSpeedHack = 1
 Anticheat.Movement.DetectWaterWalk = 1
 Anticheat.Movement.DetectFlyHack = 1
+Anticheat.Movement.DetectMountainHack = 1
 Anticheat.Movement.BanType = 0
 Anticheat.Movement.BanTime = "1m"
 Anticheat.Movement.MaxXYT = 0.04

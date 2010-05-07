@@ -585,6 +585,7 @@ class World
         inline bool GetMvAnticheatSpeedCheck()         {return m_MvAnticheatSpeedCheck;}
         inline bool GetMvAnticheatWaterCheck()         {return m_MvAnticheatWaterCheck;}
         inline bool GetMvAnticheatFlyCheck()           {return m_MvAnticheatFlyCheck;}
+        inline bool GetMvAnticheatMountainCheck()      {return m_MvAnticheatMountainCheck;}
 
         void ProcessCliCommands();
         void QueueCliCommand(CliCommandHolder* commandHolder) { cliCmdQueue.add(commandHolder); }
@@ -692,6 +693,7 @@ class World
         bool m_MvAnticheatSpeedCheck;
         bool m_MvAnticheatWaterCheck;
         bool m_MvAnticheatFlyCheck;
+        bool m_MvAnticheatMountainCheck;
 
         // CLI command holder to be thread safe
         ACE_Based::LockedQueue<CliCommandHolder*,ACE_Thread_Mutex> cliCmdQueue;
