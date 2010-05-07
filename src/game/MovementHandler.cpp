@@ -578,11 +578,10 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         }
          
         // Check for walking upwards a mountain while not beeing able to do that
-        // if ((tg_z > 85.0f)) <-- original check
         // New check by Darky88 
-        if((delta_z < -2.3f) && (tg_z > 2.37f))
+        if((delta_z < -2.3f) && (tg_z > 2.37f) /* (tg_z > 85.0f) */)
         {
-            Anti__CheatOccurred(CurTime,"Mount hack",tg_z,NULL,delta,delta_z);
+            Anti__CheatOccurred(CurTime,"Mountain hack",tg_z,NULL,delta,delta_z);
         }
         
         
@@ -591,7 +590,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         float Anti__FloorZ  = GetPlayer()->GetMap()->GetHeight(GetPlayer()->GetPositionX(),GetPlayer()->GetPositionY(),GetPlayer()->GetPositionZ());
         float Anti__MapZ = ((Anti__FloorZ <= (INVALID_HEIGHT+5.0f)) ? Anti__GroundZ : Anti__FloorZ) + DIFF_OVERGROUND;
          
-        if(!GetPlayer()->CanFly() && /*!plMover->isGameMaster() &&*/
+        if(!GetPlayer()->CanFly() &&
            !GetPlayer()->GetBaseMap()->IsUnderWater(movementInfo.GetPos()->x, movementInfo.GetPos()->y, movementInfo.GetPos()->z-7.0f) &&
            Anti__MapZ < GetPlayer()->GetPositionZ() && Anti__MapZ > (INVALID_HEIGHT+DIFF_OVERGROUND + 5.0f))
         {
@@ -604,11 +603,13 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
               if (!GetPlayer()->HasAura(55164))
                 Anti__CheatOccurred(CurTime,"Fly hack",
                                     ((uint8)(GetPlayer()->HasAuraType(SPELL_AURA_FLY))) +
-                                    ((uint8)(GetPlayer()->HasAuraType(SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED))*2),
+                                    /* Temp. test by comment from laly  
+                                    ((uint8)(GetPlayer()->HasAuraType(SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED))*2),*/
+                                    ((uint8)(GetPlayer()->HasAuraType(SPELL_AURA_MOD_FLIGHT_SPEED_MOUNTED))*2),
                                     NULL,GetPlayer()->GetPositionZ()-Anti__MapZ);
             }
              
-            /* Need a better way to do that - currently a lot of fake alarms
+            // Need a better way to do that - currently a lot of fake alarms
             else if((Anti__MapZ+DIFF_AIRJUMP < GetPlayer()->GetPositionZ() &&
                     (movementInfo.flags & (MOVEMENTFLAG_FALLING | MOVEMENTFLAG_UNK4))==0) ||
                     (Anti__MapZ < GetPlayer()->GetPositionZ() && 
@@ -616,7 +617,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
             {
                  Anti__CheatOccurred(CurTime,"Possible Air Jump Hack",
                                     0.0f,LookupOpcodeName(opcode),0.0f,movementInfo.flags,&movementInfo);
-            }*/
+            }
         }
  
         
