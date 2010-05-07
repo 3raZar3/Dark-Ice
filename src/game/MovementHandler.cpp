@@ -32,74 +32,7 @@
 #include "InstanceSaveMgr.h"
 #include "ObjectMgr.h"
 #include "World.h"
-
-//#define __ANTI_DEBUG__
-
-#ifdef __ANTI_DEBUG__
-#include "Chat.h"
-std::string FlagsToStr(const uint32 Flags)
-{
-    std::string Ret="";
-    if(Flags==0)
-    {
-        Ret="None";
-        return Ret;
-    }
-    
-    if(Flags & MOVEFLAG_FORWARD)
-    {   Ret+="FW "; }
-    if(Flags & MOVEFLAG_BACKWARD)
-    {   Ret+="BW "; }
-    if(Flags & MOVEFLAG_STRAFE_LEFT)
-    {   Ret+="STL ";    }
-    if(Flags & MOVEFLAG_STRAFE_RIGHT)
-    {   Ret+="STR ";    }
-    if(Flags & MOVEFLAG_LEFT)
-    {   Ret+="LF "; }
-    if(Flags & MOVEFLAG_RIGHT)
-    {   Ret+="RI "; }
-    if(Flags & MOVEFLAG_PITCH_UP)
-    {   Ret+="PTUP ";   }
-    if(Flags & MOVEFLAG_PITCH_DOWN)
-    {   Ret+="PTDW ";   }
-    if(Flags & MOVEFLAG_WALK_MODE)
-    {   Ret+="WALK ";   }
-    if(Flags & MOVEFLAG_ONTRANSPORT)
-    {   Ret+="TRANS ";  }
-    if(Flags & MOVEFLAG_LEVITATING)
-    {   Ret+="LEVI ";   }
-    if(Flags & MOVEFLAG_FLY_UNK1)
-    {   Ret+="FLYUNK1 ";    }
-    if(Flags & MOVEFLAG_JUMPING)
-    {   Ret+="JUMP ";   }
-    if(Flags & MOVEFLAG_UNK4)
-    {   Ret+="UNK4 ";   }
-    if(Flags & MOVEFLAG_FALLING)
-    {   Ret+="FALL ";   }
-    if(Flags & MOVEFLAG_SWIMMING)
-    {   Ret+="SWIM ";   }
-    if(Flags & MOVEFLAG_FLY_UP)
-    {   Ret+="FLYUP ";  }
-    if(Flags & MOVEFLAG_CAN_FLY)
-    {   Ret+="CFLY ";   }
-    if(Flags & MOVEFLAG_FLYING)
-    {   Ret+="FLY ";    }
-    if(Flags & MOVEFLAG_FLYING2)
-    {   Ret+="FLY2 ";   }
-    if(Flags & MOVEFLAG_WATERWALKING)
-    {   Ret+="WTWALK "; }
-    if(Flags & MOVEFLAG_SAFE_FALL)
-    {   Ret+="SAFE ";   }
-    if(Flags & MOVEFLAG_UNK3)
-    {   Ret+="UNK3 ";   }
-    if(Flags & MOVEFLAG_SPLINE)
-    {   Ret+="SPLINE ";     }
-    if(Flags & MOVEFLAG_SPLINE2)
-    {   Ret+="SPLINE2 ";    }
-    
-    return Ret;
-}
-#endif // __ANTI_DEBUG__
+#include "Language.h"
 
 bool WorldSession::Anti__ReportCheat(const char* Reason,float Speed,const char* Op,float Val1,uint32 Val2 /*,MovementInfo* MvInfo*/)
 {
@@ -208,6 +141,8 @@ bool WorldSession::Anti__CheatOccurred(uint32 CurTime,const char* Reason,float S
     if (GetPlayer()->m_anti_alarmcount > sWorld.GetMvAnticheatAlarmCount())
     {
         Anti__ReportCheat(Reason,Speed,Op,Val1,Val2/*,MvInfo*/);
+        if(sWorld.GetMvAnticheatAnnounce())
+           sWorld.SendWorldText(LANG_ANNOUNCE_CHEAT, GetPlayer()->GetName(), Reason);
         return true;
     }
     return false;

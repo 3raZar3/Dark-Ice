@@ -572,6 +572,7 @@ class World
         //movement anticheat enable flag
         inline bool GetMvAnticheatEnable()             {return m_MvAnticheatEnable;}
         inline bool GetMvAnticheatKick()               {return m_MvAnticheatKick;}
+        inline bool GetMvAnticheatAnnounce()           {return m_MvAnticheatAnnounce;}
         inline uint32 GetMvAnticheatAlarmCount()       {return m_MvAnticheatAlarmCount;}
         inline uint32 GetMvAnticheatAlarmPeriod()      {return m_MvAnticheatAlarmPeriod;}
         inline unsigned char GetMvAnticheatBan()       {return m_MvAntiCheatBan;}
@@ -675,6 +676,7 @@ class World
         //movement anticheat enable flag
         bool m_MvAnticheatEnable;
         bool m_MvAnticheatKick;
+        bool m_MvAnticheatAnnounce;
         uint32 m_MvAnticheatAlarmCount;
         uint32 m_MvAnticheatAlarmPeriod;
         unsigned char m_MvAntiCheatBan;

@@ -1515,6 +1515,7 @@ Anticheat.Movement.AlarmCount = 5
 Anticheat.Movement.AlarmTime = 5000
 Anticheat.Movement.Kill = 0
 Anticheat.Movement.Kick = 0
+Anticheat.Movement.Announce = 0
 Anticheat.Movement.BanType = 0
 Anticheat.Movement.BanTime = "1m"
 Anticheat.Movement.MaxXYT = 0.04
