@@ -8954,7 +8954,7 @@ void Aura::HandleAuraInitializeImages(bool Apply, bool Real)
     }
 	  else
    {
-       pImmage->GetMotionMaster()->Clear();
+       pImmage->GetMotionMaster()->Clear(true, true);
        pImmage->GetMotionMaster()->MoveFollow(creator, pImmage->GetDistance(creator), pImmage->GetAngle(creator));
    }
 }
