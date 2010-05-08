@@ -457,7 +457,15 @@ void GameObject::Update(uint32 p_time)
                 return;
 
             // since pool system can fail to roll unspawned object, this one can remain spawned, so must set respawn nevertheless
-			m_respawnTime = m_spawnedByDefault ? time(NULL) + m_respawnDelayTime : 0;
+ 	        if(!m_spawnedByDefault)
+                {
+                    m_respawnTime = 0;
+
+                    if (IsInWorld())
+                        UpdateObjectVisibility();
+
+                    break;
+                }
 
             // if option not set then object will be saved at grid unload
             if(sWorld.getConfig(CONFIG_BOOL_SAVE_RESPAWN_TIME_IMMEDIATLY))
