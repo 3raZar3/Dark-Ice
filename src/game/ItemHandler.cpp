@@ -1432,7 +1432,7 @@ void WorldSession::HandleItemRefundInfoRequest(WorldPacket& recv_data)
 
     WorldPacket data(SMSG_ITEM_REFUND_INFO_RESPONSE, 68); // guess size
     data << guid;                                         // item guid
-    data << uint32(item->GetProto()->BuyPrice);           // price
+    data << uint32(item->GetPrice());           // price
     data << uint32(honor_points);                         // honor point cost
     data << uint32(arena_points);                         // arena point cost
     for(uint32 i = 0; i < 5; ++i)                         // extended cost data
@@ -1489,7 +1489,7 @@ void WorldSession::HandleItemRefund(WorldPacket& recv_data)
         {
             //Cant make refund
             _player->SendEquipError(msg, NULL, NULL, iece->reqitem[i]);
-            WorldPacket packet( SMSG_ITEM_REFUND_RESULT, 60 );
+            WorldPacket packet( SMSG_ITEM_REFUND_RESULT,  12);
             packet << guid;
             packet << uint32(1);
             SendPacket(&packet);
@@ -1498,7 +1498,7 @@ void WorldSession::HandleItemRefund(WorldPacket& recv_data)
     }
     
     //Refund money, honor and arena points and items
-    _player->ModifyMoney(item->GetProto()->BuyPrice);
+    _player->ModifyMoney(item->GetPrice());
     _player->ModifyHonorPoints(honor_points);
     _player->ModifyArenaPoints(arena_points);
     for (uint8 i = 0; i < 5; ++i)
@@ -1518,7 +1518,7 @@ void WorldSession::HandleItemRefund(WorldPacket& recv_data)
     WorldPacket data(SMSG_ITEM_REFUND_RESULT, 60);        // guess size
     data << guid;                                         // item guid
     data << uint32(0);                                    // Error msg
-    data << uint32(item->GetProto()->BuyPrice);           // price
+	data << uint32(item->GetPrice());                      // price
     data << uint32(honor_points);                         // honor point cost
     data << uint32(arena_points);                         // arena point cost
     for(uint32 i = 0; i < 5; ++i)                         // extended cost data
