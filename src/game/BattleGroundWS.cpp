@@ -27,6 +27,7 @@
 #include "WorldPacket.h"
 #include "Language.h"
 #include "MapManager.h"
+#include "World.h"
 
 BattleGroundWS::BattleGroundWS()
 {

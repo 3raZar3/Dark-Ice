@@ -2001,19 +2001,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         void CheckExploreSystem(void);
 
         static uint32 TeamForRace(uint8 race);
-        uint32 GetTeam() const 
-		{ 
-			if(!m_isInTeamBG || (m_isInTeamBG && !GetBattleGroundTypeId()))
-        		return m_team;
-
-    		switch(m_TeamBGSide)
-    		{
-       			case 1: return ALLIANCE;
-        		case 2: return HORDE;
-        		default: return m_team;
-    		}
-		}
-        TeamId GetTeamId() const { return m_team == ALLIANCE ? TEAM_ALLIANCE : TEAM_HORDE; }
+        uint32 GetTeam() const;
+		TeamId GetTeamId() const { return m_team == ALLIANCE ? TEAM_ALLIANCE : TEAM_HORDE; }
         static uint32 getFactionForRace(uint8 race);
         void setFactionForRace(uint8 race);
 
@@ -2463,7 +2452,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool isInTeamBG() { return m_isInTeamBG; };
         void SetTeamBG(bool isIn, uint8 side) { m_isInTeamBG = isIn; m_fakeTeam = side; };
 
-        Player* LastDmgDealer;
         uint8 getFakeTeam() { return m_fakeTeam; };
         void SetFakeTeam(uint8 side) { m_fakeTeam = side; };
         uint32 getOriginalTeam() { return TeamForRace(getRace()); };
