@@ -9618,7 +9618,7 @@ int32 Unit::SpellBaseDamageBonusDone(SpellSchoolMask schoolMask)
         }
 
     }
-    return DoneAdvertisedBenefit;
+    return DoneAdvertisedBenefit > 0 ? DoneAdvertisedBenefit : 0;
 }
 
 int32 Unit::SpellBaseDamageBonusTaken(SpellSchoolMask schoolMask)
@@ -9633,7 +9633,7 @@ int32 Unit::SpellBaseDamageBonusTaken(SpellSchoolMask schoolMask)
             TakenAdvertisedBenefit += (*i)->GetModifier()->m_amount;
     }
 
-    return TakenAdvertisedBenefit;
+    return TakenAdvertisedBenefit > 0 ? TakenAdvertisedBenefit : 0;
 }
 
 bool Unit::IsSpellCrit(Unit *pVictim, SpellEntry const *spellProto, SpellSchoolMask schoolMask, WeaponAttackType attackType)
