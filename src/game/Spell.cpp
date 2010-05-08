@@ -2924,13 +2924,6 @@ void Spell::cast(bool skipCheck)
                 AddTriggeredSpell(67801);
             break;
         }
-        case SPELLFAMILY_HUNTER:
-        {
-            // Deterrence
-            if (m_spellInfo->Id == 19263)
-                AddTriggeredSpell(67801);
-            break;
-        }
         case SPELLFAMILY_ROGUE:
             // Fan of Knives (main hand)
             if (m_spellInfo->Id == 51723 && m_caster->GetTypeId() == TYPEID_PLAYER &&
@@ -2968,13 +2961,6 @@ void Spell::cast(bool skipCheck)
             else if (m_spellInfo->Effect[EFFECT_INDEX_0]==SPELL_EFFECT_APPLY_AREA_AURA_RAID && m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000004000000))
                 // only for main totem spell cast
                 AddTriggeredSpell(30708);                   // Totem of Wrath
-            break;
-        }
-        case SPELLFAMILY_WARRIOR:
-        {
-            // Shattering Throw
-            if (m_spellInfo->Id == 64382)
-                AddTriggeredSpell(64380);                     // Shattering Throw
             break;
         }
         default:

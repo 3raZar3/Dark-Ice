@@ -10827,17 +10827,17 @@ uint32 Unit::MeleeDamageBonus(Unit *pVictim, uint32 pdamage,WeaponAttackType att
            bonusApCoeff += float(i_spellProto->CalculateSimpleValue(EFFECT_INDEX_0)) / 100.0f; 
     }
  
-    // .. taken pct: SPELL_AURA_284 
-    AuraList const& mAuraListAura284 = pVictim->GetAurasByType(SPELL_AURA_284); 
-    for(AuraList::const_iterator i = mAuraListAura284.begin(); i != mAuraListAura284.end(); ++i) 
-    { 
-        // Crypt Fever and Ebon Plague 
-        if((*i)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_DEATHKNIGHT) 
-        { 
-            if (!spellProto) 
-                continue; 
-            if (spellProto->Dispel ==  DISPEL_DISEASE) 
-                TakenPercent *= ((*i)->GetModifier()->m_amount + 100.0f) / 100.0f; 
+    // .. taken pct: SPELL_AURA_284
+    AuraList const& mAuraListAura284 = pVictim->GetAurasByType(SPELL_AURA_LINKED);
+    for(AuraList::const_iterator i = mAuraListAura284.begin(); i != mAuraListAura284.end(); ++i)
+    {
+        // Crypt Fever and Ebon Plague
+        if((*i)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_DEATHKNIGHT)
+        {
+            if (!spellProto)
+                continue;
+            if (spellProto->Dispel ==  DISPEL_DISEASE)
+                TakenPercent *= ((*i)->GetModifier()->m_amount + 100.0f) / 100.0f;
         }
     }
     // .. taken (dummy auras)
