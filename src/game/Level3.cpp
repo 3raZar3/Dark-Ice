@@ -1378,7 +1378,6 @@ bool ChatHandler::HandleReloadSpellDisabledCommand(const char* /*arg*/)
     sObjectMgr.LoadSpellDisabledEntrys();
     SendGlobalSysMessage("DB table `spell_disabled` reloaded.");
 	return true;
-
 }
 
 bool ChatHandler::HandleReloadVehicleDataCommand(const char*)

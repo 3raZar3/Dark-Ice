@@ -580,7 +580,6 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         {
             Anti__ReportCheat("Tele hack",delta,LookupOpcodeName(opcode));
         }
-
         // Check for waterwalking . Fix new way of checking for waterwalking by Darky88
         if (movementInfo.HasMovementFlag(MOVEFLAG_WATERWALKING) &&
            !(GetPlayer()->HasAuraType(SPELL_AURA_WATER_WALK) || GetPlayer()->HasAuraType(SPELL_AURA_GHOST)))
@@ -594,8 +593,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         if((delta_z < -2.3f) && (tg_z > 2.37f))
         {
             Anti__CheatOccurred(CurTime,"Mount hack",tg_z,NULL,delta,delta_z);
-        }
-        
+        }        
         
         static const float DIFF_OVERGROUND = 10.0f;
         float Anti__GroundZ = GetPlayer()->GetMap()->GetHeight(GetPlayer()->GetPositionX(),GetPlayer()->GetPositionY(),MAX_HEIGHT);
@@ -645,7 +643,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
 
     WorldPacket data(opcode, recv_data.size());
 
-  if(plMover)                                             // nothing is charmed, or player charmed
+    if(plMover)                                             // nothing is charmed, or player charmed
     {
         data.appendPackGUID(mover->GetGUID());                  // write guid
         movementInfo.Write(data);                               // write data

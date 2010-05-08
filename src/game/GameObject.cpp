@@ -456,6 +456,16 @@ void GameObject::Update(uint32 p_time)
             if(!m_respawnDelayTime)
                 return;
 
+            if(!m_spawnedByDefault)
+            {
+                m_respawnTime = 0;
+
+                if (IsInWorld())
+                    UpdateObjectVisibility();
+
+                break;
+            }
+
             // since pool system can fail to roll unspawned object, this one can remain spawned, so must set respawn nevertheless
 			m_respawnTime = m_spawnedByDefault ? time(NULL) + m_respawnDelayTime : 0;
 
@@ -736,14 +746,17 @@ bool GameObject::isVisibleForInState(Player const* u, WorldObject const* viewPoi
         // TODO: implement trap stealth, take look at spell 2836
         if(GetOwner() && GetOwner()->IsInWorld() && GetGOInfo()->type == GAMEOBJECT_TYPE_TRAP && GetGOInfo()->trap.stealthed && u->IsHostileTo(GetOwner()))
         {
-            if(u->GetGUID() == GetOwner()->GetGUID() || u->HasAura(2836))
+            if(u->GetGUID() == GetOwner()->GetGUID() || u->HasAura(2836) && u->isInFront(this, 15.0f, M_PI_F/2))   // hack, maybe values are wrong
                 return true;
 
             if(m_lootState == GO_READY)
                 return false;
+			
+			if (Unit* TrapOwner = GetOwner())
+                if (TrapOwner->GetTypeId() == TYPEID_PLAYER && ((Player*)TrapOwner)->IsInSameRaidWith(u))
+                    return true;
 
             return true;
-
         }
     }
 
@@ -776,7 +789,7 @@ bool GameObject::ActivateToQuest( Player *pTarget)const
                 //look for battlegroundAV for some objects which are only activated after mine gots captured by own team
                 if (GetEntry() == BG_AV_OBJECTID_MINE_N || GetEntry() == BG_AV_OBJECTID_MINE_S)
                     if (BattleGround *bg = pTarget->GetBattleGround())
-                        if (bg->GetTypeID() == BATTLEGROUND_AV && !(((BattleGroundAV*)bg)->PlayerCanDoMineQuest(GetEntry(),pTarget->GetTeam())))
+                        if (bg->GetTypeID(true) == BATTLEGROUND_AV && !(((BattleGroundAV*)bg)->PlayerCanDoMineQuest(GetEntry(),pTarget->GetTeam())))
                             return false;
                 return true;
             }
@@ -1381,15 +1394,15 @@ void GameObject::Use(Unit* user)
                     {
                         case 179785:                        // Silverwing Flag
                             // check if it's correct bg
-                            if(bg->GetTypeID() == BATTLEGROUND_WS)
+                            if(bg->GetTypeID(true) == BATTLEGROUND_WS)
                                 bg->EventPlayerClickedOnFlag(player, this);
                             break;
                         case 179786:                        // Warsong Flag
-                            if(bg->GetTypeID() == BATTLEGROUND_WS)
+                            if(bg->GetTypeID(true) == BATTLEGROUND_WS)
                                 bg->EventPlayerClickedOnFlag(player, this);
                             break;
                         case 184142:                        // Netherstorm Flag
-                            if(bg->GetTypeID() == BATTLEGROUND_EY)
+                            if(bg->GetTypeID(true) == BATTLEGROUND_EY)
                                 bg->EventPlayerClickedOnFlag(player, this);
                             break;
                     }
