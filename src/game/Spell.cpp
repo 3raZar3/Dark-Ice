@@ -2951,6 +2951,22 @@ void Spell::cast(bool skipCheck)
             }
             else if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x200000000000))
                 AddPrecastSpell(61987);                     // Avenging Wrath Marker
+            // Lay on Hands
+            else if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x000000008000))
+            {
+                if (m_targets.getUnitTarget() && m_targets.getUnitTarget() == m_caster)
+                {
+                    AddPrecastSpell(25771);                 // Forbearance
+                    AddPrecastSpell(61987);                 // Avenging Wrath Marker
+                }
+            }
+            // Aura Mastery 
+            else if (m_spellInfo->Id == 31821) 
+            { 
+                // get Concentration Aura 
+                if (m_caster->GetAura(SPELL_AURA_REDUCE_PUSHBACK, SPELLFAMILY_PALADIN, UI64LIT(0x00020000), (0x00000020), m_caster->GetGUID())) 
+                    AddTriggeredSpell(64364);               // Aura Mastery - immunity part 
+            }
             break;
         }
         case SPELLFAMILY_SHAMAN:
