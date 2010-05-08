@@ -604,6 +604,9 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
 
     DEBUG_LOG("DealDamageStart");
 
+    if(pVictim->GetTypeId() == TYPEID_PLAYER && GetTypeId() == TYPEID_PLAYER)
+        ((Player*)pVictim)->LastDmgDealer = (Player*)this;
+
     uint32 health = pVictim->GetHealth();
     DETAIL_LOG("deal dmg:%d to health:%d ",damage,health);
 
