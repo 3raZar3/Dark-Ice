@@ -632,25 +632,6 @@ void BattleGround::RewardHonorToTeam(uint32 Honor, uint32 TeamID)
 
         if (team == TeamID)
             plr->RewardHonor(NULL, 1, (float)Honor);
-	}
-}
-
-void BattleGround::RewardHonorTeamDaily(uint32 WinningTeamID)
-{
-    for(BattleGroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
-    {
-        if (itr->second.OfflineRemoveTime)
-            continue;
-
-        Player *plr = sObjectMgr.GetPlayer(itr->first);
-
-        if (!plr)
-            continue;
-        
-        uint32 team = itr->second.Team;
-        if(!team) team = plr->GetTeam();
-
-        plr->RewardHonorEndBattlegroud(team == WinningTeamID);
     }
 }
 
@@ -775,6 +756,11 @@ void BattleGround::EndBattleGround(uint32 winner)
             sLog.outError("BattleGround:EndBattleGround Player (GUID: %u) not found!", GUID_LOPART(itr->first));
             continue;
         }
+        
+        if(!team) team = plr->GetTeam();
+        
+        if(!isArena())
+            plr->RewardHonorEndBattlegroud(team == winner);
 
         // should remove spirit of redemption
         if (plr->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))
