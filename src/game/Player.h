@@ -2787,7 +2787,7 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         // TEAMBG helpers
         bool m_isInTeamBG;
-        uint8 m_TeamBGSide; // 0 nothing, 1 blue(ali), 2 red(horde)
+        uint8 m_fakeTeam; // 0 nothing, 1 blue(ali), 2 red(horde)
 };
 
 void AddItemsSetItem(Player*player,Item *item);
