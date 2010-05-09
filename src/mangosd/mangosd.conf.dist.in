@@ -1517,6 +1517,17 @@ SOAP.Port = 7878
 #    Anticheat.Movement.DetectMountainHack
 #        Turn Speed Check on/off
 #        Default: 1 (on)
+#    Anticheat.Movement.DetectAirJumpHack
+#        Turn Air/Graviti Jump Check on/off
+#        Default: 1 (on)
+#
+#    Anticheat.Movement.DetectTeleportHack
+#        Turn Teleport Check on/off
+#        Default: 1 (on)
+#
+#    Anticheat.Movement.DetectTeleport2PlaneHack
+#        Turn Teleport2Plane Check on/off
+#        Default: 1 (on)
 #
 #    Anticheat.Movement.BanTime
 #        How long the ban should last.
