@@ -588,7 +588,8 @@ class World
         inline bool GetMvAnticheatFlyCheck()           {return m_MvAnticheatFlyCheck;}
         inline bool GetMvAnticheatMountainCheck()      {return m_MvAnticheatMountainCheck;}
         inline bool GetMvAnticheatJumpCheck()          {return m_MvAnticheatJumpCheck;}
-        inline bool GetMvAnticheatTeleport2PlaneCheck  {return m_MvAnticheatTeleport2PlaneCheck;}
+        inline bool GetMvAnticheatTeleportCheck()      {return m_MvAnticheatTeleportCheck;}
+        inline bool GetMvAnticheatTeleport2PlaneCheck()  {return m_MvAnticheatTeleport2PlaneCheck;}
 
 
         void ProcessCliCommands();

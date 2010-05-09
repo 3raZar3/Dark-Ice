@@ -1547,6 +1547,7 @@ Anticheat.Movement.DetectWaterWalk = 1
 Anticheat.Movement.DetectFlyHack = 1
 Anticheat.Movement.DetectMountainHack = 1
 Anticheat.Movement.DetectAirJumpHack = 1
+Anticheat.Movement.DetectTeleportHack = 1
 Anticheat.Movement.DetectTeleport2PlaneHack = 0
 Anticheat.Movement.BanType = 0
 Anticheat.Movement.BanTime = "1m"

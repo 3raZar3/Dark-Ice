@@ -559,7 +559,8 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
  
         if(delta > 100.0f && GetPlayer()->GetZoneId() != 2257)
         {
-            Anti__ReportCheat("Tele hack",delta,LookupOpcodeName(opcode));
+            if(sWorld.GetMvAnticheatTeleportCheck())
+              Anti__ReportCheat("Tele hack",delta,LookupOpcodeName(opcode));
         }
 
         // Check for waterwalking . Fix new way of checking for waterwalking by Darky88
