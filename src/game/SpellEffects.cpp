@@ -1824,22 +1824,20 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 if (!unitTarget)
                     return;
 
-                uint32 original_rage = m_caster->GetPower(POWER_RAGE);
+                uint32 rage = m_caster->GetPower(POWER_RAGE);
 
-                // This is needed to proper cast of 20647
-                SpellEntry const *executeInfo = sSpellStore.LookupEntry(20647);
-                if(!original_rage)
-                    m_caster->SetPower(POWER_RAGE,executeInfo->manaCost);
+                if (!rage)
+                    m_caster->SetPower(POWER_RAGE, 1);
 
-                int32 rage = original_rage;
+                uint32 rage_addition = rage;
 
-                // up to max 30 rage cost
-                if (rage > (300 - GetPowerCost()))
-                    rage = (300 - GetPowerCost());
+                // up to max 30 total rage cost
+                if (rage_addition + GetPowerCost() > 300)
+                    rage_addition = 300 - GetPowerCost();
+
+                uint32 rage_modified = rage_addition;
 
                 // Glyph of Execution bonus
-                uint32 rage_modified = rage;
-
                 if (Aura *aura = m_caster->GetDummyAura(58367))
                     rage_modified +=  aura->GetModifier()->m_amount*10;
 
@@ -1848,20 +1846,26 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 
                 m_caster->CastCustomSpell(unitTarget, 20647, &basePoints0, NULL, NULL, true, 0);
 
-                uint32 rageLeft = original_rage-rage; // for easier sudden death calculation
-                uint32 lastrage=0;
-                // Sudden Death - this must be stored somewhere :/
-                if(m_caster->HasAura(29723))
-                    lastrage = 30;
-                else if(m_caster->HasAura(29725))
-                    lastrage = 70;
-                else if(m_caster->HasAura(29724))
-                    lastrage = 100;
+                uint32 new_rage = rage - rage_addition;
 
-                if(rageLeft < lastrage)
-                    rageLeft = lastrage;
+                // Sudden Death
+                Unit::AuraList const& auras = m_caster->GetAurasByType(SPELL_AURA_PROC_TRIGGER_SPELL);
+                for (Unit::AuraList::const_iterator itr = auras.begin(); itr != auras.end(); ++itr)
+                {
+                    // Only Sudden Death have this SpellIconID with SPELL_AURA_PROC_TRIGGER_SPELL
+                    if ((*itr)->GetSpellProto()->SpellIconID == 1989)
+                    {
+                        // saved rage top stored in next affect
+                        uint32 save_rage = (*itr)->GetSpellProto()->CalculateSimpleValue(EFFECT_INDEX_1)*10;
 
-                m_caster->SetPower(POWER_RAGE,original_rage - rage);
+                        if (new_rage < save_rage)
+                            new_rage = save_rage;
+
+                        break;
+                    }
+                }
+
+                m_caster->SetPower(POWER_RAGE, new_rage);
                 return;
             }
             // Slam
