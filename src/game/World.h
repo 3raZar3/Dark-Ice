@@ -587,6 +587,9 @@ class World
         inline bool GetMvAnticheatWaterCheck()         {return m_MvAnticheatWaterCheck;}
         inline bool GetMvAnticheatFlyCheck()           {return m_MvAnticheatFlyCheck;}
         inline bool GetMvAnticheatMountainCheck()      {return m_MvAnticheatMountainCheck;}
+        inline bool GetMvAnticheatJumpCheck()          {return m_MvAnticheatJumpCheck;}
+        inline bool GetMvAnticheatTeleport2PlaneCheck  {return m_MvAnticheatTeleport2PlaneCheck;}
+
 
         void ProcessCliCommands();
         void QueueCliCommand(CliCommandHolder* commandHolder) { cliCmdQueue.add(commandHolder); }

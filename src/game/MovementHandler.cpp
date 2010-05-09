@@ -608,7 +608,8 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
                     (Anti__MapZ < GetPlayer()->GetPositionZ() && 
                      opcode==MSG_MOVE_JUMP))
             {
-                 Anti__CheatOccurred(CurTime,"Possible Air Jump Hack",
+                 if(sWorld.GetMvAnticheatJumpCheck())
+                   Anti__CheatOccurred(CurTime,"Possible Air Jump Hack",
                                     0.0f,LookupOpcodeName(opcode),0.0f,movementInfo.flags,&movementInfo);
             }
         }
@@ -620,6 +621,24 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
             Anti__CheatOccurred(CurTime,"Teleport2Plane hack",
                                 GetPlayer()->GetPositionZ(),NULL,Anti__GroundZ);
         }*/
+
+        //Teleport To Plane checks
+        if (movementInfo.GetPos()->z < 0.0001f && movementInfo.GetPos()->z > -0.0001f && (!movementInfo.HasMovementFlag(MovementFlags(MOVEFLAG_SWIMMING | MOVEFLAG_CAN_FLY | MOVEFLAG_FLYING))))
+        {
+           if(sWorld.GetMvAnticheatTeleport2PlaneCheck())
+              // Prevent using TeleportToPlan.
+              Map *map = GetPlayer()->GetMap();
+              if (map)
+              {
+                float plane_z = map->GetHeight(movementInfo.GetPos()->x, movementInfo.GetPos()->y, MAX_HEIGHT) - movementInfo.GetPos()->z;
+                plane_z = (plane_z < -500.0f) ? 0 : plane_z; //check holes in heigth map
+                if(plane_z > 0.1f || plane_z < -0.1f)
+                {
+                   if(sWorld.GetMvAnticheatTeleport2PlaneCheck())
+                      Anti__CheatOccurred(CurTime,"Teleport2Plane hack",GetPlayer()->GetPositionZ(),NULL,plane_z);
+                }
+              }
+        }
     } 
     // <<---- anti-cheat features
 
