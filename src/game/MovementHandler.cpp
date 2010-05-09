@@ -627,6 +627,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         if (movementInfo.GetPos()->z < 0.0001f && movementInfo.GetPos()->z > -0.0001f && (!movementInfo.HasMovementFlag(MovementFlags(MOVEFLAG_SWIMMING | MOVEFLAG_CAN_FLY | MOVEFLAG_FLYING))))
         {
            if(sWorld.GetMvAnticheatTeleport2PlaneCheck())
+           {
               // Prevent using TeleportToPlan.
               Map *map = GetPlayer()->GetMap();
               if (map)
@@ -639,6 +640,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
                       Anti__CheatOccurred(CurTime,"Teleport2Plane hack",GetPlayer()->GetPositionZ(),NULL,plane_z);
                 }
               }
+           }
         }
     } 
     // <<---- anti-cheat features
