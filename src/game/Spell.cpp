@@ -1545,8 +1545,17 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 case 25991:                                 // Poison Bolt Volley (Pincess Huhuran)
                     unMaxTargets = 15;
                     break;
+        case 62240:                                 // Solar Flare
+        case 62920:                                 // Solar Flare (h)
+        {
+          if(Aura *pAura = m_caster->GetAura(62251, EFFECT_INDEX_0))
+            unMaxTargets = pAura->GetStackAmount();
+          else unMaxTargets = 1;
+          break;
+        }
             }
             break;
+        
         }
         case SPELLFAMILY_PALADIN:
             if (m_spellInfo->Id == 20424)                   // Seal of Command (2 more target for single targeted spell)
@@ -1583,7 +1592,9 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         case TARGET_RANDOM_NEARBY_LOC:
 			// Get a random point IN circle around the CASTER(!). Use sqrt(rand) to correct distribution when converting polar to Cartesian coordinates.
             radius *= sqrtf(rand_norm_f());
-            // no 'break' expected since we use code in case TARGET_RANDOM_CIRCUMFERENCE_POINT!!!        case TARGET_RANDOM_CIRCUMFERENCE_POINT:
+            // no 'break' expected since we use code in case TARGET_RANDOM_CIRCUMFERENCE_POINT!!! 
+    case TARGET_RANDOM_POINT_AROUND_CASTER:  
+        case TARGET_RANDOM_CIRCUMFERENCE_POINT:
         {
             // Get a random point AT the CIRCUMREFERENCE(!).
 			float angle = 2.0f * M_PI_F * rand_norm_f();
