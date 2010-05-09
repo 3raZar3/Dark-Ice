@@ -6535,6 +6535,11 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
         }
         case SPELLFAMILY_PALADIN:
         {
+			// Safety check for Art of War proccing, it should not be removed by spellfamily mask 1073741824 that are not from Flash of Light
+            if( dummySpell->Id == 53489 || dummySpell->Id == 59578 )
+                if( procSpell->SpellFamilyName == 10 && procSpell->SpellIconID == 13 )
+                    return false;
+
             // Seal of Righteousness - melee proc dummy (addition ${$MWS*(0.022*$AP+0.044*$SPH)} damage)
             if ((dummySpell->SpellFamilyFlags & UI64LIT(0x000000008000000)) && effIndex == EFFECT_INDEX_0)
             {
