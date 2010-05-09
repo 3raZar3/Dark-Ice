@@ -756,12 +756,49 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
 		pCurrChar->SetSkill(SKILL_SWORDS, 450, 450);
 		pCurrChar->SetSkill(SKILL_STAVES, 450, 450);
 		pCurrChar->SetSkill(SKILL_2H_MACES, 450, 450);
+		pCurrChar->SetSkill(SKILL_MACES, 450, 450);
+		pCurrChar->SetSkill(SKILL_WANDS, 450, 450);
 		pCurrChar->SetSkill(SKILL_2H_AXES, 450, 450);
 		pCurrChar->SetSkill(SKILL_DAGGERS, 450, 450);
 		pCurrChar->SetSkill(SKILL_THROWN, 450, 450);
 		pCurrChar->SetSkill(SKILL_CROSSBOWS, 450, 450);
 		pCurrChar->SetSkill(SKILL_POLEARMS, 450, 450);
 		pCurrChar->SetSkill(SKILL_FIST_WEAPONS, 450, 450);
+    }
+
+	if (sWorld.getConfig(CONFIG_BOOL_ALL_WEAPONS_FOR_CLASS_MAX_SKILL))
+    {
+        if(pCurrChar->getClass() == CLASS_HUNTER || pCurrChar->getClass() == CLASS_ROGUE || pCurrChar->getClass() == CLASS_WARRIOR)
+        {
+            pCurrChar->SetSkill(SKILL_BOWS, 450, 450);
+            pCurrChar->SetSkill(SKILL_CROSSBOWS, 450, 450);
+            pCurrChar->SetSkill(SKILL_GUNS, 450, 450);
+            pCurrChar->SetSkill(SKILL_THROWN, 450, 450);
+        }
+        if(pCurrChar->getClass() == CLASS_DRUID || pCurrChar->getClass() == CLASS_HUNTER || pCurrChar->getClass() == CLASS_MAGE || pCurrChar->getClass() == CLASS_PRIEST || pCurrChar->getClass() == CLASS_ROGUE || pCurrChar->getClass() == CLASS_SHAMAN || pCurrChar->getClass() == CLASS_WARLOCK || pCurrChar->getClass() == CLASS_WARRIOR)
+        {
+            pCurrChar->SetSkill(SKILL_DAGGERS, 450, 450);
+            pCurrChar->SetSkill(SKILL_STAVES, 450, 450);
+        }
+        if(pCurrChar->getClass() == CLASS_DRUID || pCurrChar->getClass() == CLASS_HUNTER || pCurrChar->getClass() == CLASS_ROGUE || pCurrChar->getClass() == CLASS_SHAMAN || pCurrChar->getClass() == CLASS_WARRIOR)
+            pCurrChar->SetSkill(SKILL_FIST_WEAPONS, 450, 450);
+        if(pCurrChar->getClass() == CLASS_DEATH_KNIGHT || pCurrChar->getClass() == CLASS_HUNTER || pCurrChar->getClass() == CLASS_PALADIN || pCurrChar->getClass() == CLASS_ROGUE || pCurrChar->getClass() == CLASS_SHAMAN || pCurrChar->getClass() == CLASS_WARRIOR)
+            pCurrChar->SetSkill(SKILL_AXES, 450, 450);
+        if(pCurrChar->getClass() == CLASS_DEATH_KNIGHT || pCurrChar->getClass() == CLASS_DRUID || pCurrChar->getClass() == CLASS_PALADIN || pCurrChar->getClass() == CLASS_PRIEST || pCurrChar->getClass() == CLASS_ROGUE || pCurrChar->getClass() == CLASS_SHAMAN || pCurrChar->getClass() == CLASS_WARRIOR)
+            pCurrChar->SetSkill(SKILL_MACES, 450, 450);
+        if(pCurrChar->getClass() == CLASS_DEATH_KNIGHT || pCurrChar->getClass() == CLASS_HUNTER || pCurrChar->getClass() == CLASS_MAGE || pCurrChar->getClass() == CLASS_PALADIN || pCurrChar->getClass() == CLASS_PRIEST || pCurrChar->getClass() == CLASS_ROGUE || pCurrChar->getClass() == CLASS_WARLOCK || pCurrChar->getClass() == CLASS_WARRIOR)
+            pCurrChar->SetSkill(SKILL_SWORDS, 450, 450);
+        if(pCurrChar->getClass() == CLASS_DEATH_KNIGHT || pCurrChar->getClass() == CLASS_DRUID || pCurrChar->getClass() == CLASS_HUNTER || pCurrChar->getClass() == CLASS_PALADIN || pCurrChar->getClass() == CLASS_WARRIOR)
+            pCurrChar->SetSkill(SKILL_POLEARMS, 450, 450);
+        if(pCurrChar->getClass() == CLASS_MAGE || pCurrChar->getClass() == CLASS_PRIEST || pCurrChar->getClass() == CLASS_WARLOCK)
+            pCurrChar->SetSkill(SKILL_WANDS, 450, 450);
+        if(pCurrChar->getClass() == CLASS_DEATH_KNIGHT || pCurrChar->getClass() == CLASS_HUNTER || pCurrChar->getClass() == CLASS_PALADIN || pCurrChar->getClass() == CLASS_SHAMAN || pCurrChar->getClass() == CLASS_WARRIOR)
+            pCurrChar->SetSkill(SKILL_2H_AXES, 450, 450);
+        if(pCurrChar->getClass() == CLASS_DEATH_KNIGHT || pCurrChar->getClass() == CLASS_DRUID || pCurrChar->getClass() == CLASS_PALADIN || pCurrChar->getClass() == CLASS_SHAMAN || pCurrChar->getClass() == CLASS_WARRIOR)
+            pCurrChar->SetSkill(SKILL_2H_MACES, 450, 450);
+        if(pCurrChar->getClass() == CLASS_DEATH_KNIGHT || pCurrChar->getClass() == CLASS_HUNTER || pCurrChar->getClass() == CLASS_PALADIN || pCurrChar->getClass() == CLASS_WARRIOR)
+            pCurrChar->SetSkill(SKILL_2H_SWORDS, 450, 450);
+        pCurrChar->SetSkill(SKILL_UNARMED, 450, 450);
 	}
 	
     pCurrChar->SendInitialPacketsBeforeAddToMap();

@@ -4497,25 +4497,33 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
 
 void Player::KillPlayer()
 {
-    SetMovement(MOVE_ROOT);
+    if (sWorld.getConfig(CONFIG_BOOL_PLAYER_AUTO_RESS))
+	{
+	    ResurrectPlayer(1.0f);
+        SpawnCorpseBones();
+	}
+	else
+	{
+	    SetMovement(MOVE_ROOT);
 
-    StopMirrorTimers();                                     //disable timers(bars)
+	    StopMirrorTimers();                                     //disable timers(bars)
 
-    setDeathState(CORPSE);
-    //SetFlag( UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_IN_PVP );
+	    setDeathState(CORPSE);
+	    //SetFlag( UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_IN_PVP );
 
-    SetFlag(UNIT_DYNAMIC_FLAGS, 0x00);
-    ApplyModFlag(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTE_RELEASE_TIMER, !sMapStore.LookupEntry(GetMapId())->Instanceable());
+	    SetFlag(UNIT_DYNAMIC_FLAGS, 0x00);
+	    ApplyModFlag(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTE_RELEASE_TIMER, !sMapStore.LookupEntry(GetMapId())->Instanceable());
 
-    // 6 minutes until repop at graveyard
-    m_deathTimer = 6*MINUTE*IN_MILLISECONDS;
+	    // 6 minutes until repop at graveyard
+	    m_deathTimer = 6*MINUTE*IN_MILLISECONDS;
 
-    UpdateCorpseReclaimDelay();                             // dependent at use SetDeathPvP() call before kill
+	    UpdateCorpseReclaimDelay();                             // dependent at use SetDeathPvP() call before kill
 
-    // don't create corpse at this moment, player might be falling
+	    // don't create corpse at this moment, player might be falling
 
-    // update visibility
-    UpdateObjectVisibility();
+	    // update visibility
+	    UpdateObjectVisibility();
+	}
 }
 
 Corpse* Player::CreateCorpse()
@@ -6773,10 +6781,14 @@ void Player::UpdateZone(uint32 newZone, uint32 newArea)
 	{
 		if(GetZoneId() == (sWorld.getConfig(CONFIG_UINT32_PVP_ID_1)) || GetZoneId() == (sWorld.getConfig(CONFIG_UINT32_PVP_ID_2)) || GetZoneId() == (sWorld.getConfig(CONFIG_UINT32_PVP_ID_3)) || GetZoneId() == (sWorld.getConfig(CONFIG_UINT32_PVP_ID_4)))
 		{
-			if(zone->flags & AREA_FLAG_SANCTUARY)
+			if (zone->flags & AREA_FLAG_SANCTUARY)
 				RemoveByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SANCTUARY);
-			if(!IsPvP() || pvpInfo.endTimer != 0)
+			if (!IsPvP() || pvpInfo.endTimer != 0)
+			{
 				UpdatePvP(true, true);
+				SetFlag(PLAYER_FLAGS, PLAYER_FLAGS_IN_PVP);
+				pvpInfo.inHostileArea = true;
+			}
 		}
 	}
 
@@ -22942,6 +22954,8 @@ bool Player::CanUseFlyingMounts(SpellEntry const* sEntry)
         GetSession()->SendPacket(&data);
         return false;
     }
+	if(GetZoneId() == 4378 || GetZoneId() == 4406 || GetZoneId() == 3968 || GetZoneId() == 3702 || GetZoneId() == 3698)
+		return false;
     if( (!mapEntry)/* || (mapEntry->Instanceable())*/ || (mapEntry->IsDungeon()) ||
         (mapEntry->IsRaid()) || (mapEntry->IsBattleArena()) || (mapEntry->IsBattleGround()) )
     {
