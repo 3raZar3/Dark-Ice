@@ -34,6 +34,74 @@
 #include "World.h"
 #include "Language.h"
 
+//#define __ANTI_DEBUG__
+
+#ifdef __ANTI_DEBUG__
+#include "Chat.h"
+std::string FlagsToStr(const uint32 Flags)
+{
+    std::string Ret="";
+    if(Flags==0)
+    {
+        Ret="None";
+        return Ret;
+    }
+    
+    if(Flags & MOVEMENTFLAG_FORWARD)
+    {   Ret+="FW "; }
+    if(Flags & MOVEMENTFLAG_BACKWARD)
+    {   Ret+="BW "; }
+    if(Flags & MOVEMENTFLAG_STRAFE_LEFT)
+    {   Ret+="STL ";    }
+    if(Flags & MOVEMENTFLAG_STRAFE_RIGHT)
+    {   Ret+="STR ";    }
+    if(Flags & MOVEMENTFLAG_LEFT)
+    {   Ret+="LF "; }
+    if(Flags & MOVEMENTFLAG_RIGHT)
+    {   Ret+="RI "; }
+    if(Flags & MOVEMENTFLAG_PITCH_UP)
+    {   Ret+="PTUP ";   }
+    if(Flags & MOVEMENTFLAG_PITCH_DOWN)
+    {   Ret+="PTDW ";   }
+    if(Flags & MOVEMENTFLAG_WALK_MODE)
+    {   Ret+="WALK ";   }
+    if(Flags & MOVEMENTFLAG_ONTRANSPORT)
+    {   Ret+="TRANS ";  }
+    if(Flags & MOVEMENTFLAG_LEVITATING)
+    {   Ret+="LEVI ";   }
+    if(Flags & MOVEMENTFLAG_FLY_UNK1)
+    {   Ret+="FLYUNK1 ";    }
+    if(Flags & MOVEMENTFLAG_JUMPING)
+    {   Ret+="JUMP ";   }
+    if(Flags & MOVEMENTFLAG_UNK4)
+    {   Ret+="UNK4 ";   }
+    if(Flags & MOVEMENTFLAG_FALLING)
+    {   Ret+="FALL ";   }
+    if(Flags & MOVEMENTFLAG_SWIMMING)
+    {   Ret+="SWIM ";   }
+    if(Flags & MOVEMENTFLAG_FLY_UP)
+    {   Ret+="FLYUP ";  }
+    if(Flags & MOVEMENTFLAG_CAN_FLY)
+    {   Ret+="CFLY ";   }
+    if(Flags & MOVEMENTFLAG_FLYING)
+    {   Ret+="FLY ";    }
+    if(Flags & MOVEMENTFLAG_FLYING2)
+    {   Ret+="FLY2 ";   }
+    if(Flags & MOVEMENTFLAG_WATERWALKING)
+    {   Ret+="WTWALK "; }
+    if(Flags & MOVEMENTFLAG_SAFE_FALL)
+    {   Ret+="SAFE ";   }
+   if(Flags & MOVEMENTFLAG_UNK3)
+    {   Ret+="UNK3 ";   }
+    if(Flags & MOVEMENTFLAG_SPLINE)
+    {   Ret+="SPLINE ";     }
+    if(Flags & MOVEMENTFLAG_SPLINE2)
+    {   Ret+="SPLINE2 ";    }
+    
+    return Ret;
+}
+#endif // __ANTI_DEBUG__
+
 bool WorldSession::Anti__ReportCheat(const char* Reason,float Speed,const char* Op,float Val1,uint32 Val2)
 {
     if(!Reason)
