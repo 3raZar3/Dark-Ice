@@ -1808,6 +1808,38 @@ BG.BonusHonor.Holiday = 5
 #                 2 - Ban IP
 #                 3 - Ban Account + IP
 #
+#    Anticheat.Movement.Announce
+#        Enable Announce cheater
+#        Default: 0 - off
+#                 1 - on
+#
+#    Anticheat.Movement.DetectSpeedHack
+#        Turn Speed Check on/off
+#        Default: 1 (on)
+#
+#    Anticheat.Movement.DetectWaterWalk
+#        Turn WaterWalk Check on/off
+#        Default: 1 (on)
+#
+#    Anticheat.Movement.DetectFlyHack
+#        Turn Fly Hack Check on/off
+#        Default: 1 (on)
+#
+#    Anticheat.Movement.DetectMountainHack
+#        Turn Speed Check on/off
+#        Default: 1 (on)
+#    Anticheat.Movement.DetectAirJumpHack
+#        Turn Air/Graviti Jump Check on/off
+#        Default: 1 (on)
+#
+#    Anticheat.Movement.DetectTeleportHack
+#        Turn Teleport Check on/off
+#        Default: 1 (on)
+#
+#    Anticheat.Movement.DetectTeleport2PlaneHack
+#        Turn Teleport2Plane Check on/off
+#        Default: 1 (on)
+#
 #    Anticheat.Movement.BanTime
 #        How long the ban should last.
 #        Default: 1 Minute - 1m
@@ -1831,6 +1863,14 @@ Anticheat.Movement.AlarmCount = 5
 Anticheat.Movement.AlarmTime = 5000
 Anticheat.Movement.Kill = 0
 Anticheat.Movement.Kick = 0
+Anticheat.Movement.Announce = 0
+Anticheat.Movement.DetectSpeedHack = 1
+Anticheat.Movement.DetectWaterWalk = 1
+Anticheat.Movement.DetectFlyHack = 1
+Anticheat.Movement.DetectMountainHack = 1
+Anticheat.Movement.DetectAirJumpHack = 1
+Anticheat.Movement.DetectTeleportHack = 1
+Anticheat.Movement.DetectTeleport2PlaneHack = 0
 Anticheat.Movement.BanType = 0
 Anticheat.Movement.BanTime = "1m"
 Anticheat.Movement.MaxXYT = 0.04
