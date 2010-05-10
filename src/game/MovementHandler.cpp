@@ -533,7 +533,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
         }
 
         //antiOFF fall-damage, MOVEMENTFLAG_UNK4 seted by client if player try movement when falling and unset in this case the MOVEMENTFLAG_FALLING flag. 
-        if((GetPlayer()->m_anti_BeginFallZ == INVALID_HEIGHT) &&
+        if((!GetPlayer()->CanFly() && GetPlayer()->m_anti_BeginFallZ == INVALID_HEIGHT) &&
            (movementInfo.GetMovementFlags() & (MOVEFLAG_FALLING | MOVEFLAG_FALLINGFAR)) != 0)
         {
             GetPlayer()->m_anti_BeginFallZ=(float)(movementInfo.GetPos()->z);
@@ -610,8 +610,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
                      opcode==MSG_MOVE_JUMP))
             {
                  if(sWorld.GetMvAnticheatJumpCheck())
-                   Anti__CheatOccurred(CurTime,"Possible Air Jump Hack",
-                                    0.0f,LookupOpcodeName(opcode),0.0f,movementInfo.flags,&movementInfo);
+                   Anti__CheatOccurred(CurTime,"Possible Air Jump Hack",0.0f,LookupOpcodeName(opcode),0.0f,movementInfo.flags,&movementInfo);
             }
         }
  
