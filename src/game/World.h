@@ -701,7 +701,7 @@ class World
         bool m_MvAnticheatMountainCheck;
         bool m_MvAnticheatJumpCheck;
         bool m_MvAnticheatTeleportCheck;
-        bool m_MvAnticheatTeleport2PlaneCehck;
+        bool m_MvAnticheatTeleport2PlaneCheck;
 
         // CLI command holder to be thread safe
         ACE_Based::LockedQueue<CliCommandHolder*,ACE_Thread_Mutex> cliCmdQueue;
