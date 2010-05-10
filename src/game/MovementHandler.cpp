@@ -605,7 +605,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
              
             // Need a better way to do that - currently a lot of fake alarms
             else if((Anti__MapZ+DIFF_AIRJUMP < GetPlayer()->GetPositionZ() &&
-                    (movementInfo.flags & (MOVEMENTFLAG_FALLING | MOVEMENTFLAG_UNK4))==0) ||
+                    (movementInfo.GetMovementFlags() & (MOVEFLAG_FALLING /*| MOVEFLAG_UNK4*/))==0) ||
                     (Anti__MapZ < GetPlayer()->GetPositionZ() && 
                      opcode==MSG_MOVE_JUMP))
             {
