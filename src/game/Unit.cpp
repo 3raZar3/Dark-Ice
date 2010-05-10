@@ -8156,6 +8156,14 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
                     pAura->SendFakeAuraUpdate(56817, false);
                     return true;
             }
+			// Glyph of Death Grip
+			if (auraSpellInfo->Id == 62259)
+			{
+			    // remove cooldown of Death Grip
+				if (GetTypeId()==TYPEID_PLAYER)
+				    ((Player*)this)->RemoveSpellCooldown(49576, true);
+				return true;
+			}	
             // Blade Barrier
             else if (auraSpellInfo->SpellIconID == 85)
             {
