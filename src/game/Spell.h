@@ -362,6 +362,7 @@ class Spell
         void EffectActivateSpec(SpellEffectIndex eff_idx);
 		void EffectSummonPossessed(SpellEffectIndex eff_idx); 
         void EffectSummonVehicle(SpellEffectIndex eff_idx);
+        void EffectSummonSnakes(SpellEffectIndex eff_idx);
 		void EffectWMODamage(SpellEffectIndex eff_idx);
         void EffectWMORepair(SpellEffectIndex eff_idx);
 
