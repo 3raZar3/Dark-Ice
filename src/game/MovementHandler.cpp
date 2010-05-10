@@ -610,7 +610,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
                      opcode==MSG_MOVE_JUMP))
             {
                  if(sWorld.GetMvAnticheatJumpCheck())
-                   Anti__CheatOccurred(CurTime,"Possible Air Jump Hack",0.0f,LookupOpcodeName(opcode),0.0f,movementInfo.flags,&movementInfo);
+                   Anti__CheatOccurred(CurTime,"Possible Air Jump Hack",0.0f,LookupOpcodeName(opcode),0.0f,movementInfo.GetMovementFlags());
             }
         }
  
