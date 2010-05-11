@@ -1532,10 +1532,6 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     // Garrote-Silence -> Garrote (multi-family check)
                     if( spellInfo_1->SpellIconID == 498 && spellInfo_1->SpellVisual[0] == 0 && spellInfo_2->SpellIconID == 498  )
                         return false;
-					
-					// Killing Spree (two buffs)
-                    if( spellInfo_1->Id == 61851 || spellInfo_2->Id == 51690)
-                        return false;
 
                     // Killing Spree
                     if( spellInfo_1->Id == 61851 && spellInfo_2->Id == 51690)
