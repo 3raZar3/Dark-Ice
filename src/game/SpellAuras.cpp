@@ -9009,7 +9009,7 @@ void Aura::HandleAuraInitializeImages(bool Apply, bool Real)
 
     // set stats and visual
     pImmage->SetDisplayId(creator->GetDisplayId());
-    pImmage->SetLevel(creator->getLevel());
+    //pImmage->SetLevel(creator->getLevel());
     pImmage->SetMaxHealth(creator->GetMaxHealth()/5);
     pImmage->SetHealth(creator->GetHealth()/2);
     pImmage->SetMaxPower(POWER_MANA, creator->GetMaxPower(POWER_MANA));
@@ -9017,23 +9017,19 @@ void Aura::HandleAuraInitializeImages(bool Apply, bool Real)
     pImmage->setFaction(creator->getFaction());
     pImmage->SetUInt32Value(UNIT_FIELD_FLAGS_2, UNIT_FLAG2_DISARM | UNIT_FLAG2_REGENERATE_POWER);
     if (creator->IsPvP())
-	{
-	  pImmage->SetPvP(true);
-    }
+	    pImmage->SetPvP(true);
+    
 	if (creator->isInCombat() && pImmage->isAlive())
-    {
-	pImmage->CastSpell(pImmage, 58838, true);
-    }
-	  else
+        pImmage->CastSpell(pImmage, 58838, true);
+    else
    {
-       pImmage->GetMotionMaster()->Clear(true, true);
+       pImmage->GetMotionMaster()->Clear();
        pImmage->GetMotionMaster()->MoveFollow(creator, pImmage->GetDistance(creator), pImmage->GetAngle(creator));
    }
 }
 
 void Aura::HandleAuraCloneCaster(bool Apply, bool Real)
 {
-    error_log("HandleAuraCloneCaster");
     if (!Real || !Apply)
         return;
 
