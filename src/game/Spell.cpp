@@ -1086,7 +1086,15 @@ void Spell::DoAllEffectOnTarget(TargetInfo *target)
                 caster->CastCustomSpell(unitTarget, 70890, &bp0, NULL, NULL, true); 
             } 
         } 
-        caster->DealSpellDamage(&damageInfo, true);
+				caster->DealSpellDamage(&damageInfo, true);
+				
+		// Divine Storm (use m_healthLeech to store damage for all targets)
+        if (m_spellInfo->Id == 53385)
+		{
+            m_healthLeech += damageInfo.damage;
+			if(Aura * pGlyph = caster->GetAura(63220, EFFECT_INDEX_0))
+                m_healthLeech += (m_healthLeech * pGlyph->GetModifier()->m_amount / 100);
+        }
 
         // Scourge Strike, here because needs to use final damage in second part of the spell
         if (m_spellInfo->SpellFamilyName == SPELLFAMILY_DEATHKNIGHT && m_spellInfo->SpellFamilyFlags & UI64LIT(0x0800000000000000))
