@@ -8945,6 +8945,20 @@ void Aura::HandleAuraModAllCritChance(bool apply, bool Real)
     ((Player*)m_target)->UpdateAllSpellCritChances();
 }
 
+void Aura::HandleAuraOpenStable(bool apply, bool Real)
+{
+    if(!apply || !Real)
+        return;
+
+    Unit* caster = GetCaster();
+    if(!caster || !caster->IsInWorld() || caster->GetTypeId() != TYPEID_PLAYER)
+        return;
+
+    WorldPacket data;
+    data << uint64(caster->GetGUID());
+    ((Player*)caster)->GetSession()->HandleListStabledPetsOpcode(data);
+}
+
 void Aura::HandleAllowOnlyAbility(bool apply, bool Real)
 {
     if(!Real)
