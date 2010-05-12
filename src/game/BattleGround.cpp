@@ -1055,12 +1055,6 @@ void BattleGround::RemovePlayerAtLeave(uint64 guid, bool Transport, bool SendPac
         plr->ResurrectPlayer(1.0f);
         plr->SpawnCorpseBones();
     }
-	
-	if (plr)
-    {
-        plr->Unmount();
-        plr->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
-    }
 
     RemovePlayer(plr, guid);                                // BG subclass specific code
 
