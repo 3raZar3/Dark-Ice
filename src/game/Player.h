@@ -2002,7 +2002,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void CheckExploreSystem(void);
 
         static uint32 TeamForRace(uint8 race);
-        uint32 GetTeam() const;
+        uint32 GetTeam() const { return m_team; }
 		TeamId GetTeamId() const { return m_team == ALLIANCE ? TEAM_ALLIANCE : TEAM_HORDE; }
         static uint32 getFactionForRace(uint8 race);
         void setFactionForRace(uint8 race);
@@ -2100,7 +2100,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SendInitWorldStates(uint32 zone, uint32 area);
         void SendUpdateWorldState(uint32 Field, uint32 Value);
         void SendDirectMessage(WorldPacket *data);
-        void SendBGWeekendWorldStates();
+        void FillBGWeekendWorldStates(WorldPacket& data, uint32& count);
 
         void SendAurasForTarget(Unit *target);
 

@@ -2021,6 +2021,14 @@ FactionedMap.Team = 1
 #	  	  If enabled, at character creation, all characters will have ALL weapon skills at level 450 (for funservers / pvp servers)
 #	  Default : 0
 #
+#	  Custom.AutoRessPlayersOnDeath = 0
+#	  	  If enabled, upon dying you instantly revive with full health (check for enemies will be made later on) this can be fun for events
+#	  Default : 0
+#
+#	  Custom.AllWeaponSkillsForClassAtMax = 0
+#	  	  If enabled, at character creation, all characters will have all weapon skills their class should have at level 450 (for funservers / pvp servers)
+#	  Default : 0
+#
 ###################################################################################################################
 
 Custom.AllowFlyingMountsEverywhere = 0
