@@ -453,13 +453,6 @@ void Map::LoadGrid(const Cell& cell, bool no_unload)
 
 bool Map::Add(Player *player)
 {
-    //TEAMBG - this must NOT happen!
-    if(!IsBattleGround() && player->isInTeamBG())
-    {
-        player->SetTeamBG(false, 0);
-        sLog.outError("Something is wrong, player %u is not added to bg map but has TeamBG data!", player->GetGUID());
-    }
-
     player->GetMapRef().link(this, player);
     player->SetMap(this);
 
@@ -476,18 +469,6 @@ bool Map::Add(Player *player)
     UpdateObjectsVisibilityFor(player,cell,p);
 
     AddNotifier(player,cell,p);
-
-    //Factioned maps
-    if(sMapMgr.isFactioned(GetId()) && sWorld.getConfig(CONFIG_BOOL_FACTIONED_MAP_ENABLED))
-    {
-        player->setFaction(sWorld.getConfig(CONFIG_UINT32_FACTIONED_MAP_FACTION));
-        player->SetFakeTeam(sWorld.getConfig(CONFIG_UINT32_FACTIONED_MAP_TEAM));
-    }
-    else if (player->getFakeTeam() != 0 && !sMapMgr.isFactioned(GetId()) && !player->isInTeamBG())
-    {
-        player->SetFakeTeam(0);
-        player->setFactionForRace(player->getRace());
-    }
     return true;
 }
 

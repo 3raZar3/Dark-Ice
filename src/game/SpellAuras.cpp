@@ -3910,13 +3910,7 @@ void Aura::HandleModPossess(bool apply, bool Real)
 
         if(m_target->GetTypeId() == TYPEID_PLAYER && !m_target->GetVehicleGUID())
         {
-            //TEAMBG check
-            if(((Player*)m_target)->isInTeamBG() && ((Player*)m_target)->getFakeTeam() == 1) //BLUE(ali)
-                ((Player*)m_target)->setFaction(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_FACTION_BLUE));
-            else if(((Player*)m_target)->isInTeamBG() && ((Player*)m_target)->getFakeTeam() == 2) //RED(horde)
-                ((Player*)m_target)->setFaction(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_FACTION_RED));
-            else
-                ((Player*)m_target)->setFactionForRace(m_target->getRace());
+            ((Player*)m_target)->setFactionForRace(m_target->getRace());
             ((Player*)m_target)->SetClientControl(m_target, 1);
         }
         else if(m_target->GetTypeId() == TYPEID_UNIT)
@@ -4052,15 +4046,7 @@ void Aura::HandleModCharm(bool apply, bool Real)
         m_target->SetCharmerGUID(0);
 
         if(m_target->GetTypeId() == TYPEID_PLAYER)
-        {
-            //TEAMBG check
-            if(((Player*)m_target)->isInTeamBG() && ((Player*)m_target)->getFakeTeam() == 1) //BLUE(ali)
-                ((Player*)m_target)->setFaction(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_FACTION_BLUE));
-            else if(((Player*)m_target)->isInTeamBG() && ((Player*)m_target)->getFakeTeam() == 2) //RED(horde)
-                ((Player*)m_target)->setFaction(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_FACTION_RED));
-            else
-                ((Player*)m_target)->setFactionForRace(m_target->getRace());
-        }
+            ((Player*)m_target)->setFactionForRace(m_target->getRace());
         else
         {
             CreatureInfo const *cinfo = ((Creature*)m_target)->GetCreatureInfo();

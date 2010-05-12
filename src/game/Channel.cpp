@@ -543,9 +543,6 @@ void Channel::Say(uint64 p, const char *what, uint32 lang)
 
     if (sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHANNEL))
         lang = LANG_UNIVERSAL;
-		
-	if (plr && plr->isInTeamBG())
-		lang = LANG_UNIVERSAL;
 
     uint32 sec = 0;
     if(plr)
@@ -611,7 +608,7 @@ void Channel::Invite(uint64 p, const char *newname)
     if (!plr)
         return;
 
-    if (newp->GetTeam() != plr->GetTeam() && !sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHANNEL) && !plr->isInTeamBG())
+    if (newp->GetTeam() != plr->GetTeam() && (!(sWorld.getConfig(CONFIG_BOOL_ALLOW_TWO_SIDE_INTERACTION_CHANNEL))))
     {
         WorldPacket data;
         MakeInviteWrongFaction(&data);

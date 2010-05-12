@@ -175,54 +175,6 @@ GroupQueueInfo * BattleGroundQueue::AddGroup(Player *leader, Group* grp, BattleG
     if (ginfo->Team == HORDE)
         index++;
 
-    // --- TEAM BG ---
-    if(!ArenaType && !isRated && !isPremade)
-    {
-        bool isAllowed = false;
-        switch(BgTypeId)
-        {
-            case BATTLEGROUND_AB:
-                if(sWorld.getConfig(CONFIG_BOOL_TEAM_BG_ALLOW_AB))
-                    isAllowed = true;
-                break;
-            case BATTLEGROUND_AV:
-                if(sWorld.getConfig(CONFIG_BOOL_TEAM_BG_ALLOW_AV))
-                    isAllowed = true;
-                break;
-            case BATTLEGROUND_EY:
-                if(sWorld.getConfig(CONFIG_BOOL_TEAM_BG_ALLOW_EOS))
-                    isAllowed = true;
-                break;
-            case BATTLEGROUND_WS:
-                if(sWorld.getConfig(CONFIG_BOOL_TEAM_BG_ALLOW_WSG))
-                    isAllowed = true;
-                break;
-        }
-        if(isAllowed)
-        {
-            uint32 qHorde = 0;
-            uint32 qAlliance = 0;
-			GroupsQueueType::const_iterator itr;
-            for(itr = m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_ALLIANCE].begin(); itr != m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_ALLIANCE].end(); ++itr)
-                if (!(*itr)->IsInvitedToBGInstanceGUID)
-                    qAlliance += (*itr)->Players.size();
-            for(itr = m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_HORDE].begin(); itr != m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_HORDE].end(); ++itr)
-                if (!(*itr)->IsInvitedToBGInstanceGUID)
-                    qHorde += (*itr)->Players.size();
-            //If theres more ali then horde, then change index to horde
-            if(qAlliance > qHorde+1)
-            {
-                index = 3;  // Set horde
-                ginfo->Team = HORDE;
-            }
-            else if (qAlliance+1 < qHorde)
-            {
-                index = 2;  // Set Aliance
-                ginfo->Team = ALLIANCE;
-            }
-        }
-    }
-
     DEBUG_LOG("Adding Group to BattleGroundQueue bgTypeId : %u, bracket_id : %u, index : %u", BgTypeId, bracketId, index);
 
     uint32 lastOnlineTime = getMSTime();

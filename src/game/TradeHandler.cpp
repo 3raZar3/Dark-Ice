@@ -531,8 +531,8 @@ void WorldSession::HandleInitiateTradeOpcode(WorldPacket& recvPacket)
         SendTradeStatus(TRADE_STATUS_IGNORE_YOU);
         return;
     }
-
-    if (pOther->getOriginalTeam() !=_player->getOriginalTeam() )
+	
+    if (pOther->GetTeam() !=_player->GetTeam() )
     {
         SendTradeStatus(TRADE_STATUS_WRONG_FACTION);
         return;
