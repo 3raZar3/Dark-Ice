@@ -5792,8 +5792,6 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     CastSpell(this, 28682, true, castItem, triggeredByAura);
                     return (procEx & PROC_EX_CRITICAL_HIT); // charge update only at crit hits, no hidden cooldowns
                 }
-<<<<<<< HEAD
-=======
 				// Empowered Fire
                 case 12654:
                 {
@@ -5829,7 +5827,6 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     if(procSpell->EffectTriggerSpell[1] == 36032 || GetSpellSchoolMask(procSpell) != SPELL_SCHOOL_MASK_ARCANE)
                         return false;
                 }
->>>>>>> 358b34d... Empowered Fire fix
                 // Glyph of Ice Block
                 case 56372:
                 {
