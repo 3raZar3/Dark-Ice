@@ -5325,7 +5325,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                         return SPELL_FAILED_CANT_DO_THAT_RIGHT_NOW; 
                 break;
             }
-            case SPELL_EFFECT_TRANS_DOOR:
+			case SPELL_EFFECT_TRANS_DOOR:
             {
                 if(m_caster->GetTypeId() == TYPEID_PLAYER)
                 {
