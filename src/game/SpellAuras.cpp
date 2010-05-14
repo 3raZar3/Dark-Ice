@@ -9074,22 +9074,3 @@ void Aura::ApplyHasteToPeriodic()
     }
     m_modifier.periodictime = periodic;
 }
-
-void Aura::HandleAuraLinked(bool apply, bool Real)
-{
-    if (!Real)
-        return;
-
-    uint32 linkedSpell = m_spellProto->EffectTriggerSpell[m_effIndex];
-    SpellEntry const *spellInfo = sSpellStore.LookupEntry(linkedSpell);
-    if (!spellInfo)
-    {
-        sLog.outError("HandleAuraLinked for spell %u effect %u: triggering unknown spell %u", m_spellProto->Id, m_effIndex, linkedSpell);
-        return;
-    }
-
-    if (apply)
-        m_target->CastSpell(m_target, linkedSpell, true, NULL, this);
-    else
-        m_target->RemoveAurasByCasterSpell(linkedSpell, GetCasterGUID());
-}
