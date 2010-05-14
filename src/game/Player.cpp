@@ -21450,12 +21450,14 @@ uint32 Player::CalculateTalentsPoints() const
 	}
 }
 
-bool Player::IsKnowHowFlyIn(uint32 mapid, uint32 zone) const
+bool Player::IsKnowHowFlyIn(uint32 mapid, uint32 zone, uint32 area) const
 {
     if(sWorld.getConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE)) return true;
     // continent checked in SpellMgr::GetSpellAllowedInLocationError at cast and area update
     uint32 v_map = GetVirtualMapForMapAndZone(mapid, zone);
-    return v_map != 571 || HasSpell(54197);                 // Cold Weather Flying
+
+    // don't allow flying in Dalaran except Krasus' Landing
+    return (v_map != 571 || HasSpell(54197)) && (zone != 4395 || area == 4564);                 // Cold Weather Flying
 }
 
 struct DoPlayerLearnSpell
