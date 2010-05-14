@@ -1926,6 +1926,15 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     && (spellInfo_1->Id == 25899 || spellInfo_1->Id == 20911)))
                     return false;
 					
+				// Seal of Corruption/Vengeance DoT and Righteouss Fury
+                if ((spellInfo_1->SpellIconID == 3025 && spellInfo_2->SpellIconID == 2292) ||
+                    (spellInfo_1->SpellIconID == 2292 && spellInfo_2->SpellIconID == 3025))
+                    return false;
+
+                // Repentance removes Righteous Vengeance
+                if (spellInfo_1->Id == 20066 && spellInfo_2->Id == 61840)
+                    return true;				
+					
 				// Seal of Vengeance/Corruption and Righteous Vengeance
                 if (spellInfo_1->SpellIconID == 2292 && spellInfo_2->SpellIconID == 3025 ||
                     spellInfo_2->SpellIconID == 2292 && spellInfo_1->SpellIconID == 3025)
