@@ -8983,21 +8983,6 @@ void Aura::HandleAllowOnlyAbility(bool apply, bool Real)
 
 }
 
-void Aura::HandleAuraOpenStable(bool apply, bool Real)
-{
-    if(!apply || !Real)
-        return;
-
-    Unit* caster = GetCaster();
-
-    if(!caster || !caster->IsInWorld() || caster->GetTypeId() != TYPEID_PLAYER)
-        return;
-
-    WorldPacket data;
-    data << uint64(caster->GetGUID());
-    ((Player*)caster)->GetSession()->HandleListStabledPetsOpcode(data);
-}
-
 void Aura::HandleAuraInitializeImages(bool Apply, bool Real)
 {
     if (!Real || !Apply || !m_target || m_target->GetTypeId() != TYPEID_UNIT)
