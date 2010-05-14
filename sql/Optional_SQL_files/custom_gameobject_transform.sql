@@ -1,2 +1,0 @@
--- Transforming Device 100102
-REPLACE into `GAMEOBJECT_TEMPLATE` VALUES ('100102','3','7179','Transforming Device','','','','0','0','1','0','0','0','0','0','0','0','0','0','1','0','0','0','0','0','0','0','0','1','0','0','0','0','0','0','0','0','0','0','0','0','0','custom_gameobject_transform');
