@@ -2982,11 +2982,7 @@ void Spell::cast(bool skipCheck)
                 AddTriggeredSpell(70721);
             break;
         }
-<<<<<<< HEAD
-		case SPELLFAMILY_HUNTER:
-=======
         case SPELLFAMILY_HUNTER:
->>>>>>> 6da51ce... Added new version of [patch 126]
         {
             // Deterrence
             if (m_spellInfo->Id == 19263)

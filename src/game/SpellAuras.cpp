@@ -2413,6 +2413,9 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                             // not use ammo and not allow use
                             ((Player*)m_target)->RemoveAmmo();
                         return;
+					case 48025:                             // Headless Horseman's Mount
+                        Spell::SelectMountByAreaAndSkill(m_target, 51621, 48024, 51617, 48023, 0);
+						return;
                     case 55328:                                 // Stoneclaw Totem I
                         m_target->CastSpell(m_target, 5728, true);
                         return;
@@ -2458,9 +2461,6 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                         if (m_target->GetTypeId() == TYPEID_PLAYER)
                             ((Player*)m_target)->removeSpell(63680);
                         return;
-					case 48025:                             // Headless Horseman's Mount
-                        Spell::SelectMountByAreaAndSkill(m_target, 51621, 48024, 51617, 48023, 0);
-						return;
                     case 72286:                             // Invincible
                         Spell::SelectMountByAreaAndSkill(m_target, 72281, 72282, 72283, 72284, 0);
                         return;
