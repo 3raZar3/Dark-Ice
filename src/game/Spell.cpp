@@ -1189,6 +1189,7 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
     {
         if (realCaster)
             realCaster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_DEFLECT);
+        ResetEffectDamageAndHeal();
         return;
     }
 
@@ -1224,13 +1225,9 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
                 return;
             }
 
-            // not break stealth by cast targeting and some exceptions for spells which should break/not break stealth
+            // not break stealth by cast targeting
             if ((!(m_spellInfo->AttributesEx & SPELL_ATTR_EX_NOT_BREAK_STEALTH) && m_spellInfo->Id != 51690 && m_spellInfo->Id != 53198 && m_spellInfo->Id != 3600 && m_spellInfo->Id != 53055 && m_spellInfo->Id != 44416 && m_spellInfo->Id != 32835 ) || (m_spellInfo->SpellFamilyName == SPELLFAMILY_ROGUE && m_spellInfo->SpellFamilyFlags == SPELLFAMILYFLAG_ROGUE_SAP))
-            {
-                if (!(m_spellInfo->Id == 39897 || m_spellInfo->Id == 32592 || m_spellInfo->Id == 32375|| m_spellInfo->Id == 1725
-                    || m_spellInfo->Id == 1038 || (m_spellInfo->SpellFamilyFlags2 & UI64LIT(0x00000100)) || m_spellInfo->Id == 3600))
-                    unit->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
-            }
+                unit->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
 
             // can cause back attack (if detected), stealth removed at Spell::cast if spell break it
             if (!(m_spellInfo->AttributesEx & SPELL_ATTR_EX_NO_INITIAL_AGGRO) && !IsPositiveSpell(m_spellInfo->Id) &&
@@ -2985,7 +2982,7 @@ void Spell::cast(bool skipCheck)
                 AddTriggeredSpell(70721);
             break;
         }
-		case SPELLFAMILY_HUNTER:
+        case SPELLFAMILY_HUNTER:
         {
             // Deterrence
             if (m_spellInfo->Id == 19263)
@@ -5322,7 +5319,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                         return SPELL_FAILED_CANT_DO_THAT_RIGHT_NOW; 
                 break;
             }
-            case SPELL_EFFECT_TRANS_DOOR:
+			case SPELL_EFFECT_TRANS_DOOR:
             {
                 if(m_caster->GetTypeId() == TYPEID_PLAYER)
                 {

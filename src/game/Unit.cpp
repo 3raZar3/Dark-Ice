@@ -2952,10 +2952,6 @@ SpellMissInfo Unit::MeleeSpellHitResult(Unit *pVictim, SpellEntry const *spell, 
 
     // Ranged attack cannot be parry/dodge only miss
     if (attType == RANGED_ATTACK)
-        //int32 deflect_chance = pVictim->GetTotalAuraModifier(SPELL_AURA_DEFLECT_RANGED_HIT)*100;- //missing something  but what??
-        //tmp+=deflect_chance;
-        //if (roll < tmp)
-            //return SPELL_MISS_DODGE;
         return SPELL_MISS_NONE;
 
     // Check for attack from behind
@@ -5815,6 +5811,41 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     CastSpell(this, 28682, true, castItem, triggeredByAura);
                     return (procEx & PROC_EX_CRITICAL_HIT); // charge update only at crit hits, no hidden cooldowns
                 }
+				// Empowered Fire
+                case 12654:
+                {
+                    if (Unit* caster = triggeredByAura->GetCaster())
+                    {
+                        if (pVictim != caster)
+                            return false;
+                        Unit::AuraList const& auras = caster->GetAurasByType(SPELL_AURA_ADD_FLAT_MODIFIER);
+                        for (Unit::AuraList::const_iterator i = auras.begin(); i != auras.end(); i++)
+                        {
+                            switch((*i)->GetId())
+                            {
+                                case 31656:
+                                case 31657:
+                                case 31658:
+                                    if(roll_chance_i((*i)->GetSpellProto()->procChance))
+                                    {
+                                        caster->CastSpell( caster, 67545, true );
+                                        return true;
+                                    }
+                                    break;
+                                default:
+                                    continue;
+                            }
+                            break;
+                        }
+                    }
+                    return false;
+                }
+				// Arcane Blast proc-off only from arcane school and not from self
+                case 36032:
+                {
+                    if(procSpell->EffectTriggerSpell[1] == 36032 || GetSpellSchoolMask(procSpell) != SPELL_SCHOOL_MASK_ARCANE)
+                        return false;
+                }
                 // Glyph of Ice Block
                 case 56372:
                 {
@@ -6735,7 +6766,7 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 // Seal of Vengeance (damage calc on apply aura)
                 case 31801:
                 {
-                    if (effIndex != EFFECT_INDEX_0)         // effect 1,2 used by seal unleashing code
+                    if (effIndex != EFFECT_INDEX_0 || !(procFlag & PROC_FLAG_SUCCESSFUL_MELEE_HIT))         // effect 1,2 used by seal unleashing code
                         return false;
 
                     // At melee attack or Hammer of the Righteous spell damage considered as melee attack
@@ -10087,7 +10118,10 @@ bool Unit::IsSpellCrit(Unit *pVictim, SpellEntry const *spellProto, SpellSchoolM
     switch(spellProto->DmgClass)
     {
         case SPELL_DAMAGE_CLASS_NONE:
-            return false;
+        {
+            if (spellProto->Id != 33778) // Lifebloom final tick
+                return false;
+        }
         case SPELL_DAMAGE_CLASS_MAGIC:
         {
             if (schoolMask & SPELL_SCHOOL_MASK_NORMAL)
