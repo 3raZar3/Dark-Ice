@@ -2929,10 +2929,6 @@ SpellMissInfo Unit::MeleeSpellHitResult(Unit *pVictim, SpellEntry const *spell, 
 
     // Ranged attack cannot be parry/dodge only miss
     if (attType == RANGED_ATTACK)
-        //int32 deflect_chance = pVictim->GetTotalAuraModifier(SPELL_AURA_DEFLECT_RANGED_HIT)*100;- //missing something  but what??
-        //tmp+=deflect_chance;
-        //if (roll < tmp)
-            //return SPELL_MISS_DODGE;
         return SPELL_MISS_NONE;
 
     // Check for attack from behind
