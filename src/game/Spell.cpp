@@ -3050,13 +3050,6 @@ void Spell::cast(bool skipCheck)
                 AddTriggeredSpell(30708);                   // Totem of Wrath
             break;
         }
-        case SPELLFAMILY_WARRIOR:
-        {
-            // Shattering Throw
-            if (m_spellInfo->Id == 64382)
-                AddTriggeredSpell(64380);                     // Shattering Throw
-            break;
-        }
         case SPELLFAMILY_DEATHKNIGHT:
         {
             // Frost Fever at Chains of Ice
