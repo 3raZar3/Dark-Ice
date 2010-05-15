@@ -879,7 +879,7 @@ uint32 BattleGround::GetBattlemasterEntry() const
 
 void BattleGround::RewardMark(Player *plr,uint32 count)
 {
-    switch(GetTypeID())
+    switch(GetTypeID(true))
     {
         case BATTLEGROUND_AV:
             if (count == ITEM_WINNER_COUNT)
