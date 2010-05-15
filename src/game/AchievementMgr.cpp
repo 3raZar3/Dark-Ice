@@ -799,22 +799,20 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
                     // some hardcoded requirements
                     switch(achievementCriteria->referredAchievement)
                     {
-                        case 214:							// EY, win under 6 minutes
-                        case 226:							// AV, win under 6 minutes
-                        case 159:							// AB, win under 6 minutes
+                        case 214:              // EY, win under 6 minutes
+                        case 226:              // AV, win under 6 minutes
+                        case 159:              // AB, win under 6 minutes
                         {
                             // set 8 minutes because there is 2 minutes long preparation
                             if(GetPlayer()->GetBattleGround()->GetStartTime() > (8 * MINUTE * IN_MILLISECONDS))
-                                continue;
-                            
+                                continue;     
                             break;
                         }
-                        case 201:							// WS, win under 7 minutes
+                        case 201:              // WS, win under 7 minutes
                         {
                             // set 9 minutes because there is 2 minutes long preparation
                             if(GetPlayer()->GetBattleGround()->GetStartTime() > (9 * MINUTE * IN_MILLISECONDS))
                                 continue;
-                            
                             break;
                         }
                         default:
@@ -1549,11 +1547,13 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
                     }
                     case 122:                           // AB, assault a base
                     {
+                        error_log("ide tedy 1");
                         if(bg->GetTypeID() != BATTLEGROUND_AB)
                             continue;
                         
                         if(miscvalue2 == 1)
                             continue;
+                        error_log("ide tedy 2");
 
                         break;
                     }
@@ -1576,8 +1576,7 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
                 }
                 SetCriteriaProgress(achievementCriteria, miscvalue1, PROGRESS_ACCUMULATE);
                 break;
-            }
-
+            }           
             // std case: not exist in DBC, not triggered in code as result
             case ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_HEALTH:
             case ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_SPELLPOWER:
