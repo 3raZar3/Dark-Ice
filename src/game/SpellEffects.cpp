@@ -6531,8 +6531,8 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                         if ((familyFlag & UI64LIT(0x0000000000004000)) && aura->GetEffIndex() == EFFECT_INDEX_0)
                         {
                             // m_amount does not include RAP bonus - must be calculated 
-                            basePoint = m_caster->MeleeDamageBonus(target, aura->GetModifier()->m_amount, RANGED_ATTACK, aura->GetSpellProto(), DOT, aura->GetStackAmount());
-              basePoint = basePoint * (aura->GetAuraMaxDuration() / aura->GetModifier()->periodictime) * 40 / 100; 
+                            basePoint = m_caster->MeleeDamageBonusDone(target, aura->GetModifier()->m_amount, RANGED_ATTACK, aura->GetSpellProto(), DOT, aura->GetStackAmount());
+                            basePoint = basePoint * (aura->GetAuraMaxDuration() / aura->GetModifier()->periodictime) * 40 / 100; 
                             spellId = 53353;                // Chimera Shot - Serpent
                         }
 
