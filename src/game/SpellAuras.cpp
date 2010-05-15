@@ -2419,6 +2419,9 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                     case 48025:                             // Headless Horseman's Mount
                         Spell::SelectMountByAreaAndSkill(m_target, 51621, 48024, 51617, 48023, 0);
                         return;
+                    case 52921:                             // Arc Lightning (Halls of Lighning: Loken)
+                        m_target->CastSpell(m_target, 52924, false);
+                        return;
                     case 55328:                                 // Stoneclaw Totem I
                         m_target->CastSpell(m_target, 5728, true);
                         return;

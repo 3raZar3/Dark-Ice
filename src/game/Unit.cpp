@@ -9980,10 +9980,11 @@ uint32 Unit::SpellDamageBonusTaken(Unit *pCaster, SpellEntry const *spellProto, 
     for(AuraList::const_iterator i = mModDamagePercentTaken.begin(); i != mModDamagePercentTaken.end(); ++i)
     {
         // Pulsing Shockwave Aura - Loken (Halls of Ligtning)
-        if ((*i)->GetSpellProto()->Id == 59414)
+        // Probably should only affect triggered effects - else generating emence dmg from other spells
+        if ((*i)->GetSpellProto()->Id == 59414 && (spellProto->Id == 52942 || spellProto->Id == 59837 || spellProto->Id == 52924))
         {
             float fDistance = GetDistance(pCaster);
-            TakenTotal += fDistance < ATTACK_DISTANCE ? 600 : 60;
+            TakenTotal += fDistance < ATTACK_DISTANCE ? 500 : 50;
             TakenTotalMod *= 1 + (fDistance < ATTACK_DISTANCE ? 0 : fDistance);
         }
 
