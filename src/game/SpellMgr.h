@@ -27,7 +27,6 @@
 #include "DBCStructure.h"
 #include "DBCStores.h"
 #include "Database/SQLStorage.h"
-#include "Unit.h"
 
 #include "Utilities/UnorderedMap.h"
 
