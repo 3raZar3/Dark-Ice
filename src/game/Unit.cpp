@@ -9979,6 +9979,14 @@ uint32 Unit::SpellDamageBonusTaken(Unit *pCaster, SpellEntry const *spellProto, 
     AuraList const& mModDamagePercentTaken = GetAurasByType(SPELL_AURA_MOD_DAMAGE_PERCENT_TAKEN);
     for(AuraList::const_iterator i = mModDamagePercentTaken.begin(); i != mModDamagePercentTaken.end(); ++i)
     {
+        // Pulsing Shockwave Aura - Loken (Halls of Ligtning)
+        if ((*i)->GetSpellProto()->Id == 59414)
+        {
+            float fDistance = GetDistance(pCaster);
+            TakenTotal += fDistance < ATTACK_DISTANCE ? 600 : 60;
+            TakenTotalMod *= 1 + (fDistance < ATTACK_DISTANCE ? 0 : fDistance);
+        }
+
         if ((*i)->GetModifier()->m_miscvalue & GetSpellSchoolMask(spellProto))
             TakenTotalMod *= ((*i)->GetModifier()->m_amount + 100.0f) / 100.0f;
     }
