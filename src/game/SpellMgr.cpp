@@ -1733,6 +1733,11 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     // Berserking/Enrage PvE spells and Mind Trauma
                     if(spellInfo_1->SpellIconID == 95 && spellInfo_2->Id == 48301)
                         return false;
+                    // Last Stand and Weakened Soul (multi-family check)
+                    if( spellInfo_1->Id == 12976 && spellInfo_2->Id == 6788 )
+                        return false;
+
+                    break;
                 }
                 case SPELLFAMILY_DRUID:
                 {
@@ -1984,6 +1989,9 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 if (spellInfo_1->SpellVisual[0] == 278 && spellInfo_2->Id == 72590)
                     return true;
             }
+            // Weakened Soul and Last Stand (multi-family check)
+            if (spellInfo_1->Id == 6788 && spellInfo_2->Id == 12976)
+                return false;
             break;
         case SPELLFAMILY_DRUID:
             if( spellInfo_2->SpellFamilyName == SPELLFAMILY_DRUID )
