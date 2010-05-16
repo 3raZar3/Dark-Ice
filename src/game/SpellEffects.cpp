@@ -6257,6 +6257,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                             ((Player*)m_caster)->RemovePet(pPet, PET_SAVE_NOT_IN_SLOT);
                     }
                     return;
+				}
                 case 51904:                                 // Summon Ghouls Of Scarlet Crusade
                 {
                     if(!unitTarget)
