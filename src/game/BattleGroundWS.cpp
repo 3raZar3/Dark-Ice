@@ -88,7 +88,7 @@ void BattleGroundWS::Update(uint32 diff)
             }
         }
 
-        if (m_EndTimer < diff)
+        if (m_EndTimer <= diff)
         {
             uint32 allianceScore = GetTeamScore(ALLIANCE);
             uint32 hordeScore    = GetTeamScore(HORDE);
@@ -659,6 +659,6 @@ void BattleGroundWS::FillInitialWorldStates(WorldPacket& data, uint32& count)
     else
         FillInitialWorldState(data, count, BG_WS_FLAG_STATE_ALLIANCE, 1);
 
-    data << uint32(BG_WS_UNK1) << uint32(1);
-    data << uint32(BG_WS_TIME_REMAINING) << uint32(GetRemainingTimeInMinutes());
+    FillInitialWorldState(data, count, BG_WS_UNK1, 1);
+    FillInitialWorldState(data, count, BG_WS_TIME_REMAINING, GetRemainingTimeInMinutes());
 }

@@ -55,7 +55,7 @@ enum BG_WS_WorldStates
     BG_WS_FLAG_CAPTURES_MAX       = 1601,
     BG_WS_FLAG_STATE_HORDE        = 2338,
     BG_WS_FLAG_STATE_ALLIANCE     = 2339,
-    BG_WS_UNK1                    = 4247, // Show time limit?
+    BG_WS_UNK1                    = 4247,                   // Show time limit?
     BG_WS_TIME_REMAINING          = 4248
 };
 
@@ -131,6 +131,7 @@ class BattleGroundWS : public BattleGround
         virtual void Reset();
         void EndBattleGround(uint32 winner);
         virtual WorldSafeLocsEntry const* GetClosestGraveYard(Player* player);
+        uint32 GetRemainingTimeInMinutes() { return m_EndTimer ? (m_EndTimer-1) / (MINUTE * IN_MILLISECONDS) + 1 : 0; }
 
         void UpdateFlagState(uint32 team, uint32 value);
         void UpdateTeamScore(uint32 team);
@@ -145,7 +146,6 @@ class BattleGroundWS : public BattleGround
         void SetTeamPoint(uint32 TeamID, uint32 Points = 0) { m_TeamScores[GetTeamIndexByTeamId(TeamID)] = Points; }
         void RemovePoint(uint32 TeamID, uint32 Points = 1)  { m_TeamScores[GetTeamIndexByTeamId(TeamID)] -= Points; }
 
-        uint32 GetRemainingTimeInMinutes() { return (uint32)ceil(float(m_EndTimer) / (MINUTE * IN_MILLISECONDS)); }
     private:
         uint64 m_FlagKeepers[BG_TEAMS_COUNT];
 

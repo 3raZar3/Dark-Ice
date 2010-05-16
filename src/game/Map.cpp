@@ -3661,26 +3661,6 @@ void Map::SendObjectUpdates()
     }
 }
 
-uint32 Map::GenerateLocalLowGuid(HighGuid guidhigh)
-{
-    // TODO: for map local guid counters possible force reload map instead shutdown server at guid counter overflow
-    switch(guidhigh)
-    {
-        case HIGHGUID_DYNAMICOBJECT:
-            return m_DynObjectGuids.Generate();
-        case HIGHGUID_PET:
-            return m_PetGuids.Generate();
-        case HIGHGUID_VEHICLE:
-            return m_VehicleGuids.Generate();
-        default:
-            ASSERT(0);
-    }
-
-    ASSERT(0);
-    return 0;
-}
-
-
 bool Map::IsNextZcoordOK(float x, float y, float oldZ, float maxDiff) const
 {
     // The fastest way to get an accurate result 90% of the time.
@@ -3701,4 +3681,23 @@ bool Map::IsNextZcoordOK(float x, float y, float oldZ, float maxDiff) const
             return false;
     }
     return true;
+}
+
+uint32 Map::GenerateLocalLowGuid(HighGuid guidhigh)
+{
+    // TODO: for map local guid counters possible force reload map instead shutdown server at guid counter overflow
+    switch(guidhigh)
+    {
+        case HIGHGUID_DYNAMICOBJECT:
+            return m_DynObjectGuids.Generate();
+        case HIGHGUID_PET:
+            return m_PetGuids.Generate();
+        case HIGHGUID_VEHICLE:
+            return m_VehicleGuids.Generate();
+        default:
+            ASSERT(0);
+    }
+
+    ASSERT(0);
+    return 0;
 }
