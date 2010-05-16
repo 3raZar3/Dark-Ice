@@ -1896,6 +1896,10 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             if (IsPositiveEffect(m_spellInfo->Id, effIndex))
                 targetB = SPELL_TARGETS_FRIENDLY;
 
+            // hack - spell for quest 10233
+            if (m_spellInfo->Id == 34526)
+                targetB = SPELL_TARGETS_ALL;
+
             FillAreaTargets(targetUnitMap, m_caster->GetPositionX(), m_caster->GetPositionY(), radius, PUSH_DEST_CENTER, targetB);
 
             // exclude caster
