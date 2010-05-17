@@ -1753,6 +1753,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     if (spellId_1 == 40216 && spellId_2 == 42016 )
                         return false;
 
+                    // Leeching Swarm and Insect Swarm
+                    if ( spellInfo_1->SpellIconID == 1771 && spellInfo_1->SpellVisual[0] == 0 && spellInfo_2->SpellIconID == 1771 )
+                        return false;
+
                     break;
                 }
                 case SPELLFAMILY_ROGUE:

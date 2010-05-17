@@ -675,7 +675,7 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
 
     if (pVictim->GetTypeId() == TYPEID_UNIT && !((Creature*)pVictim)->isPet())
     {
-        if(!((Creature*)pVictim)->hasLootRecipient())
+        if(!((Creature*)pVictim)->HasLootRecipient())
             ((Creature*)pVictim)->SetLootRecipient(this);
 
         ((Creature*)pVictim)->IncrementReceivedDamage(this, health < damage ? health : damage);
@@ -686,7 +686,9 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
         DEBUG_LOG("DealDamage: victim just died");
 
         // find player: owner of controlled `this` or `this` itself maybe
-        Player *player = GetCharmerOrOwnerPlayerOrPlayerItself();
+        // for loot will be sued only if group_tap==NULL
+        Player *player_tap = GetCharmerOrOwnerPlayerOrPlayerItself();
+        Group *group_tap = NULL;
 
         // find owner of pVictim, used for creature cases, AI calls
         Unit* pOwner = pVictim->GetCharmerOrOwner();
@@ -694,44 +696,51 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
         bool bRewardIsAllowed = true;
         if (pVictim->GetTypeId() == TYPEID_UNIT)
         {
-            bRewardIsAllowed = ((Creature*)pVictim)->AreLootAndRewardAllowed();
-            if(!bRewardIsAllowed)
-                ((Creature*)pVictim)->SetLootRecipient(NULL);
-        }
+            group_tap = ((Creature*)pVictim)->GetGroupLootRecipient();
 
-        if(bRewardIsAllowed && pVictim->GetTypeId() == TYPEID_UNIT && ((Creature*)pVictim)->GetLootRecipient())
-            player = ((Creature*)pVictim)->GetLootRecipient();
+            if (Player* recipient = ((Creature*)pVictim)->GetOriginalLootRecipient())
+				if (bRewardIsAllowed)
+                    player_tap = recipient;
+        }
 
         if (pVictim->GetTypeId() == TYPEID_PLAYER)
         {
             ((Player*)pVictim)->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_TOTAL_DAMAGE_RECEIVED, health);
-            if (player)
-                player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_SPECIAL_PVP_KILL,1,0,pVictim);		
+            if (player_tap)
+                player_tap->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_SPECIAL_PVP_KILL,1,0,pVictim);
         }
 
-        // Reward player, his pets, and group/raid members
         // call kill spell proc event (before real die and combat stop to triggering auras removed at death/combat stop)
-        if (player && player!=pVictim && bRewardIsAllowed)
+        if (player_tap && player_tap != pVictim && bRewardIsAllowed)
         {
-            player->RewardPlayerAndGroupAtKill(pVictim);
-            player->ProcDamageAndSpell(pVictim, PROC_FLAG_KILL, PROC_FLAG_KILLED, PROC_EX_NONE, 0);
+            player_tap->ProcDamageAndSpell(pVictim, PROC_FLAG_KILL, PROC_FLAG_KILLED, PROC_EX_NONE, 0);
 
 			///PVP Announcer
 			if (pVictim->GetTypeId() == TYPEID_PLAYER)
-				sWorld.SendPvPAnnounce(player, ((Player*)pVictim));
+				sWorld.SendPvPAnnounce(player_tap, ((Player*)pVictim));
 			
 			// PvP Token
-			int8 leveldiff = player->getLevel() - pVictim->getLevel();
+			int8 leveldiff = player_tap->getLevel() - pVictim->getLevel();
 			if((pVictim->GetTypeId() == TYPEID_PLAYER) && leveldiff < 10)
-			player->ReceiveToken();
+			    player_tap->ReceiveToken();
 			
-            WorldPacket data(SMSG_PARTYKILLLOG, (8+8)); //send event PARTY_KILL
-            data << uint64(player->GetGUID()); //player with killing blow
-            data << uint64(pVictim->GetGUID()); //victim
-            if (Group *group =  player->GetGroup())
-                group->BroadcastPacket(&data, group->GetMemberGroup(player->GetGUID()));
-            else
-                player->SendDirectMessage(&data);
+            WorldPacket data(SMSG_PARTYKILLLOG, (8+8));     //send event PARTY_KILL
+            data << player_tap->GetObjectGuid();            //player with killing blow
+            data << pVictim->GetObjectGuid();              //victim
+
+            if (group_tap)
+                group_tap->BroadcastPacket(&data, false, group_tap->GetMemberGroup(player_tap->GetGUID()),player_tap->GetGUID());
+
+            player_tap->SendDirectMessage(&data);
+        }
+
+        // Reward player, his pets, and group/raid members
+        if (player_tap != pVictim)
+        {
+            if (group_tap)
+                group_tap->RewardGroupAtKill(pVictim);
+            else if (player_tap)
+                player_tap->RewardSinglePlayerAtKill(pVictim);
         }
 
         DEBUG_LOG("DealDamageAttackStop");
@@ -790,7 +799,7 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
         // remember victim PvP death for corpse type and corpse reclaim delay
         // at original death (not at SpiritOfRedemtionTalent timeout)
         if( pVictim->GetTypeId()==TYPEID_PLAYER && !damageFromSpiritOfRedemtionTalent )
-            ((Player*)pVictim)->SetPvPDeath(player!=NULL);
+            ((Player*)pVictim)->SetPvPDeath(player_tap != NULL);
 
         // Call KilledUnit for creatures
         if (GetTypeId() == TYPEID_UNIT && ((Creature*)this)->AI())
@@ -810,7 +819,7 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
         if (pVictim->GetTypeId() == TYPEID_PLAYER)
         {
             // only if not player and not controlled by player pet. And not at BG
-            if (durabilityLoss && !player && !((Player*)pVictim)->InBattleGround())
+            if (durabilityLoss && !player_tap && !((Player*)pVictim)->InBattleGround())
             {
                 DEBUG_LOG("We are dead, loosing 10 percents durability");
                 ((Player*)pVictim)->DurabilityLossAll(0.10f,false);
@@ -891,29 +900,28 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
             he->DuelComplete(DUEL_INTERUPTED);
         }
 
-        if (player && this != pVictim)
-            if (OutdoorPvP * pvp = player->GetOutdoorPvP())
-                pvp->HandleKill(player, pVictim);
+        if (player_tap && this != pVictim)
+            if (OutdoorPvP * pvp = player_tap->GetOutdoorPvP())
+                pvp->HandleKill(player_tap, pVictim);
 
         // battleground things (do this at the end, so the death state flag will be properly set to handle in the bg->handlekill)
         if(pVictim->GetTypeId() == TYPEID_PLAYER && ((Player*)pVictim)->InBattleGround())
         {
             Player *killed = ((Player*)pVictim);
             if(BattleGround *bg = killed->GetBattleGround())
-                if(player)
-                {
-                    bg->HandleKillPlayer(killed, player);
-                    player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL,1);
-                    player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_GET_KILLING_BLOWS,1);
-                    player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL_AT_AREA,1);
-
-                }
+                if(player_tap)
+				{
+                    bg->HandleKillPlayer(killed, player_tap);
+					player_tap->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL,1);
+                    player_tap->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_GET_KILLING_BLOWS,1);
+                    player_tap->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL_AT_AREA,1);
+				}
         }
         else if(pVictim->GetTypeId() == TYPEID_UNIT)
         {
-            if (player)
-                if (BattleGround *bg = player->GetBattleGround())
-                    bg->HandleKillUnit((Creature*)pVictim, player);
+            if (player_tap)
+                if (BattleGround *bg = player_tap->GetBattleGround())
+                    bg->HandleKillUnit((Creature*)pVictim, player_tap);
         }
     }
     else                                                    // if (health <= damage)
@@ -1889,35 +1897,43 @@ void Unit::CalculateAbsorbAndResist(Unit *pCaster, SpellSchoolMask schoolMask, D
     // Magic damage, check for resists
     if ((schoolMask & SPELL_SCHOOL_MASK_NORMAL)==0)
     {
-        // Get base victim resistance for school
-        float tmpvalue2 = (float)pCaster->GetResistance(GetFirstSchoolInMask(schoolMask));
-        // Ignore resistance by self SPELL_AURA_MOD_TARGET_RESISTANCE aura
-        tmpvalue2 += (float)GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_TARGET_RESISTANCE, schoolMask);
-        // all pets receive 100% of owner's spell penetration
-        if (GetTypeId() == TYPEID_UNIT && ((Creature*)this)->isPet() && GetOwner())
-            tmpvalue2 += float(GetOwner()->GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_TARGET_RESISTANCE, schoolMask));
+        float victimResistance = float(pCaster->GetResistance(GetFirstSchoolInMask(schoolMask)));
+        victimResistance += float(GetTotalAuraModifierByMiscMask(SPELL_AURA_MOD_TARGET_RESISTANCE, schoolMask));
+        if(victimResistance < 0.0f)
+            victimResistance = 0.0f;
 
-        tmpvalue2 *= (float)(0.15f / getLevel());
-        if (tmpvalue2 < 0.0f)
-            tmpvalue2 = 0.0f;
-        if (tmpvalue2 > 0.75f)
-            tmpvalue2 = 0.75f;
-        uint32 ran = urand(0, 100);
-        float faq[4] = {24.0f,6.0f,4.0f,6.0f};
-        uint8 m = 0;
-        float Binom = 0.0f;
-        for (uint8 i = 0; i < 4; ++i)
+        float resistConst = pCaster->getLevel() * 5.0f;
+        if(pCaster->GetTypeId()==TYPEID_UNIT && ((Creature*)pCaster)->isWorldBoss())
+            resistConst = 510.0f;
+
+        float averageResist = victimResistance / (victimResistance + resistConst);
+
+        // partial resists occur in multiples of 10%
+        float discreteResistProbability[11];
+        for (uint32 i = 0; i < 11; i++)
         {
-            Binom += 2400 *( powf(tmpvalue2, float(i)) * powf( (1-tmpvalue2), float(4-i)))/faq[i];
-            if (ran > Binom )
-                ++m;
-            else
-                break;
+            discreteResistProbability[i] = 0.5f - 2.5f * fabs(0.1f * i - averageResist);
+            if (discreteResistProbability[i] < 0.0f)
+                discreteResistProbability[i] = 0.0f;
         }
-        if (damagetype == DOT && m == 4)
-            *resist += uint32(damage - 1);
-        else
-            *resist += uint32(damage * m / 4);
+
+        // formula for low resistance values
+        if (averageResist <= 0.1f)
+        {
+            discreteResistProbability[0] = 1.0f - 7.5f * averageResist;
+            discreteResistProbability[1] = 5.0f * averageResist;
+            discreteResistProbability[2] = 2.5f * averageResist;
+        }
+
+        float psum = 0.0f;
+        uint32 i = 0;
+        float norm = rand_norm_f();
+
+        while (norm >= psum && i < 11)
+            psum += discreteResistProbability[i++];
+
+        *resist += uint32(damage * (i>0?i-1:0) / 10.0f);
+
         if(*resist > damage)
             *resist = damage;
     }
@@ -4078,10 +4094,6 @@ bool Unit::AddAura(Aura *Aur)
     {
         m_modAuras[aurName].push_back(Aur);
     }
-    if (aurSpellInfo->AttributesEx4 & SPELL_ATTR_EX4_PET_SCALING_AURA && GetTypeId() == TYPEID_UNIT && ((Creature*)this)->isPet())
-    {
-        ((Pet*)this)->m_scalingauras.push_back(Aur);
-    }
 
     Aur->ApplyModifier(true,true);
     DEBUG_LOG("Aura %u now is in use", aurName);
@@ -4616,10 +4628,6 @@ void Unit::RemoveAura(AuraMap::iterator &i, AuraRemoveMode mode)
     if (Aur->GetModifier()->m_auraname < TOTAL_AURAS)
     {
         m_modAuras[Aur->GetModifier()->m_auraname].remove(Aur);
-    }
-    if (AurSpellInfo->AttributesEx4 & SPELL_ATTR_EX4_PET_SCALING_AURA && GetTypeId() == TYPEID_UNIT && ((Creature*)this)->isPet())
-    {
-        ((Pet*)this)->m_scalingauras.remove(Aur);
     }
 
     // Set remove mode
@@ -9585,15 +9593,9 @@ uint32 Unit::SpellDamageBonusDone(Unit *pVictim, SpellEntry const *spellProto, u
 	float bonusApCoeff = 1.0f; 
 
     // ..done
-
-    // creature and pet bonus mods
-    if (GetTypeId() == TYPEID_UNIT)
-    {
-        if (!((Creature*)this)->isPet())
-            DoneTotalMod *= ((Creature*)this)->GetSpellDamageMod(((Creature*)this)->GetCreatureInfo()->rank);
-        else
-            DoneTotalMod *= ((Pet*)this)->GetHappinessDamageMod();
-    }
+    // Creature damage
+    if( GetTypeId() == TYPEID_UNIT && !((Creature*)this)->isPet() )
+        DoneTotalMod *= ((Creature*)this)->GetSpellDamageMod(((Creature*)this)->GetCreatureInfo()->rank);
 
     if (!(spellProto->AttributesEx6 & SPELL_ATTR_EX6_NO_DMG_PERCENT_MODS))
     {
@@ -10093,19 +10095,6 @@ int32 Unit::SpellBaseDamageBonusTaken(SpellSchoolMask schoolMask)
     }
 
     return TakenAdvertisedBenefit > 0 ? TakenAdvertisedBenefit : 0;
-}
-
-int32 Unit::GetMaxSpellBaseDamageBonus(SpellSchoolMask schoolMask)
-{
-    int32 bonus = 0;
-    for (int i = SPELL_SCHOOL_HOLY; i < MAX_SPELL_SCHOOL; i++)
-        if (schoolMask & SpellSchoolMask(1 << i))
-        {
-            int32 current = SpellBaseDamageBonusDone(SpellSchoolMask(1 << i));
-            if (current > bonus)
-                bonus = current;
-        }
-    return bonus > 0 ? bonus : 0;
 }
 
 bool Unit::IsSpellCrit(Unit *pVictim, SpellEntry const *spellProto, SpellSchoolMask schoolMask, WeaponAttackType attackType)
@@ -10781,8 +10770,7 @@ uint32 Unit::MeleeDamageBonusDone(Unit *pVictim, uint32 pdamage,WeaponAttackType
         AuraList const& mModDamageDone = GetAurasByType(SPELL_AURA_MOD_DAMAGE_DONE);
         for(AuraList::const_iterator i = mModDamageDone.begin(); i != mModDamageDone.end(); ++i)
         {
-            if ((*i)->GetSpellProto()->AttributesEx4 & SPELL_ATTR_EX4_PET_SCALING_AURA ||           // completely schoolmask-independend: pet scaling auras, see note
-                (*i)->GetModifier()->m_miscvalue & schoolMask &&                                    // schoolmask has to fit with the intrinsic spell school
+            if ((*i)->GetModifier()->m_miscvalue & schoolMask &&                                    // schoolmask has to fit with the intrinsic spell school
                 (*i)->GetModifier()->m_miscvalue & GetMeleeDamageSchoolMask() &&                    // AND schoolmask has to fit with weapon damage school (essential for non-physical spells)
                 ((*i)->GetSpellProto()->EquippedItemClass == -1 ||                                  // general, weapon independent
                 pWeapon && pWeapon->IsFitToSpellRequirements((*i)->GetSpellProto())))               // OR used weapon fits aura requirements
@@ -10790,14 +10778,8 @@ uint32 Unit::MeleeDamageBonusDone(Unit *pVictim, uint32 pdamage,WeaponAttackType
                 DoneFlat += (*i)->GetModifier()->m_amount;
             }
         }
-        /* Additional note to pet scaling auras:
-           Those auras have SPELL_SCHOOL_MASK_MAGIC, but anyway should also
-           affect physical damage from non-weapon-damage-based spells (claw, swipe etc.).
-           Alternatively we could use pet::m_bonusdamage (that is currently still used for pet's
-           without dynamic scaling auras), but this would make the scaling aura idea inconsistent in some way :-/
-        */
 
-        // Pets (without scaling auras) just add their bonus damage to their melee damage
+        // Pets just add their bonus damage to their melee damage
         if (GetTypeId() == TYPEID_UNIT && ((Creature*)this)->isPet())
             DoneFlat += ((Pet*)this)->GetBonusDamage();
     }
@@ -10845,15 +10827,6 @@ uint32 Unit::MeleeDamageBonusDone(Unit *pVictim, uint32 pdamage,WeaponAttackType
 
         if (attType == OFF_ATTACK)
             DonePercent *= GetModifierValue(UNIT_MOD_DAMAGE_OFFHAND, TOTAL_PCT);                    // no school check required
-
-        // creature and pet bonus mods
-        if (GetTypeId() == TYPEID_UNIT)
-        {
-            if (!((Creature*)this)->isPet())
-                DonePercent *= ((Creature*)this)->GetSpellDamageMod(((Creature*)this)->GetCreatureInfo()->rank);
-            else
-                DonePercent *= ((Pet*)this)->GetHappinessDamageMod();
-        }
     }
 
     // ..done pct (by creature type mask)
@@ -12549,10 +12522,6 @@ int32 Unit::CalculateSpellDamage(Unit const* target, SpellEntry const* spellProt
         }
         sLog.outDebug("CalculateSpellDamage: no  saved roll for 12494 (Frostbite)");
     }
-    if(spellProto->AttributesEx4 & SPELL_ATTR_EX4_PET_SCALING_AURA && GetTypeId() == TYPEID_UNIT &&
-        ((Creature*)this)->isPet())
-        value += ((Pet*)this)->CalcScalingAuraBonus(spellProto, effect_index);
-
     return value;
 }
 
