@@ -14784,8 +14784,8 @@ void Unit::ExitVehicle()
 
         float x = GetPositionX();
         float y = GetPositionY();
-        float z = GetPositionZ();
-        GetClosePoint(x, y, z, 0);
+        float z = GetPositionZ() + 2.0f;
+        GetClosePoint(x, y, z, 2.0f + v_size);
         SendMonsterMove(x, y, z, SPLINETYPE_NORMAL, SPLINEFLAG_WALKMODE, 0);
     }
 }
