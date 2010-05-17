@@ -517,13 +517,13 @@ void Creature::Update(uint32 diff)
 }
 
 
-void Creature::StartGroupLoot( Group* group, uint32 timer )
+void WorldObject::StartGroupLoot( Group* group, uint32 timer )
 {
     m_groupLootId = group->GetId();
     m_groupLootTimer = timer;
 }
 
-void Creature::StopGroupLoot()
+void WorldObject::StopGroupLoot()
 {
     if (!m_groupLootId)
         return;

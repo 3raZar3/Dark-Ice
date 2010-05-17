@@ -6584,6 +6584,7 @@ void Aura::HandleSpellSpecificBoosts(bool apply)
                     spellId1 = 38639;                           // Nether Exhaustion
                     break;
                 }
+				return;
             }
             else
                 return;

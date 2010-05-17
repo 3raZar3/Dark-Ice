@@ -33,7 +33,6 @@
 struct SpellEntry;
 
 class CreatureAI;
-class Group;
 class Quest;
 class Player;
 class WorldSession;
@@ -600,9 +599,10 @@ class MANGOS_DLL_SPEC Creature : public Unit
 
         float GetRespawnRadius() const { return m_respawnradius; }
         void SetRespawnRadius(float dist) { m_respawnradius = dist; }
-
-        void StartGroupLoot(Group* group, uint32 timer);
-
+		
+		uint32 m_groupLootTimer;                            // (msecs)timer used for group loot
+        uint32 m_groupLootId;                               // used to find group which is looting corpse
+		
         void SendZoneUnderAttackMessage(Player* attacker);
 
         void SetInCombatWithZone();
@@ -671,10 +671,6 @@ class MANGOS_DLL_SPEC Creature : public Unit
 
         uint32 m_unPlayerDamageDone;
         uint32 m_unUnitDamageDone;
-
-        uint32 m_groupLootTimer;                            // (msecs)timer used for group loot
-        uint32 m_groupLootId;                               // used to find group which is looting corpse
-        void StopGroupLoot();
 
         // vendor items
         VendorItemCounts m_vendorItemCounts;
