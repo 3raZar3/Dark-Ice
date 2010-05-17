@@ -2260,8 +2260,8 @@ void World::ResetRandomBG()
 
 void World::SetPlayerLimit( int32 limit, bool needUpdate )
 {
-    if (limit < -SEC_ADMINISTRATOR)
-        limit = -SEC_ADMINISTRATOR;
+    if(limit <= -SEC_CONSOLE)
+        limit = -(SEC_CONSOLE-1);
 
     // lock update need
     bool db_update_need = needUpdate || (limit < 0) != (m_playerLimit < 0) || (limit < 0 && m_playerLimit < 0 && limit != m_playerLimit);

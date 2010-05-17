@@ -1544,6 +1544,7 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         static uint32 GetZoneIdFromDB(uint64 guid);
         static uint32 GetLevelFromDB(uint64 guid);
+		static uint32 GetGMLevelFromDB(uint64 guid);
         static bool   LoadPositionFromDB(uint32& mapid, float& x,float& y,float& z,float& o, bool& in_flight, uint64 guid);
 
         /*********************************************************/
@@ -2777,6 +2778,13 @@ class MANGOS_DLL_SPEC Player : public Unit
 		
 		// Battleground reward system
         uint32 m_FirstBGTime;
+		
+        // per character gm levels
+    public:
+        int32 GetSecurity() { return m_GMLevel; }
+        void SetSecurity(int32 gmlevel) { m_GMLevel = gmlevel; m_session->SetSecurity(AccountTypes(m_GMLevel)); }
+    private:
+        int32 m_GMLevel;
 };
 
 void AddItemsSetItem(Player*player,Item *item);

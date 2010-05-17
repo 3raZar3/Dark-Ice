@@ -317,7 +317,8 @@ UpdateMask Player::updateVisualBits;
 
 Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputationMgr(this)
 {
-    m_transport = 0;
+    m_GMLevel = 0;
+	m_transport = 0;
 
     // Playerbot mod:
     m_playerbotAI = 0;
@@ -6696,6 +6697,19 @@ uint32 Player::GetZoneIdFromDB(uint64 guid)
 uint32 Player::GetLevelFromDB(uint64 guid)
 {
     QueryResult *result = CharacterDatabase.PQuery( "SELECT level FROM characters WHERE guid='%u'", GUID_LOPART(guid) );
+    if (!result)
+        return 0;
+
+    Field* fields = result->Fetch();
+    uint32 level = fields[0].GetUInt32();
+    delete result;
+
+    return level;
+}
+
+uint32 Player::GetGMLevelFromDB(uint64 guid)
+{
+    QueryResult *result = CharacterDatabase.PQuery( "SELECT gmlevel FROM characters WHERE guid='%u'", GUID_LOPART(guid) );
     if (!result)
         return 0;
 
@@ -15328,8 +15342,8 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
     //"resettalents_time, trans_x, trans_y, trans_z, trans_o, transguid, extra_flags, stable_slots, at_login, zone, online, death_expire_time, taxi_path, dungeon_difficulty,"
     // 39           40                41                42                    43          44          45              46           47               48              49
     //"arenaPoints, totalHonorPoints, todayHonorPoints, yesterdayHonorPoints, totalKills, todayKills, yesterdayKills, chosenTitle, knownCurrencies, watchedFaction, drunk,"
-    // 50      51      52      53      54      55      56      57      58         59          60             61              62      63           64
-    //"health, power1, power2, power3, power4, power5, power6, power7, specCount, activeSpec, exploredZones, equipmentCache, ammoId, knownTitles, actionBars  FROM characters WHERE guid = '%u'", GUID_LOPART(m_guid));
+    // 50      51      52      53      54      55      56      57      58         59          60             61              62      63           64          65
+    //"health, power1, power2, power3, power4, power5, power6, power7, specCount, activeSpec, exploredZones, equipmentCache, ammoId, knownTitles, actionBars, gmlevel  FROM characters WHERE guid = '%u'", GUID_LOPART(m_guid));
     QueryResult *result = holder->GetResult(PLAYER_LOGIN_QUERY_LOADFROM);
 
     if(!result)
@@ -15341,6 +15355,10 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
     Field *fields = result->Fetch();
 
     uint32 dbAccountId = fields[1].GetUInt32();
+
+    m_GMLevel = fields[65].GetInt32();
+    if (m_GMLevel > 0)
+        GetSession()->SetSecurity((AccountTypes)m_GMLevel);
 
     // check if the character's account in the db and the logged in account match.
     // player should be able to load/delete character only with correct account!
@@ -17033,7 +17051,7 @@ void Player::SaveToDB()
         "trans_x, trans_y, trans_z, trans_o, transguid, extra_flags, stable_slots, at_login, zone, "
         "death_expire_time, taxi_path, arenaPoints, totalHonorPoints, todayHonorPoints, yesterdayHonorPoints, totalKills, "
         "todayKills, yesterdayKills, chosenTitle, knownCurrencies, watchedFaction, drunk, health, power1, power2, power3, "
-        "power4, power5, power6, power7, specCount, activeSpec, exploredZones, equipmentCache, ammoId, knownTitles, actionBars) VALUES ("
+        "power4, power5, power6, power7, specCount, activeSpec, exploredZones, equipmentCache, ammoId, knownTitles, actionBars, gmlevel) VALUES ("
         << GetGUIDLow() << ", "
         << GetSession()->GetAccountId() << ", '"
         << sql_name << "', "
@@ -17155,6 +17173,8 @@ void Player::SaveToDB()
     }
     ss << "',";
     ss << uint32(GetByteValue(PLAYER_FIELD_BYTES, 2));
+    ss << uint32(m_activeSpec) << ", ";
+    ss << uint32(m_GMLevel);    
     ss << ")";
 
     CharacterDatabase.Execute( ss.str().c_str() );

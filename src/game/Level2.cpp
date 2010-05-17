@@ -2122,6 +2122,7 @@ bool ChatHandler::HandlePInfoCommand(const char* args)
     uint32 total_player_time = 0;
     uint32 level = 0;
     uint32 latency = 0;
+	int32  security = 0;
 
     // get additional information from Player object
     if(target)
@@ -2135,6 +2136,7 @@ bool ChatHandler::HandlePInfoCommand(const char* args)
         total_player_time = target->GetTotalPlayedTime();
         level = target->getLevel();
         latency = target->GetSession()->GetLatency();
+		security = target->GetSession()->GetSecurity();
     }
     // get additional information from DB
     else
@@ -2144,7 +2146,7 @@ bool ChatHandler::HandlePInfoCommand(const char* args)
             return false;
 
         //                                                     0          1      2      3
-        QueryResult *result = CharacterDatabase.PQuery("SELECT totaltime, level, money, account FROM characters WHERE guid = '%u'", GUID_LOPART(target_guid));
+        QueryResult *result = CharacterDatabase.PQuery("SELECT totaltime, level, money, account, gmlevel FROM characters WHERE guid = '%u'", GUID_LOPART(target_guid));
         if (!result)
             return false;
 
@@ -2153,12 +2155,13 @@ bool ChatHandler::HandlePInfoCommand(const char* args)
         level = fields[1].GetUInt32();
         money = fields[2].GetUInt32();
         accId = fields[3].GetUInt32();
+		security = fields[4].GetInt32();
         delete result;
     }
 
     std::string username = GetMangosString(LANG_ERROR);
     std::string last_ip = GetMangosString(LANG_ERROR);
-    AccountTypes security = SEC_PLAYER;
+    //AccountTypes security = SEC_PLAYER;
     std::string last_login = GetMangosString(LANG_ERROR);
 
     QueryResult* result = loginDatabase.PQuery("SELECT username,gmlevel,last_ip,last_login FROM account WHERE id = '%u'",accId);
@@ -2166,7 +2169,10 @@ bool ChatHandler::HandlePInfoCommand(const char* args)
     {
         Field* fields = result->Fetch();
         username = fields[0].GetCppString();
-        security = (AccountTypes)fields[1].GetUInt32();
+        if (security == 0)
+		{
+			security = (AccountTypes)fields[1].GetUInt32();
+		}
 
         if(GetAccessLevel() >= security)
         {

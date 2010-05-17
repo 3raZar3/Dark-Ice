@@ -4530,6 +4530,51 @@ bool ChatHandler::HandleCharacterLevelCommand(const char* args)
     return true;
 }
 
+bool ChatHandler::HandleCharacterGMLevelCommand(const char* args)
+{
+    char* nameStr;
+    char* levelStr;
+    extractOptFirstArg((char*)args,&nameStr,&levelStr);
+    if(!levelStr)
+        return false;
+
+    // exception opt second arg: .character gmlevel $name
+    if(isalpha(levelStr[0]))
+    {
+        nameStr = levelStr;
+        levelStr = NULL;                                    // current level will used
+    }
+
+    Player* target;
+    uint64 target_guid;
+    std::string target_name;
+    if(!extractPlayerTarget(nameStr,&target,&target_guid,&target_name))
+        return false;
+
+    int32 oldlevel = target ? target->GetSecurity() : Player::GetGMLevelFromDB(target_guid);
+    int32 newlevel = levelStr ? atoi(levelStr) : oldlevel;
+
+    if(newlevel < 0)
+        return false;                                       // invalid level
+
+	if (oldlevel >= m_session->GetSecurity())
+	{
+		PSendSysMessage("You too low level to affect this player");
+		return true;
+	}
+
+	if (newlevel >= m_session->GetSecurity())
+	{
+		PSendSysMessage("You cannot set a level equal to or greater than your own");
+		return true;
+	}
+
+	target->SetSecurity(newlevel);
+	target->SaveToDB();
+
+    return true;
+}
+
 bool ChatHandler::HandleLevelUpCommand(const char* args)
 {
     char* nameStr;
