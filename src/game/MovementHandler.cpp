@@ -788,7 +788,13 @@ void WorldSession::HandleSetActiveMoverOpcode(WorldPacket &recv_data)
 
     uint64 guid;
     recv_data >> guid;
-
+	
+	if (!_player->m_mover || !_player->m_mover->IsInWorld())
+	{
+	    sLog.outError("HandleSetActiveMoverOpcode: incorrect mover for player %s guid %u",_player->GetName(), _player->GetGUID()); 
+        return;
+	}
+	
     if(_player->m_mover_in_queve && _player->m_mover_in_queve->GetGUID() == guid)
     {
         _player->m_mover = _player->m_mover_in_queve;
