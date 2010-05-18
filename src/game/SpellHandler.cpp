@@ -635,13 +635,14 @@ void WorldSession::HandleSpellClick( WorldPacket & recv_data )
             {
                 Unit *caster = (itr->second.castFlags & 0x1) ? (Unit*)_player : (Unit*)unit;
                 Unit *target = (itr->second.castFlags & 0x2) ? (Unit*)_player : (Unit*)unit;
-			                caster->CastSpell(target, itr->second.spellId, true);
+			                
+				caster->CastSpell(target, itr->second.spellId, true);
             }
         }
     }
 }
 
-void WorldSession::HandleMirrorImageDataRequest( WorldPacket& recv_data )
+void WorldSession::HandleMirrorImageDataRequest( WorldPacket & recv_data )
 {
     sLog.outDebug("WORLD: CMSG_GET_MIRRORIMAGE_DATA");
     uint64 guid;
