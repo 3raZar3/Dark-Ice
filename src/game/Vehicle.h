@@ -86,7 +86,7 @@ class MANGOS_DLL_SPEC Vehicle : public Creature
 
         void Dismiss();
 
-        void RellocatePassengers(Map *map);
+        void RelocatePassengers(Map *map);
         void AddPassenger(Unit *unit, int8 seatId, bool force = true);
         void RemovePassenger(Unit *unit);
         void RemoveAllPassengers();

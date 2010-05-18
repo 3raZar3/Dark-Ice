@@ -414,7 +414,7 @@ void Vehicle::Dismiss()
     AddObjectToRemoveList();
 }
 
-void Vehicle::RellocatePassengers(Map *map)
+void Vehicle::RelocatePassengers(Map *map)
 {
     for(SeatMap::iterator itr = m_Seats.begin(); itr != m_Seats.end(); ++itr)
     {
@@ -452,7 +452,7 @@ void Vehicle::RellocatePassengers(Map *map)
             float oo = passengers->GetOrientation();
 
             map->CreatureRelocation((Creature*)passengers, xx, yy, zz, oo);
-            ((Vehicle*)passengers)->RellocatePassengers(map);
+            ((Vehicle*)passengers)->RelocatePassengers(map);
         }
     }
 }
