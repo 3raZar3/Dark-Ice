@@ -1447,7 +1447,7 @@ void GameObject::Use(Unit* user)
         if(user->GetTypeId() != TYPEID_PLAYER || !sOutdoorPvPMgr.HandleCustomSpell((Player*)user,spellId,this))
             sLog.outError("WORLD: unknown spell id %u at use action for gameobject (Entry: %u GoType: %u )", spellId,GetEntry(),GetGoType());
         else
-            sLog.outDebug("WORLD: %u non-dbc spell was handled by OutdoorPvP", spellId);
+            DEBUG_LOG("WORLD: %u non-dbc spell was handled by OutdoorPvP", spellId);
         return;
     }
 
