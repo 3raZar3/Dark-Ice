@@ -53,6 +53,7 @@
 #include "CreatureEventAIMgr.h"
 #include "DBCEnums.h"
 #include "AuctionHouseBot.h"
+#include "BattleGround.h"
 
 bool ChatHandler::HandleAHBotOptionsCommand(const char* args)
 {
@@ -6639,6 +6640,23 @@ bool ChatHandler::HandleInstanceStatsCommand(const char* /*args*/)
     PSendSysMessage("players bound: %d", sInstanceSaveMgr.GetNumBoundPlayersTotal());
     PSendSysMessage("groups bound: %d", sInstanceSaveMgr.GetNumBoundGroupsTotal());
     return true;
+}
+
+bool ChatHandler::HandleInstanceStartCommand(const char * /*args*/)
+{
+    Player* pl = m_session->GetPlayer();
+	BattleGround *bg = pl->GetBattleGround();
+    if(bg->GetTypeID(true))
+    {
+        bg->StartBattleGround();
+		return true;
+    }
+    else
+    {
+        PSendSysMessage("Map is not a battleground.");
+        SetSentErrorMessage(true);
+        return false;
+    }
 }
 
 bool ChatHandler::HandleInstanceSaveDataCommand(const char * /*args*/)
