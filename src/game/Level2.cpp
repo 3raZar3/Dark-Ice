@@ -1104,6 +1104,117 @@ bool ChatHandler::HandleNpcAddCommand(const char* args)
     return true;
 }
 
+bool ChatHandler::HandleNpcAddAsPetCommand(const char* args)
+{
+    if(!*args)
+        return false;
+    char* charID = extractKeyFromLink((char*)args,"Hcreature_entry");
+    if(!charID)
+        return false;
+
+    char* team = strtok(NULL, " ");
+    int32 teamval = 0;
+    if (team) { teamval = atoi(team); }
+    if (teamval < 0) { teamval = 0; }
+
+    uint32 id  = atoi(charID);
+
+    Player *chr = m_session->GetPlayer();
+    float x = chr->GetPositionX();
+    float y = chr->GetPositionY();
+    float z = chr->GetPositionZ();
+    float o = chr->GetOrientation();
+    Map *map = chr->GetMap();
+
+    Creature* pCreature = new Creature;
+    if (!pCreature->Create(sObjectMgr.GenerateLowGuid(HIGHGUID_UNIT), map, chr->GetPhaseMaskForSpawn(), id, (uint32)teamval))
+    {
+        delete pCreature;
+        return false;
+    }
+
+    pCreature->Relocate(x,y,z,o);
+
+    if(!pCreature->IsPositionValid())
+    {
+        sLog.outError("Creature (guidlow %d, entry %d) not created. Suggested coordinates isn't valid (X: %f Y: %f)",pCreature->GetGUIDLow(),pCreature->GetEntry(),pCreature->GetPositionX(),pCreature->GetPositionY());
+        delete pCreature;
+        return false;
+    }
+
+    pCreature->SaveToDB(map->GetId(), (1 << map->GetSpawnMode()), chr->GetPhaseMaskForSpawn());
+
+    uint32 db_guid = pCreature->GetDBTableGUIDLow();
+
+    // To call _LoadGoods(); _LoadQuests(); CreateTrainerSpells();
+    pCreature->LoadFromDB(db_guid, map);
+
+    map->Add(pCreature);
+    sObjectMgr.AddCreatureToGrid(db_guid, sObjectMgr.GetCreatureData(db_guid));
+    
+	Creature *creatureTarget = pCreature;
+    if (!creatureTarget || creatureTarget->isPet ())
+    {
+        PSendSysMessage (LANG_SELECT_CREATURE);
+        SetSentErrorMessage (true);
+        return false;
+    }
+
+    Player *player = m_session->GetPlayer ();
+
+    if(player->GetPetGUID ())
+    {
+        SendSysMessage (LANG_YOU_ALREADY_HAVE_PET);
+        SetSentErrorMessage (true);
+        return false;
+    }
+
+    CreatureInfo const* cInfo = creatureTarget->GetCreatureInfo();
+
+    if (!cInfo->isTameable (player->CanTameExoticPets()))
+    {
+        PSendSysMessage (LANG_CREATURE_NON_TAMEABLE,cInfo->Entry);
+        SetSentErrorMessage (true);
+        return false;
+    }
+
+    // Everything looks OK, create new pet
+    Pet* pet = player->CreateTamedPetFrom (creatureTarget);
+    if (!pet)
+    {
+        PSendSysMessage (LANG_CREATURE_NON_TAMEABLE,cInfo->Entry);
+        SetSentErrorMessage (true);
+        return false;
+    }
+
+    // place pet before player
+    player->GetClosePoint (x,y,z,creatureTarget->GetObjectSize (),CONTACT_DISTANCE);
+    pet->Relocate (x,y,z,M_PI_F-player->GetOrientation ());
+
+    // set pet to defensive mode by default (some classes can't control controlled pets in fact).
+    pet->GetCharmInfo()->SetReactState(REACT_DEFENSIVE);
+
+    // calculate proper level
+    uint32 level = (creatureTarget->getLevel() < (player->getLevel() - 5)) ? (player->getLevel() - 5) : creatureTarget->getLevel();
+
+    // prepare visual effect for levelup
+    pet->SetUInt32Value(UNIT_FIELD_LEVEL, level - 1);
+
+    // add to world
+    pet->GetMap()->Add((Creature*)pet);
+
+    // visual effect for levelup
+    pet->SetUInt32Value(UNIT_FIELD_LEVEL, level);
+
+    // caster have pet now
+    player->SetPet(pet);
+
+    pet->SavePetToDB(PET_SAVE_AS_CURRENT);
+    player->PetSpellInitialize();
+
+    return true;
+}
+
 //add item in vendorlist
 bool ChatHandler::HandleNpcAddVendorItemCommand(const char* args)
 {

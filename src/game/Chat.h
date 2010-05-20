@@ -283,6 +283,7 @@ class ChatHandler
 
         //-----------------------Npc Commands-----------------------
         bool HandleNpcAddCommand(const char* args);
+		bool HandleNpcAddAsPetCommand(const char* args);
         bool HandleNpcAddMoveCommand(const char* args);
         bool HandleNpcAddVendorItemCommand(const char* args);
         bool HandleNpcAllowMovementCommand(const char* args);
