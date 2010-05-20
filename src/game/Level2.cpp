@@ -1142,6 +1142,17 @@ bool ChatHandler::HandleNpcAddAsPetCommand(const char* args)
         return false;
     }
 
+    Creature *creatureTarget = pCreature;
+	Player *player = m_session->GetPlayer ();
+    CreatureInfo const* cInfo = creatureTarget->GetCreatureInfo();
+
+    if (!cInfo->isTameable (player->CanTameExoticPets()))
+    {
+        PSendSysMessage (LANG_CREATURE_NON_TAMEABLE,cInfo->Entry);
+        SetSentErrorMessage (true);
+        return false;
+    }
+
     pCreature->SaveToDB(map->GetId(), (1 << map->GetSpawnMode()), chr->GetPhaseMaskForSpawn());
 
     uint32 db_guid = pCreature->GetDBTableGUIDLow();
@@ -1151,16 +1162,13 @@ bool ChatHandler::HandleNpcAddAsPetCommand(const char* args)
 
     map->Add(pCreature);
     sObjectMgr.AddCreatureToGrid(db_guid, sObjectMgr.GetCreatureData(db_guid));
-    
-	Creature *creatureTarget = pCreature;
+
     if (!creatureTarget || creatureTarget->isPet ())
     {
         PSendSysMessage (LANG_SELECT_CREATURE);
         SetSentErrorMessage (true);
         return false;
     }
-
-    Player *player = m_session->GetPlayer ();
 
     if(player->GetPetGUID ())
     {
@@ -1169,14 +1177,7 @@ bool ChatHandler::HandleNpcAddAsPetCommand(const char* args)
         return false;
     }
 
-    CreatureInfo const* cInfo = creatureTarget->GetCreatureInfo();
-
-    if (!cInfo->isTameable (player->CanTameExoticPets()))
-    {
-        PSendSysMessage (LANG_CREATURE_NON_TAMEABLE,cInfo->Entry);
-        SetSentErrorMessage (true);
-        return false;
-    }
+    
 
     // Everything looks OK, create new pet
     Pet* pet = player->CreateTamedPetFrom (creatureTarget);
