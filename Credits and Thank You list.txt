@@ -1,38 +1,49 @@
- -=== Info: ===-
-
-  This text holds the names of the ones who have helped and/or worked on things that we are now using.
-We have used their work (or a portion of it) to build this great core and bring you the core straight
-from the depths of Hell itself.
-
-  /!\NOTE/!\ This is a work in progress as the list of names gets bigger each day. /!\NOTE/!\
-
-  You can always get support, find out the latest news and/or contribute to our project
-                                   at: www.hellscream-wow.com
-
- -=== Credits and Thank You flies out to: ===-
-
- 1. Hellscream Network development and staff team.
- 2. MaNGOS development team.
- 3. YTDB/Yurity/UDB development team.
- 4. ScriptDev2/ScriptDevZero development team.
- 3. Insider42.
- 4. Xeross.
- 5. RSA.
- 6. Janu.
- 7. Tasssadar.
- 8. Traponinet.
- 9. Gimli.
-10. Laise.
-11. Kero99.
-12. Ancient.
-13. Blueboy.
-14. Scrappydoo
-15. Feanordev.
-16. Sixsixnine.
-17. Przemratajczak.
-18. GriffonHeart.
-19. MrLama.
-20. Selector.
-21. udbuser93
-22. fandor
- -=== Last Updated: 05/20/2010 ===-
+﻿╔═══════╦══════════════════════════════════════════════════════╗
+║ Info: ║ "Even Hell itself tremble before our mighty march!"  ║
+╟───────╨──────────────────────────────────────────────────────╢
+║ This text document holds the list of names of those people   ║
+║ who have helped and/or worked on scripts/portions of code    ║
+║ that we are using now. Its their hard work that made this    ║
+║ core and this whole project to what it is now. Respect them  ║
+║ and thank them for it is their fault you are reading this.   ║
+╠═══════════╦══════════════════════════════════════════════════╣
+║ The list: ║    "Pay your respects to these fine people!"     ║
+╟─────┬─────╨──────────────────────────────────────────────────╢
+║   1.│ Hellscream Network development team.                   ║
+║   2.│ MaNGOS development team.                               ║
+║   3.│ YTDB/Yurity/UDB development team.                      ║
+║   4.│ ScriptDev2/ScriptDevZero development team.             ║
+║   3.│ Insider42.                                             ║
+║   4.│ Xeross.                                                ║
+║   5.│ RSA.                                                   ║
+║   6.│ Janu.                                                  ║
+║   7.│ Tasssadar.                                             ║
+║   8.│ Traponinet.                                            ║
+║   9.│ Gimli.                                                 ║
+║  10.│ Laise.                                                 ║
+║  11.│ Kero99.                                                ║
+║  12.│ Ancient.                                               ║
+║  13.│ Blueboy.                                               ║
+║  14.│ Scrappydoo                                             ║
+║  15.│ Feanordev.                                             ║
+║  16.│ Sixsixnine.                                            ║
+║  17.│ Przemratajczak.                                        ║
+║  18.│ GriffonHeart.                                          ║
+║  19.│ MrLama.                                                ║
+║  20.│ Selector.                                              ║
+║  21.│ udbuser93                                              ║
+║  22.│ fandor                                                 ║
+╟─────┴────────────────────────────────────────────────────────╢
+║ Very special thanks flies out to:                            ║
+║ Darkrulerz for being here with us and guiding us through the ║
+║ rough roads towards the heart of the Force itself. Thank you.║
+╠══════════════╦═══════════════════════════════════════════════╣
+║ Final notes: ║ You can find us at < www.hellscream-wow.com > ║
+╟──────────────╨───────────────────────────────────────────────╢
+║ This document is a work in progress as the list of names gets║
+║ bigger every passing day. If for some reason you are not here║
+║ and your code is included, contact us via E-Mail at:         ║
+║                support@hellscream-wow.com                    ║
+╟────────────────────┬─────────────────────────────────────────╢
+║ File last updated: │ on Thursday, May 20, 2010 (05/20/2010)  ║
+╚════════════════════╧═════════════════════════════════════════╝
