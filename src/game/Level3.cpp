@@ -2682,6 +2682,68 @@ bool ChatHandler::HandleAddItemCommand(const char* args)
     return true;
 }
 
+bool ChatHandler::HandleDeleteItemCommand(const char* args)
+{
+    if (!*args)
+        return false;
+
+    uint32 itemId = 0;
+
+    if(args[0]=='[')                                        // [name] manual form
+    {
+        char* citemName = strtok((char*)args, "]");
+
+        if(citemName && citemName[0])
+        {
+            std::string itemName = citemName+1;
+            WorldDatabase.escape_string(itemName);
+            QueryResult *result = WorldDatabase.PQuery("SELECT entry FROM item_template WHERE name = '%s'", itemName.c_str());
+            if (!result)
+            {
+                PSendSysMessage(LANG_COMMAND_COULDNOTFIND, citemName+1);
+                SetSentErrorMessage(true);
+                return false;
+            }
+            itemId = result->Fetch()->GetUInt16();
+            delete result;
+        }
+        else
+            return false;
+    }
+    else                                                    // item_id or [name] Shift-click form |color|Hitem:item_id:0:0:0|h[name]|h|r
+    {
+        char* cId = extractKeyFromLink((char*)args,"Hitem");
+        if(!cId)
+            return false;
+        itemId = atol(cId);
+    }
+
+    char* ccount = strtok(NULL, " ");
+
+    int32 count = 1;
+
+    if (ccount)
+        count = strtol(ccount, NULL, 10);
+
+    if (count == 0)
+        count = 1;
+
+    Player* pl = m_session->GetPlayer();
+    Player* plTarget = getSelectedPlayer();
+    if(!plTarget)
+        plTarget = pl;
+
+    //Remove the item
+    if (count > 0)
+    {
+        plTarget->DestroyItemCount(itemId, -count, true, false);
+        PSendSysMessage(LANG_REMOVEITEM, itemId, -count, GetNameLink(plTarget).c_str());
+        return true;
+    }
+
+    return true;
+}
+
 bool ChatHandler::HandleAddItemSetCommand(const char* args)
 {
     if (!*args)
