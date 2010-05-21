@@ -1678,8 +1678,11 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         case TARGET_AREAEFFECT_CUSTOM_2:		
         {
             // used for targeting gameobjects
-            targetUnitMap.push_back(m_caster);
-            break;
+            if (m_spellInfo->EffectImplicitTargetA[effIndex] == TARGET_EFFECT_SELECT && m_spellInfo->EffectImplicitTargetB[effIndex] == TARGET_AREAEFFECT_CUSTOM)
+		       FillAreaTargets(targetUnitMap, m_caster->GetPositionX(), m_caster->GetPositionY(), radius, PUSH_SELF_CENTER, SPELL_TARGETS_AOE_DAMAGE);
+            else
+			    targetUnitMap.push_back(m_caster);
+		    break;
         }
         case TARGET_RANDOM_ENEMY_CHAIN_IN_AREA:
         {
