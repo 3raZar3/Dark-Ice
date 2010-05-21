@@ -6582,14 +6582,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     }
                     m_caster->CastSpell(m_caster, spellId, true);
                     return;
-                }
-				case 64475:                                 // Strength of the Creator
-				{
-				   if(!unitTarget)
-				       return;
-					   
-				   return;
-				}				
+                }				
                 case 62688: // Summon Wave - 10 Mob
                 {
                     for(int8 i = 0; i < 12; i++)
