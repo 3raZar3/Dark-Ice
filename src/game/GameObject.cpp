@@ -463,7 +463,7 @@ void GameObject::Update(uint32 p_time)
                 if (IsInWorld())
                     UpdateObjectVisibility();
 
-                break;
+                return;
             }
 
             // since pool system can fail to roll unspawned object, this one can remain spawned, so must set respawn nevertheless
