@@ -619,7 +619,7 @@ bool Player::Create( uint32 guidlow, const std::string& name, uint8 race, uint8 
     PlayerInfo const* info = sObjectMgr.GetPlayerInfo(race, class_);
     if(!info)
     {
-        sLog.outError("Player have incorrect race/class pair. Can't be loaded.");
+        DEBUG_LOG("Player have incorrect race/class pair. Can't be loaded.");
         return false;
     }
 
@@ -632,7 +632,7 @@ bool Player::Create( uint32 guidlow, const std::string& name, uint8 race, uint8 
     ChrClassesEntry const* cEntry = sChrClassesStore.LookupEntry(class_);
     if(!cEntry)
     {
-        sLog.outError("Class %u not found in DBC (Wrong DBC files?)",class_);
+        DEBUG_LOG("Class %u not found in DBC (Wrong DBC files?)",class_);
         return false;
     }
 
@@ -855,7 +855,7 @@ bool Player::StoreNewItemInBestSlots(uint32 titem_id, uint32 titem_amount)
     }
 
     // item can't be added
-    sLog.outError("STORAGE: Can't equip or store initial item %u for race %u class %u , error msg = %u",titem_id,getRace(),getClass(),msg);
+    DEBUG_LOG("STORAGE: Can't equip or store initial item %u for race %u class %u , error msg = %u",titem_id,getRace(),getClass(),msg);
     return false;
 }
 
@@ -1614,7 +1614,7 @@ bool Player::BuildEnumData( QueryResult * result, WorldPacket * p_data )
     PlayerInfo const *info = sObjectMgr.GetPlayerInfo(pRace, pClass);
     if(!info)
     {
-        sLog.outError("Player %u has incorrect race/class pair. Don't build enum.", guid);
+        DEBUG_LOG("Player %u has incorrect race/class pair. Don't build enum.", guid);
         return false;
     }
 
@@ -1790,7 +1790,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
 {
     if(!MapManager::IsValidMapCoord(mapid, x, y, z, orientation))
     {
-        sLog.outError("TeleportTo: invalid map %d or absent instance template.", mapid);
+        DEBUG_LOG("TeleportTo: invalid map %d or absent instance template.", mapid);
         return false;
     }
 
@@ -2404,7 +2404,7 @@ GameObject* Player::GetGameObjectIfCanInteractWith(ObjectGuid guid, uint32 gameo
             if (go->IsWithinDistInMap(this, maxdist) && go->isSpawned())
                 return go;
 
-            sLog.outError("GetGameObjectIfCanInteractWith: GameObject '%s' [GUID: %u] is too far away from player %s [GUID: %u] to be used by him (distance=%f, maximal 10 is allowed)", go->GetGOInfo()->name,
+            DEBUG_LOG("GetGameObjectIfCanInteractWith: GameObject '%s' [GUID: %u] is too far away from player %s [GUID: %u] to be used by him (distance=%f, maximal 10 is allowed)", go->GetGOInfo()->name,
                 go->GetGUIDLow(), GetName(), GetGUIDLow(), go->GetDistance(this));
         }
     }
@@ -3069,11 +3069,11 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
         // do character spell book cleanup (all characters)
         if(!IsInWorld() && !learning)                       // spell load case
         {
-            sLog.outError("Player::addSpell: Non-existed in SpellStore spell #%u request, deleting for all characters in `character_spell`.",spell_id);
+            DEBUG_LOG("Player::addSpell: Non-existed in SpellStore spell #%u request, deleting for all characters in `character_spell`.",spell_id);
             CharacterDatabase.PExecute("DELETE FROM character_spell WHERE spell = '%u'",spell_id);
         }
         else
-            sLog.outError("Player::addSpell: Non-existed in SpellStore spell #%u request.",spell_id);
+            DEBUG_LOG("Player::addSpell: Non-existed in SpellStore spell #%u request.",spell_id);
 
         return false;
     }
@@ -3083,11 +3083,11 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
         // do character spell book cleanup (all characters)
         if(!IsInWorld() && !learning)                       // spell load case
         {
-            sLog.outError("Player::addSpell: Broken spell #%u learning not allowed, deleting for all characters in `character_spell`.",spell_id);
+            DEBUG_LOG("Player::addSpell: Broken spell #%u learning not allowed, deleting for all characters in `character_spell`.",spell_id);
             CharacterDatabase.PExecute("DELETE FROM character_spell WHERE spell = '%u'",spell_id);
         }
         else
-            sLog.outError("Player::addSpell: Broken spell #%u learning not allowed.",spell_id);
+            DEBUG_LOG("Player::addSpell: Broken spell #%u learning not allowed.",spell_id);
 
         return false;
     }
@@ -3535,7 +3535,7 @@ void Player::removeSpell(uint32 spell_id, bool disabled, bool learn_low_rank, bo
                 m_talents[m_activeSpec].erase(iter);
         }
         else
-            sLog.outError("removeSpell: Player (GUID: %u) has talent spell (id: %u) but doesn't have talent",GetGUIDLow(), spell_id );
+            DEBUG_LOG("removeSpell: Player (GUID: %u) has talent spell (id: %u) but doesn't have talent",GetGUIDLow(), spell_id );
 
         // free talent points
         uint32 talentCosts = GetTalentSpellCost(talentPos);
@@ -3765,7 +3765,7 @@ void Player::_LoadSpellCooldowns(QueryResult *result)
 
             if(!sSpellStore.LookupEntry(spell_id))
             {
-                sLog.outError("Player %u has unknown spell %u in `character_spell_cooldown`, skipping.",GetGUIDLow(),spell_id);
+                DEBUG_LOG("Player %u has unknown spell %u in `character_spell_cooldown`, skipping.",GetGUIDLow(),spell_id);
                 continue;
             }
 
@@ -4419,7 +4419,7 @@ void Player::DeleteFromDB(uint64 playerguid, uint32 accountId, bool updateRealmC
             CharacterDatabase.PExecute("UPDATE characters SET deleteInfos_Name=name, deleteInfos_Account=account, deleteDate='" UI64FMTD "', name='', account=0 WHERE guid=%u", uint64(time(NULL)), guid);
             break;
         default:
-            sLog.outError("Player::DeleteFromDB: Unsupported delete method: %u.", charDelete_method);
+            DEBUG_LOG("Player::DeleteFromDB: Unsupported delete method: %u.", charDelete_method);
     }
 
     if (updateRealmChars)
@@ -4474,7 +4474,7 @@ void Player::SetMovement(PlayerMovementType pType)
         case MOVE_WATER_WALK: data.Initialize(SMSG_MOVE_WATER_WALK,   GetPackGUID().size()+4); break;
         case MOVE_LAND_WALK:  data.Initialize(SMSG_MOVE_LAND_WALK,    GetPackGUID().size()+4); break;
         default:
-            sLog.outError("Player::SetMovement: Unsupported move type (%d), data not sent to client.",pType);
+            DEBUG_LOG("Player::SetMovement: Unsupported move type (%d), data not sent to client.",pType);
             return;
     }
     data << GetPackGUID();
@@ -4503,8 +4503,8 @@ void Player::BuildPlayerRepop()
     // the player cannot have a corpse already, only bones which are not returned by GetCorpse
     if(GetCorpse())
     {
-        sLog.outError("BuildPlayerRepop: player %s(%d) already has a corpse", GetName(), GetGUIDLow());
-        sLog.outError("Removing player %s(%d) corpse from DB", GetName(), GetGUIDLow());
+        DEBUG_LOG("BuildPlayerRepop: player %s(%d) already has a corpse", GetName(), GetGUIDLow());
+        DEBUG_LOG("Removing player %s(%d) corpse from DB", GetName(), GetGUIDLow());
         CharacterDatabase.PExecute("DELETE FROM corpse WHERE player = '%d'",GetGUIDLow());
     }
 
@@ -4512,7 +4512,7 @@ void Player::BuildPlayerRepop()
     Corpse *corpse = CreateCorpse();
     if(!corpse)
     {
-        sLog.outError("Error creating corpse for Player %s [%u]", GetName(), GetGUIDLow());
+        DEBUG_LOG("Error creating corpse for Player %s [%u]", GetName(), GetGUIDLow());
         return;
     }
     GetMap()->Add(corpse);
@@ -4870,7 +4870,7 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
             DurabilityCostsEntry const *dcost = sDurabilityCostsStore.LookupEntry(ditemProto->ItemLevel);
             if(!dcost)
             {
-                sLog.outError("RepairDurability: Wrong item lvl %u", ditemProto->ItemLevel);
+                DEBUG_LOG("RepairDurability: Wrong item lvl %u", ditemProto->ItemLevel);
                 return TotalCost;
             }
 
@@ -4878,7 +4878,7 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
             DurabilityQualityEntry const *dQualitymodEntry = sDurabilityQualityStore.LookupEntry(dQualitymodEntryId);
             if(!dQualitymodEntry)
             {
-                sLog.outError("RepairDurability: Wrong dQualityModEntry %u", dQualitymodEntryId);
+                DEBUG_LOG("RepairDurability: Wrong dQualityModEntry %u", dQualitymodEntryId);
                 return TotalCost;
             }
 

@@ -155,7 +155,7 @@ bool Guild::AddMember(uint64 plGuid, uint32 plRank)
         if (newmember.Level < 1 || newmember.Level > STRONG_MAX_LEVEL ||
             newmember.Class < CLASS_WARRIOR || newmember.Class >= MAX_CLASSES)
         {
-            sLog.outError("Player (GUID: %u) has a broken data in field `characters` table, cannot add him to guild.",GUID_LOPART(plGuid));
+            DEBUG_LOG("Player (GUID: %u) has a broken data in field `characters` table, cannot add him to guild.",GUID_LOPART(plGuid));
             return false;
         }
     }
@@ -263,7 +263,7 @@ bool Guild::LoadRanksFromDB(QueryResult *guildRanksResult)
 {
     if (!guildRanksResult)
     {
-        sLog.outError("Guild %u has broken `guild_rank` data, creating new...",m_Id);
+        DEBUG_LOG("Guild %u has broken `guild_rank` data, creating new...",m_Id);
         CreateDefaultGuildRanks(0);
         return true;
     }
@@ -313,14 +313,14 @@ bool Guild::LoadRanksFromDB(QueryResult *guildRanksResult)
     if (m_Ranks.size() < GUILD_RANKS_MIN_COUNT)             // if too few ranks, renew them
     {
         m_Ranks.clear();
-        sLog.outError("Guild %u has broken `guild_rank` data, creating new...", m_Id);
+        DEBUG_LOG("Guild %u has broken `guild_rank` data, creating new...", m_Id);
         CreateDefaultGuildRanks(0);                         // 0 is default locale_idx
         broken_ranks = false;
     }
     // guild_rank have wrong numbered ranks, repair
     if (broken_ranks)
     {
-        sLog.outError("Guild %u has broken `guild_rank` data, repairing...", m_Id);
+        DEBUG_LOG("Guild %u has broken `guild_rank` data, repairing...", m_Id);
         CharacterDatabase.BeginTransaction();
         CharacterDatabase.PExecute("DELETE FROM guild_rank WHERE guildid='%u'", m_Id);
         for(size_t i = 0; i < m_Ranks.size(); ++i)
@@ -386,20 +386,20 @@ bool Guild::LoadMembersFromDB(QueryResult *guildMembersResult)
         // this code will remove not existing character guids from guild
         if (newmember.Level < 1 || newmember.Level > STRONG_MAX_LEVEL) // can be at broken `data` field
         {
-            sLog.outError("Player (GUID: %u) has a broken data in field `characters`.`data`, deleting him from guild!",GUID_LOPART(guid));
+            DEBUG_LOG("Player (GUID: %u) has a broken data in field `characters`.`data`, deleting him from guild!",GUID_LOPART(guid));
             CharacterDatabase.PExecute("DELETE FROM guild_member WHERE guid = '%u'", GUID_LOPART(guid));
             continue;
         }
         if (!newmember.ZoneId)
         {
-            sLog.outError("Player (GUID: %u) has broken zone-data", GUID_LOPART(guid));
+            DEBUG_LOG("Player (GUID: %u) has broken zone-data", GUID_LOPART(guid));
             // here it will also try the same, to get the zone from characters-table, but additional it tries to find
             // the zone through xy coords .. this is a bit redundant, but shouldn't be called often
             newmember.ZoneId = Player::GetZoneIdFromDB(guid);
         }
         if (newmember.Class < CLASS_WARRIOR || newmember.Class >= MAX_CLASSES) // can be at broken `class` field
         {
-            sLog.outError("Player (GUID: %u) has a broken data in field `characters`.`class`, deleting him from guild!",GUID_LOPART(guid));
+            DEBUG_LOG("Player (GUID: %u) has a broken data in field `characters`.`class`, deleting him from guild!",GUID_LOPART(guid));
             CharacterDatabase.PExecute("DELETE FROM guild_member WHERE guid = '%u'", GUID_LOPART(guid));
             continue;
         }
@@ -1135,13 +1135,13 @@ void Guild::LoadGuildBankFromDB()
 
         if (TabId >= m_PurchasedTabs || TabId >= GUILD_BANK_MAX_TABS)
         {
-            sLog.outError( "Guild::LoadGuildBankFromDB: Invalid tab for item (GUID: %u id: #%u) in guild bank, skipped.", ItemGuid,ItemEntry);
+            DEBUG_LOG( "Guild::LoadGuildBankFromDB: Invalid tab for item (GUID: %u id: #%u) in guild bank, skipped.", ItemGuid,ItemEntry);
             continue;
         }
 
         if (SlotId >= GUILD_BANK_MAX_SLOTS)
         {
-            sLog.outError( "Guild::LoadGuildBankFromDB: Invalid slot for item (GUID: %u id: #%u) in guild bank, skipped.", ItemGuid,ItemEntry);
+            DEBUG_LOG( "Guild::LoadGuildBankFromDB: Invalid slot for item (GUID: %u id: #%u) in guild bank, skipped.", ItemGuid,ItemEntry);
             continue;
         }
 
@@ -1149,7 +1149,7 @@ void Guild::LoadGuildBankFromDB()
 
         if (!proto)
         {
-            sLog.outError( "Guild::LoadGuildBankFromDB: Unknown item (GUID: %u id: #%u) in guild bank, skipped.", ItemGuid,ItemEntry);
+            DEBUG_LOG( "Guild::LoadGuildBankFromDB: Unknown item (GUID: %u id: #%u) in guild bank, skipped.", ItemGuid,ItemEntry);
             continue;
         }
 
