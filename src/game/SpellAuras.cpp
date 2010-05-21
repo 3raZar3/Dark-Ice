@@ -2318,7 +2318,20 @@ void Aura::TriggerSpell()
                 target->CastCustomSpell(target, trigger_spell_id, &mana, NULL, NULL, true, NULL, this);
                 return;
             }
-        }
+			// Guardian Swarm
+			case 64396:
+			{
+			   if (Unit* caster = GetCaster())
+               {
+                  // Summon Swarming Guardian
+                  Creature* pCreature = caster->SummonCreature(34034, caster->GetPositionX(), caster->GetPositionY(), caster->GetPositionZ(), caster->GetOrientation(), TEMPSUMMON_TIMED_OR_CORPSE_DESPAWN, 10000);               				  
+        
+		          if (pCreature)
+				      pCreature->AddThreat(target, 10000.0f);
+				}
+                return;
+			}	
+		}
     }
 
     // All ok cast by default case
