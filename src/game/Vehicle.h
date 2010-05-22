@@ -62,6 +62,7 @@ class MANGOS_DLL_SPEC Vehicle : public Creature
 
         void Die();
         bool Create (uint32 guidlow, Map *map, uint32 phaseMask, uint32 Entry, uint32 vehicleId, uint32 team, const CreatureData *data = NULL);
+        void Respawn();
 
         void setDeathState(DeathState s);                   // overwrite virtual Creature::setDeathState and Unit::setDeathState
         void Update(uint32 diff);                           // overwrite virtual Creature::Update and Unit::Update
@@ -112,7 +113,6 @@ class MANGOS_DLL_SPEC Vehicle : public Creature
         bool despawn;
         int32 m_spawnduration;
         uint32 m_regenUpdateTimer;
-        void InstallAccessory(uint32 entry, int8 seatId, bool isVehicle = false, bool minion = true);
     private:
         void SaveToDB(uint32, uint8)                        // overwrited of Creature::SaveToDB     - don't must be called
         {
