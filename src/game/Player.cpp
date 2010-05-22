@@ -11403,6 +11403,10 @@ Item* Player::EquipItem( uint16 pos, Item *pItem, bool update )
             if(pProto && pProto->ItemSet)
                 AddItemsSetItem(this, pItem);
 
+            //There must be some check also for unequip...
+            // if(IsWeaponDisarmed(slot))
+              //   return NULL;
+
             _ApplyItemMods(pItem, slot, true);
 
             if(pProto && isInCombat()&& pProto->Class == ITEM_CLASS_WEAPON && m_weaponChangeTimer == 0)
