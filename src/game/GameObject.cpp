@@ -176,6 +176,13 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map *map, uint32 phaseMa
 
     SetZoneScript();
 
+    if (goinfo->type == GAMEOBJECT_TYPE_TRANSPORT)
+    {
+        SetUInt32Value(GAMEOBJECT_LEVEL, goinfo->transport.pause);
+        if (goinfo->transport.startOpen)
+            SetGoState(GO_STATE_ACTIVE);
+    }
+
     return true;
 }
 
@@ -710,6 +717,15 @@ bool GameObject::IsTransport() const
     return gInfo->type == GAMEOBJECT_TYPE_TRANSPORT || gInfo->type == GAMEOBJECT_TYPE_MO_TRANSPORT;
 }
 
+// is Dynamic transport = non-stop Transport
+bool GameObject::IsDynTransport() const
+{
+    // If something is marked as a transport, don't transmit an out of range packet for it.
+    GameObjectInfo const * gInfo = GetGOInfo();
+    if(!gInfo) return false;
+    return gInfo->type == GAMEOBJECT_TYPE_MO_TRANSPORT || (gInfo->type == GAMEOBJECT_TYPE_TRANSPORT && !gInfo->transport.pause);
+}
+
 Unit* GameObject::GetOwner() const
 {
     return ObjectAccessor::GetUnit(*this, GetOwnerGUID());
@@ -1096,7 +1112,7 @@ void GameObject::Use(Unit* user)
 
                 if (info->goober.eventId)
                 {
-                    DEBUG_LOG("Goober ScriptStart id %u for GO entry %u (GUID %u).", info->goober.eventId, GetEntry(), GetDBTableGUIDLow());
+                    DEBUG_FILTER_LOG(LOG_FILTER_AI_AND_MOVEGENSS, "Goober ScriptStart id %u for GO entry %u (GUID %u).", info->goober.eventId, GetEntry(), GetDBTableGUIDLow());
                     GetMap()->ScriptsStart(sEventScripts, info->goober.eventId, player, this);
                 }
 
