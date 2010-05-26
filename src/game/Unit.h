@@ -406,7 +406,7 @@ enum DeathState
     DEAD        = 3,
     JUST_ALIVED = 4,
     DEAD_FALLING= 5,
-	GHOULED     = 6
+    GHOULED     = 6
 };
 
 // internal state flags for some auras and movement generators, other.
@@ -574,7 +574,8 @@ enum UnitFlags2
     UNIT_FLAG2_COMPREHEND_LANG      = 0x00000008,
     UNIT_FLAG2_MIRROR_IMAGE         = 0x00000010,
     UNIT_FLAG2_FORCE_MOVE           = 0x00000040,
-    UNIT_FLAG2_DISARM               = 0x00000400,           // disarm or something
+    UNIT_FLAG2_DISARM_OFFHAND       = 0x00000080,
+    UNIT_FLAG2_DISARM_RANGED        = 0x00000400,
     UNIT_FLAG2_REGENERATE_POWER     = 0x00000800,
 };
 
@@ -1225,7 +1226,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         bool IsHostileTo(Unit const* unit) const;
         bool IsHostileToPlayers() const;
         bool IsFriendlyTo(Unit const* unit) const;
-		bool IsInRaidWith(Unit const* unit) const;
+        bool IsInRaidWith(Unit const* unit) const;
         bool IsInPartyWith(Unit const* unit) const;
 
         bool IsNeutralToAll() const;
@@ -1483,8 +1484,8 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         void RemoveGuardian(Pet* pet);
         void RemoveGuardians();
         Pet* FindGuardianWithEntry(uint32 entry);
-		GuardianPetList const& GetGuardians() const { return m_guardianPets; }
-		
+        GuardianPetList const& GetGuardians() const { return m_guardianPets; }
+        
         bool isCharmed() const { return GetCharmerGUID() != 0; }
 
         CharmInfo* GetCharmInfo() { return m_charmInfo; }

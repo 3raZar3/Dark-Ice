@@ -43,9 +43,9 @@ bool Player::UpdateStats(Stats stat)
     {
         Pet *pet = GetPet();
         if(pet)
-		{
+        {
             pet->UpdateStats(stat);
-			if (getClass() == CLASS_DEATH_KNIGHT && pet->getPetType() == SUMMON_PET)
+            if (getClass() == CLASS_DEATH_KNIGHT && pet->getPetType() == SUMMON_PET)
             {
                 pet->RemoveAllAuras();
                 pet->CastPetAuras(true);
@@ -1041,7 +1041,7 @@ void Pet::UpdateAttackPowerAndDamage(bool ranged)
             bonusAP = owner->GetTotalAttackPowerValue(RANGED_ATTACK) * 0.22f;
             SetBonusDamage( int32(owner->GetTotalAttackPowerValue(RANGED_ATTACK) * 0.1287f));
         }
-		//ghouls benefit from deathknight's attack power
+        //ghouls benefit from deathknight's attack power
         else if(getPetType() == SUMMON_PET && owner->getClass() == CLASS_DEATH_KNIGHT)
         {
             bonusAP = owner->GetTotalAttackPowerValue(BASE_ATTACK) * 0.82f;

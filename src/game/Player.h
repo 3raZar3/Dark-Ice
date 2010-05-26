@@ -641,8 +641,8 @@ enum AtLoginFlags
     AT_LOGIN_CUSTOMIZE         = 0x08,
     AT_LOGIN_RESET_PET_TALENTS = 0x10,
     AT_LOGIN_FIRST             = 0x20,
-	AT_LOGIN_CHANGE_FACTION	   = 0x40,
-	AT_LOGIN_CHANGE_RACE	   = 0x80
+    AT_LOGIN_CHANGE_FACTION	   = 0x40,
+    AT_LOGIN_CHANGE_RACE	   = 0x80
 };
 
 typedef std::map<uint32, QuestStatusData> QuestStatusMap;
@@ -1544,7 +1544,7 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         static uint32 GetZoneIdFromDB(uint64 guid);
         static uint32 GetLevelFromDB(uint64 guid);
-		static uint32 GetGMLevelFromDB(uint64 guid);
+        static uint32 GetGMLevelFromDB(uint64 guid);
         static bool   LoadPositionFromDB(uint32& mapid, float& x,float& y,float& z,float& o, bool& in_flight, uint64 guid);
 
         /*********************************************************/
@@ -2011,7 +2011,7 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         static uint32 TeamForRace(uint8 race);
         uint32 GetTeam() const { return m_team; }
-		TeamId GetTeamId() const { return m_team == ALLIANCE ? TEAM_ALLIANCE : TEAM_HORDE; }
+        TeamId GetTeamId() const { return m_team == ALLIANCE ? TEAM_ALLIANCE : TEAM_HORDE; }
         static uint32 getFactionForRace(uint8 race);
         void setFactionForRace(uint8 race);
 
@@ -2081,9 +2081,9 @@ class MANGOS_DLL_SPEC Player : public Unit
         void _ApplyWeaponDependentAuraCritMod(Item *item, WeaponAttackType attackType, Aura* aura, bool apply);
         void _ApplyWeaponDependentAuraDamageMod(Item *item, WeaponAttackType attackType, Aura* aura, bool apply);
 
-		///PVP Token
-		void ReceiveToken();
-		
+        ///PVP Token
+        void ReceiveToken();
+        
         void _ApplyItemMods(Item *item,uint8 slot,bool apply);
         void _RemoveAllItemMods();
         void _ApplyAllItemMods();
@@ -2224,8 +2224,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool CanUseBattleGroundObject();
         bool isTotalImmune();
         bool CanCaptureTowerPoint();
-		
-		bool FirstBGDone() { return m_FirstBGTime > 0; }
+        
+        bool FirstBGDone() { return m_FirstBGTime > 0; }
         void SetFirstBGTime()
         {
             m_FirstBGTime = uint64(time(NULL));
@@ -2258,6 +2258,26 @@ class MANGOS_DLL_SPEC Player : public Unit
         /*********************************************************/
 
         uint32 EnvironmentalDamage(EnviromentalDamage type, uint32 damage);
+        
+        // Jail by WarHead
+       // ---------------
+       // Char datas...
+        bool m_jail_warning;
+         bool m_jail_amnestie;
+         bool m_jail_isjailed;           // Is this player jailed?
+         std::string m_jail_char;        // Name of jailed char
+         uint32 m_jail_guid;             // guid of the jailed char
+         uint32 m_jail_release;          // When is the player a free man/woman?
+         std::string m_jail_reason;      // Why was the char jailed?
+         uint32 m_jail_times;			// How often was the player jailed?
+         uint32 m_jail_amnestietime;
+        uint32 m_jail_gmacc;            // Used GM acc
+         std::string m_jail_gmchar;      // Used GM char
+         std::string m_jail_lasttime;    // Last jail time
+         uint32 m_jail_duration;         // Duration of the jail
+        // Load / save functions...
+         void _LoadJail(void);           // Loads the jail datas
+         void _SaveJail(void);           // Saves the jail datas
 
         /*********************************************************/
         /***               FLOOD FILTER SYSTEM                 ***/
@@ -2515,7 +2535,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void _LoadArenaTeamInfo(QueryResult *result);
         void _LoadEquipmentSets(QueryResult *result);
         void _LoadBGData(QueryResult* result);
-		void _LoadBGStatus(QueryResult* result);
+        void _LoadBGStatus(QueryResult* result);
         void _LoadGlyphs(QueryResult *result);
         void _LoadIntoDataField(const char* data, uint32 startOffset, uint32 count);
 
@@ -2534,7 +2554,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void _SaveSpells();
         void _SaveEquipmentSets();
         void _SaveBGData();
-		void _SaveBGStatus();
+        void _SaveBGStatus();
         void _SaveGlyphs();
         void _SaveTalents();
         void _SaveStats();
@@ -2632,7 +2652,7 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         bool   m_DailyQuestChanged;
         bool   m_WeeklyQuestChanged;
-		bool   m_FirstBattleground;
+        bool   m_FirstBattleground;
 
         uint32 m_drunkTimer;
         uint16 m_drunk;
@@ -2733,7 +2753,7 @@ class MANGOS_DLL_SPEC Player : public Unit
 
          // Playerbot mod:
         PlayerbotAI* m_playerbotAI;
-	PlayerbotMgr* m_playerbotMgr;
+    PlayerbotMgr* m_playerbotMgr;
 
         // Homebind coordinates
         uint32 m_homebindMapId;
@@ -2772,10 +2792,10 @@ class MANGOS_DLL_SPEC Player : public Unit
         uint32 m_timeSyncTimer;
         uint32 m_timeSyncClient;
         uint32 m_timeSyncServer;
-		
-		// Battleground reward system
+        
+        // Battleground reward system
         uint32 m_FirstBGTime;
-		
+        
         // per character gm levels
     public:
         int32 GetSecurity() { return m_GMLevel; }

@@ -317,8 +317,24 @@ UpdateMask Player::updateVisualBits;
 
 Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputationMgr(this)
 {
+    // Jail by WarHead
+    m_jail_guid     = 0;
+    m_jail_char     = "";
+    m_jail_amnestie = false;
+    m_jail_warning  = false;
+    m_jail_isjailed = false;
+    m_jail_amnestietime =0;
+    m_jail_release  = 0;
+    m_jail_times    = 0;
+    m_jail_reason   = "";
+    m_jail_gmacc    = 0;
+    m_jail_gmchar   = "";
+    m_jail_lasttime = "";
+    m_jail_duration = 0;
+    // Jail end
+
     m_GMLevel = 0;
-	m_transport = 0;
+    m_transport = 0;
 
     // Playerbot mod:
     m_playerbotAI = 0;
@@ -404,7 +420,7 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
 
     m_DailyQuestChanged = false;
     m_WeeklyQuestChanged = false;
-	m_FirstBattleground = false;
+    m_FirstBattleground = false;
 
     for (int i=0; i<MAX_TIMERS; ++i)
         m_MirrorTimer[i] = DISABLED_MIRROR_TIMER;
@@ -1158,6 +1174,79 @@ void Player::Update( uint32 p_time )
     Unit::Update( p_time );
     SetCanDelayTeleport(false);
 
+    if (m_jail_isjailed)
+    {
+        time_t localtime;
+        localtime = time(NULL);
+        
+        if (m_jail_release <= localtime)
+        {
+            m_jail_isjailed = false;
+            m_jail_release = 0;
+
+            _SaveJail();
+            
+            sWorld.SendWorldText(LANG_JAIL_CHAR_FREE, GetName());
+            
+            CastSpell(this,8690,false);
+
+            return;
+        }
+
+        if (m_team == ALLIANCE)
+        {
+            if (GetDistance(sObjectMgr.m_jailconf_ally_x, sObjectMgr.m_jailconf_ally_y, sObjectMgr.m_jailconf_ally_z) > sObjectMgr.m_jailconf_radius)
+            {
+                TeleportTo(sObjectMgr.m_jailconf_ally_m, sObjectMgr.m_jailconf_ally_x,
+                    sObjectMgr.m_jailconf_ally_y, sObjectMgr.m_jailconf_ally_z, sObjectMgr.m_jailconf_ally_o);
+                return;
+            }
+        }
+        else
+        {
+            if (GetDistance(sObjectMgr.m_jailconf_horde_x, sObjectMgr.m_jailconf_horde_y, sObjectMgr.m_jailconf_horde_z) > sObjectMgr.m_jailconf_radius)
+            {
+                TeleportTo(sObjectMgr.m_jailconf_horde_m, sObjectMgr.m_jailconf_horde_x,
+                   sObjectMgr.m_jailconf_horde_y, sObjectMgr.m_jailconf_horde_z, sObjectMgr.m_jailconf_horde_o);
+                return;
+            }
+            
+        }
+    }
+    
+    if(m_jail_warning == true)
+    {
+        m_jail_warning  = false;
+        
+        if(sObjectMgr.m_jailconf_warn_player == m_jail_times || sObjectMgr.m_jailconf_warn_player <= m_jail_times)
+        {
+            if ((sObjectMgr.m_jailconf_max_jails-1 == m_jail_times-1) && sObjectMgr.m_jailconf_ban-1)
+            {
+                ChatHandler(this).PSendSysMessage(LANG_JAIL_WARNING_BAN, m_jail_times , sObjectMgr.m_jailconf_max_jails-1);
+            }
+            else
+            {
+                ChatHandler(this).PSendSysMessage(LANG_JAIL_WARNING, m_jail_times , sObjectMgr.m_jailconf_max_jails);
+            }
+                
+        }
+                return;
+    }
+    
+    if(m_jail_amnestie == true && sObjectMgr.m_jailconf_amnestie > 0 )
+    {
+        m_jail_amnestie =false;
+        time_t localtime;
+        localtime    = time(NULL);
+        
+        if(localtime >  m_jail_amnestietime)
+        {   
+            CharacterDatabase.PExecute("DELETE FROM `jail` WHERE `guid` = '%u'",GetGUIDLow());
+            ChatHandler(this).PSendSysMessage(LANG_JAIL_AMNESTII);
+        }
+        return;
+    }
+
     // update player only attacks
     if(uint32 ranged_att = getAttackTimer(RANGED_ATTACK))
     {
@@ -1361,9 +1450,18 @@ void Player::Update( uint32 p_time )
         SetHealth(0);
 
     if (m_deathState == JUST_DIED)
-        KillPlayer();
+    {
+        // Prevent death of jailed players
+        if (!m_jail_isjailed)
+            KillPlayer();
+        else
+        {
+            m_deathState = ALIVE;
+            RegenerateAll();
+        }
+    }
 
-    if(m_nextSave > 0)
+    if(m_nextSave > 0 && !m_jail_isjailed)
     {
         if(p_time >= m_nextSave)
         {
@@ -1437,7 +1535,7 @@ void Player::Update( uint32 p_time )
     if(IsHasDelayedTeleport() && isAlive())
         TeleportTo(m_teleport_dest, m_teleport_options);
 
-	    // Playerbot mod
+        // Playerbot mod
     if (m_playerbotAI)
         m_playerbotAI->UpdateAI(p_time);
     else if (m_playerbotMgr)
@@ -1564,13 +1662,13 @@ bool Player::BuildEnumData( QueryResult * result, WorldPacket * p_data )
     *p_data << uint32(char_flags);                          // character flags
     // character customize/faction/race change flags
     if(atLoginFlags & AT_LOGIN_CUSTOMIZE)
-		*p_data << uint32(CHAR_CUSTOMIZE_FLAG_CUSTOMIZE);
-	else if(atLoginFlags & AT_LOGIN_CHANGE_FACTION)
-		*p_data << uint32(CHAR_CUSTOMIZE_FLAG_FACTION);
-	else if(atLoginFlags & AT_LOGIN_CHANGE_RACE)
-		*p_data << uint32(CHAR_CUSTOMIZE_FLAG_RACE);
-	else
-		*p_data << uint32(CHAR_CUSTOMIZE_FLAG_NONE);
+        *p_data << uint32(CHAR_CUSTOMIZE_FLAG_CUSTOMIZE);
+    else if(atLoginFlags & AT_LOGIN_CHANGE_FACTION)
+        *p_data << uint32(CHAR_CUSTOMIZE_FLAG_FACTION);
+    else if(atLoginFlags & AT_LOGIN_CHANGE_RACE)
+        *p_data << uint32(CHAR_CUSTOMIZE_FLAG_RACE);
+    else
+        *p_data << uint32(CHAR_CUSTOMIZE_FLAG_NONE);
     // First login
     *p_data << uint8(atLoginFlags & AT_LOGIN_FIRST ? 1 : 0);
 
@@ -4515,32 +4613,32 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
 void Player::KillPlayer()
 {
     if (sWorld.getConfig(CONFIG_BOOL_PLAYER_AUTO_RESS))
-	{
-	    ResurrectPlayer(1.0f);
+    {
+        ResurrectPlayer(1.0f);
         SpawnCorpseBones();
-	}
-	else
-	{
-	    SetMovement(MOVE_ROOT);
+    }
+    else
+    {
+        SetMovement(MOVE_ROOT);
 
-	    StopMirrorTimers();                                     //disable timers(bars)
+        StopMirrorTimers();                                     //disable timers(bars)
 
-	    setDeathState(CORPSE);
-	    //SetFlag( UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_IN_PVP );
+        setDeathState(CORPSE);
+        //SetFlag( UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_IN_PVP );
 
-	    SetFlag(UNIT_DYNAMIC_FLAGS, 0x00);
-	    ApplyModFlag(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTE_RELEASE_TIMER, !sMapStore.LookupEntry(GetMapId())->Instanceable());
+        SetFlag(UNIT_DYNAMIC_FLAGS, 0x00);
+        ApplyModFlag(PLAYER_FIELD_BYTES, PLAYER_FIELD_BYTE_RELEASE_TIMER, !sMapStore.LookupEntry(GetMapId())->Instanceable());
 
-	    // 6 minutes until repop at graveyard
-	    m_deathTimer = 6*MINUTE*IN_MILLISECONDS;
+        // 6 minutes until repop at graveyard
+        m_deathTimer = 6*MINUTE*IN_MILLISECONDS;
 
-	    UpdateCorpseReclaimDelay();                             // dependent at use SetDeathPvP() call before kill
+        UpdateCorpseReclaimDelay();                             // dependent at use SetDeathPvP() call before kill
 
-	    // don't create corpse at this moment, player might be falling
+        // don't create corpse at this moment, player might be falling
 
-	    // update visibility
-	    UpdateObjectVisibility();
-	}
+        // update visibility
+        UpdateObjectVisibility();
+    }
 }
 
 Corpse* Player::CreateCorpse()
@@ -6792,7 +6890,7 @@ void Player::UpdateZone(uint32 newZone, uint32 newArea)
         if(IsPvP() && !HasFlag(PLAYER_FLAGS,PLAYER_FLAGS_IN_PVP) && pvpInfo.endTimer == 0)
             pvpInfo.endTimer = time(0);                     // start toggle-off
     }
-	
+    
     if(sWorld.getConfig(CONFIG_BOOL_EXTRA_PVP))
     {
         if(GetZoneId() == (sWorld.getConfig(CONFIG_UINT32_PVP_ID_1)) || GetZoneId() == (sWorld.getConfig(CONFIG_UINT32_PVP_ID_2)) || GetZoneId() == (sWorld.getConfig(CONFIG_UINT32_PVP_ID_3)) || GetZoneId() == (sWorld.getConfig(CONFIG_UINT32_PVP_ID_4)))
@@ -6816,7 +6914,7 @@ void Player::UpdateZone(uint32 newZone, uint32 newArea)
         if(sWorld.IsFFAPvPRealm())
             SetFFAPvP(false);
     }
-	else if(GetZoneId() == (sWorld.getConfig(CONFIG_UINT32_SANCTUARY_ID)) && (sWorld.getConfig(CONFIG_BOOL_EXTRA_SANCTUARY)) == 1)                   // in sanctuary
+    else if(GetZoneId() == (sWorld.getConfig(CONFIG_UINT32_SANCTUARY_ID)) && (sWorld.getConfig(CONFIG_BOOL_EXTRA_SANCTUARY)) == 1)                   // in sanctuary
     {
         SetByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SANCTUARY);
         if(sWorld.IsFFAPvPRealm())
@@ -6826,7 +6924,7 @@ void Player::UpdateZone(uint32 newZone, uint32 newArea)
     {
         RemoveByteFlag(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_FLAG_SANCTUARY);
     }
-	
+    
     if(zone->flags & AREA_FLAG_CAPITAL)                     // in capital city
         SetRestType(REST_TYPE_IN_CITY);
     else                                                    // anywhere else
@@ -10893,7 +10991,7 @@ uint8 Player::CanUseItem( Item *pItem, bool not_loading ) const
                 for(int i = 0; i < 5; i++)
                 {
                     SpellEntry const *sEntry = sSpellStore.LookupEntry(iProto->Spells[i].SpellId);
-					if (sEntry)
+                    if (sEntry)
                     {
                         Player* player = ((Player*)this);
                         if(isFlyingSpell(sEntry))
@@ -13283,15 +13381,15 @@ void Player::OnGossipSelect(WorldObject* pSource, uint32 gossipListId, uint32 me
         case GOSSIP_OPTION_TRAINER:
             GetSession()->SendTrainerList(guid);
             break;
-		case GOSSIP_OPTION_LEARNDUALSPEC:
+        case GOSSIP_OPTION_LEARNDUALSPEC:
             if(GetSpecsCount() == 1 && !(getLevel() < sWorld.getConfig(CONFIG_MIN_LEVEL_DUALSPEC)))
             {
                 // Cast spells that teach dual spec
                 // Both are also ImplicitTarget self and must be cast by player
                 CastSpell(this,63680,true,NULL,NULL,GetGUID());
                 CastSpell(this,63624,true,NULL,NULL,GetGUID());
-				
-				// Should show another Gossip text with "Congratulations..."
+                
+                // Should show another Gossip text with "Congratulations..."
                 PlayerTalkClass->CloseGossip();
             }			
             break;
@@ -15497,8 +15595,8 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
         m_movementInfo.ClearTransportData();
     }
-	
-	_LoadBGStatus(holder->GetResult(PLAYER_LOGIN_QUERY_LOADBGSTATUS));
+    
+    _LoadBGStatus(holder->GetResult(PLAYER_LOGIN_QUERY_LOADBGSTATUS));
     _LoadBGData(holder->GetResult(PLAYER_LOGIN_QUERY_LOADBGDATA));
 
     if(m_bgData.bgInstanceID)                                                //saved in BattleGround
@@ -15928,11 +16026,85 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
     m_achievementMgr.LoadFromDB(holder->GetResult(PLAYER_LOGIN_QUERY_LOADACHIEVEMENTS), holder->GetResult(PLAYER_LOGIN_QUERY_LOADCRITERIAPROGRESS));
     m_achievementMgr.CheckAllAchievementCriteria();
-
+    
     _LoadEquipmentSets(holder->GetResult(PLAYER_LOGIN_QUERY_LOADEQUIPMENTSETS));
+   // Loads the jail datas and if jailed it corrects the position to the corresponding jail
+    _LoadJail();
 
-    return true;
+return true;
 }
+
+ // Loads the jail datas (added by WarHead).
+ void Player::_LoadJail(void)
+ {
+     CharacterDatabase.BeginTransaction();
+     QueryResult *result = CharacterDatabase.PQuery("SELECT * FROM `jail` WHERE `guid`='%u' LIMIT 1", GetGUIDLow());
+     CharacterDatabase.CommitTransaction();
+ 
+     if (!result)
+     {
+         m_jail_isjailed = false;
+         return;
+     }
+ 
+         Field *fields = result->Fetch();
+         m_jail_warning = true;
+         m_jail_isjailed = true;
+         m_jail_guid = fields[0].GetUInt32();
+         m_jail_char = fields[1].GetString();
+         m_jail_release = fields[2].GetUInt32();
+         m_jail_amnestietime = fields[3].GetUInt32();
+         m_jail_reason = fields[4].GetString();
+         m_jail_times = fields[5].GetUInt32();
+         m_jail_gmacc = fields[6].GetUInt32();
+         m_jail_gmchar = fields[7].GetString();
+         m_jail_lasttime = fields[8].GetString();
+         m_jail_duration = fields[9].GetUInt32();
+ 
+     if (m_jail_release == 0)
+     {
+         m_jail_isjailed = false;
+         delete result;
+         return;
+     }
+ 
+     time_t localtime;
+     localtime = time(NULL);
+ 
+     if (m_jail_release <= localtime)
+     {
+         m_jail_isjailed = false;
+         m_jail_release = 0;
+ 
+         _SaveJail();
+ 
+         sWorld.SendWorldText(LANG_JAIL_CHAR_FREE, GetName());
+ 
+         CastSpell(this,8690,false);
+ 
+         delete result;
+         return;
+     }
+ 
+     if (m_jail_isjailed)
+    {
+         if (m_team == ALLIANCE)
+         {
+             TeleportTo(sObjectMgr.m_jailconf_ally_m, sObjectMgr.m_jailconf_ally_x,
+                 sObjectMgr.m_jailconf_ally_y, sObjectMgr.m_jailconf_ally_z, sObjectMgr.m_jailconf_ally_o);
+         }
+         else
+         {
+             TeleportTo(sObjectMgr.m_jailconf_horde_m, sObjectMgr.m_jailconf_horde_x,
+                 sObjectMgr.m_jailconf_horde_y, sObjectMgr.m_jailconf_horde_z, sObjectMgr.m_jailconf_horde_o);
+        }
+          
+         sWorld.SendWorldText(LANG_JAIL_CHAR_TELE, GetName() );
+     }
+     
+     delete result;
+     
+  }
 
 bool Player::isAllowedToLoot(Creature* creature)
 {
@@ -17008,8 +17180,29 @@ void Player::_LoadBGStatus(QueryResult *result)
 /***                   SAVE SYSTEM                     ***/
 /*********************************************************/
 
+// Saves the jail datas (added by WarHead).
+void Player::_SaveJail(void)
+{
+    CharacterDatabase.BeginTransaction();
+    QueryResult *result = CharacterDatabase.PQuery("SELECT `guid` FROM `jail` WHERE `guid`='%u' LIMIT 1", m_jail_guid);
+
+    if (!result)
+        CharacterDatabase.PExecute("INSERT INTO `jail` VALUES ('%u','%s','%u', '%u','%s','%u','%u','%s',CURRENT_TIMESTAMP,'%u')", m_jail_guid, m_jail_char.c_str(), m_jail_release, m_jail_amnestietime, m_jail_reason.c_str(), m_jail_times, m_jail_gmacc, m_jail_gmchar.c_str(), m_jail_duration);
+    else
+        CharacterDatabase.PExecute("UPDATE `jail` SET `release`='%u', `amnestietime`='%u',`reason`='%s',`times`='%u',`gmacc`='%u',`gmchar`='%s',`duration`='%u' WHERE `guid`='%u' LIMIT 1", m_jail_release, m_jail_amnestietime, m_jail_reason.c_str(), m_jail_times, m_jail_gmacc, m_jail_gmchar.c_str(), m_jail_duration, m_jail_guid);
+
+    CharacterDatabase.CommitTransaction();
+
+    if (result)
+        delete result;
+}
+
 void Player::SaveToDB()
 {
+    // Jail: Prevent saving of jailed players
+    if (m_jail_isjailed)
+        return;
+
     // we should assure this: ASSERT((m_nextSave != sWorld.getConfig(CONFIG_UINT32_INTERVAL_SAVE)));
     // delay auto save at any saves (manual, in code, or autosave)
     m_nextSave = sWorld.getConfig(CONFIG_UINT32_INTERVAL_SAVE);
@@ -17028,8 +17221,8 @@ void Player::SaveToDB()
     outDebugStatsValues();
 
     CharacterDatabase.BeginTransaction();
-	
-	CharacterDatabase.PExecute("DELETE FROM characters WHERE guid = '%u'",GetGUIDLow());
+    
+    CharacterDatabase.PExecute("DELETE FROM characters WHERE guid = '%u'",GetGUIDLow());
 
     std::string sql_name = m_name;
     CharacterDatabase.escape_string(sql_name);
@@ -17174,7 +17367,7 @@ void Player::SaveToDB()
         _SaveMail();
 
     _SaveBGData();
-	_SaveBGStatus();
+    _SaveBGStatus();
     _SaveInventory();
     _SaveQuestStatus();
     _SaveDailyQuestStatus();
@@ -17959,7 +18152,7 @@ void Player::RemovePet(Pet* pet, PetSaveMode mode, bool returnreagent)
                     }
                 }
             }
-			// cooldown, only if pet is not death already (corpse)
+            // cooldown, only if pet is not death already (corpse)
             if (spellInfo->Attributes & SPELL_ATTR_DISABLED_WHILE_ACTIVE && pet->getDeathState() != CORPSE)
             {
                 SendCooldownEvent(spellInfo);
@@ -20079,15 +20272,15 @@ void Player::learnDefaultSpells()
         uint32 tspell = *itr;
         DEBUG_LOG("PLAYER (Class: %u Race: %u): Adding initial spell, id = %u",uint32(getClass()),uint32(getRace()), tspell);
         if(!IsInWorld())                                    // will send in INITIAL_SPELLS in list anyway at map add
-		{
+        {
             addSpell(tspell, true, true, true, false);
-			if (sWorld.getConfig(CONFIG_BOOL_DUALSPEC_AT_CREATE) && GetSpecsCount() == 1)
-			{
-				CastSpell(this,63680,true,NULL,NULL,GetGUID());
-				CastSpell(this,63624,true,NULL,NULL,GetGUID());
-			}
+            if (sWorld.getConfig(CONFIG_BOOL_DUALSPEC_AT_CREATE) && GetSpecsCount() == 1)
+            {
+                CastSpell(this,63680,true,NULL,NULL,GetGUID());
+                CastSpell(this,63624,true,NULL,NULL,GetGUID());
+            }
 
-		}
+        }
         else                                                // but send in normal spell in game learn case
             learnSpell(tspell, true);
     }
@@ -21177,7 +21370,7 @@ void Player::SendEnterVehicle(Vehicle *vehicle, VehicleSeatEntry const *veSeat)
     m_movementInfo.AddMovementFlag(MOVEFLAG_ONTRANSPORT);
     m_movementInfo.AddMovementFlag(MOVEFLAG_ROOT);
 
-	if(m_transport)                                         // if we were on a transport, leave
+    if(m_transport)                                         // if we were on a transport, leave
     {
         m_transport->RemovePassenger(this);
         m_transport = NULL;
@@ -21185,7 +21378,7 @@ void Player::SendEnterVehicle(Vehicle *vehicle, VehicleSeatEntry const *veSeat)
     // vehicle is our transport from now, if we get to zeppelin or boat
     // with vehicle, ONLY my vehicle will be passenger on that transport
     // player ----> vehicle ----> zeppelin
-	
+    
     WorldPacket data(SMSG_BREAK_TARGET, 8);
     data << vehicle->GetPackGUID();
     GetSession()->SendPacket(&data);
@@ -21407,23 +21600,23 @@ void Player::AutoStoreLoot(uint8 bag, uint8 slot, uint32 loot_id, LootStore cons
 uint32 Player::CalculateTalentsPoints() const
 {
     uint32 base_talent = getLevel() < 10 ? 0 : getLevel()-9;
-	if (!(sWorld.getConfig(CONFIG_BOOL_DK_NO_QUESTS_FOR_TP)))
-	{
-		if(getClass() != CLASS_DEATH_KNIGHT)
-			return uint32(base_talent * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
+    if (!(sWorld.getConfig(CONFIG_BOOL_DK_NO_QUESTS_FOR_TP)))
+    {
+        if(getClass() != CLASS_DEATH_KNIGHT)
+            return uint32(base_talent * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
 
-		uint32 talentPointsForLevel = getLevel() < 56 ? 0 : getLevel() - 55;
-		talentPointsForLevel += m_questRewardTalentCount;
+        uint32 talentPointsForLevel = getLevel() < 56 ? 0 : getLevel() - 55;
+        talentPointsForLevel += m_questRewardTalentCount;
 
-		if(talentPointsForLevel > base_talent)
-			talentPointsForLevel = base_talent;
+        if(talentPointsForLevel > base_talent)
+            talentPointsForLevel = base_talent;
 
-		return uint32(talentPointsForLevel * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
-	}
-	else
-	{
-		return uint32(base_talent * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
-	}
+        return uint32(talentPointsForLevel * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
+    }
+    else
+    {
+        return uint32(base_talent * sWorld.getConfig(CONFIG_FLOAT_RATE_TALENT));
+    }
 }
 
 bool Player::IsKnowHowFlyIn(uint32 mapid, uint32 zone, uint32 area) const
@@ -22789,7 +22982,7 @@ void Player::FlyingMountsSpellsToItems()
 
             if(HasSpell(pProto->Spells[i].SpellId))
             {
-				uint16 RidingSkill = GetSkillValue(SKILL_RIDING);
+                uint16 RidingSkill = GetSkillValue(SKILL_RIDING);
                 removeSpell(pProto->Spells[i].SpellId, false, false);
                 SetSkill(SKILL_RIDING, RidingSkill, 300);
                 break;
@@ -22839,11 +23032,11 @@ bool Player::CanUseFlyingMounts(SpellEntry const* sEntry)
     if(!GetFlyingMountTimer())
         return false;
 
-	if (sWorld.getConfig(CONFIG_BOOL_LIMIT_ALLOWED_MOUNTS))
-	{
-			if ((sEntry->Id == (sWorld.getConfig(CONFIG_UINT32_ALLOWED_MOUNT1))) || (sEntry->Id == (sWorld.getConfig(CONFIG_UINT32_ALLOWED_MOUNT2))) || (sEntry->Id == (sWorld.getConfig(CONFIG_UINT32_ALLOWED_MOUNT3))))
-					return false;
-	}
+    if (sWorld.getConfig(CONFIG_BOOL_LIMIT_ALLOWED_MOUNTS))
+    {
+            if ((sEntry->Id == (sWorld.getConfig(CONFIG_UINT32_ALLOWED_MOUNT1))) || (sEntry->Id == (sWorld.getConfig(CONFIG_UINT32_ALLOWED_MOUNT2))) || (sEntry->Id == (sWorld.getConfig(CONFIG_UINT32_ALLOWED_MOUNT3))))
+                    return false;
+    }
 
     uint32 v_map = GetVirtualMapForMapAndZone(GetMapId(), GetZoneId());
     MapEntry const* mapEntry = sMapStore.LookupEntry(v_map);
@@ -22856,8 +23049,8 @@ bool Player::CanUseFlyingMounts(SpellEntry const* sEntry)
         GetSession()->SendPacket(&data);
         return false;
     }
-	if(GetZoneId() == 4378 || GetZoneId() == 4406 || GetZoneId() == 3968 || GetZoneId() == 3702 || GetZoneId() == 3698)
-		return false;
+    if(GetZoneId() == 4378 || GetZoneId() == 4406 || GetZoneId() == 3968 || GetZoneId() == 3702 || GetZoneId() == 3698)
+        return false;
     if( (!mapEntry)/* || (mapEntry->Instanceable())*/ || (mapEntry->IsDungeon()) ||
         (mapEntry->IsRaid()) || (mapEntry->IsBattleArena()) || (mapEntry->IsBattleGround()) )
     {

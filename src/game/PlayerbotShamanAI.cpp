@@ -150,7 +150,7 @@ void PlayerbotShamanAI::DoNextCombatManeuver(Unit *pTarget)
     switch (SpellSequence)
     {
         case SPELL_ENHANCEMENT:
-			if (STRENGTH_OF_EARTH_TOTEM > 0 && LastSpellEnhancement == 1 && (!m_bot->HasAura(STRENGTH_OF_EARTH_TOTEM, EFFECT_INDEX_0)) && ai->GetManaPercent() >= 13)
+            if (STRENGTH_OF_EARTH_TOTEM > 0 && LastSpellEnhancement == 1 && (!m_bot->HasAura(STRENGTH_OF_EARTH_TOTEM, EFFECT_INDEX_0)) && ai->GetManaPercent() >= 13)
             {
                 ai->CastSpell(STRENGTH_OF_EARTH_TOTEM);
                 SpellSequence = SPELL_RESTORATION;
@@ -447,7 +447,7 @@ void PlayerbotShamanAI::DoNextCombatManeuver(Unit *pTarget)
 
 void PlayerbotShamanAI::DoNonCombatActions()
 {
-	PlayerbotAI* ai = GetAI();
+    PlayerbotAI* ai = GetAI();
     Player * m_bot = GetPlayerBot();
     if (!m_bot)
         return;
@@ -456,7 +456,7 @@ void PlayerbotShamanAI::DoNonCombatActions()
 
     // buff master with EARTH_SHIELD
     if (EARTH_SHIELD > 0)
-		(!GetMaster()->HasAura(EARTH_SHIELD, EFFECT_INDEX_0) && ai->CastSpell(EARTH_SHIELD,*(GetMaster())) );
+        (!GetMaster()->HasAura(EARTH_SHIELD, EFFECT_INDEX_0) && ai->CastSpell(EARTH_SHIELD,*(GetMaster())) );
 
     // buff myself with WATER_SHIELD, LIGHTNING_SHIELD
     if (WATER_SHIELD > 0)

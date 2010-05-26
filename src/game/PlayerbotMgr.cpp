@@ -164,7 +164,7 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
                 {
                     Player* const bot = GetPlayerBot(m_master->GetSelection());
                     if (bot)
-						bot->GetPlayerbotAI()->SetMovementOrder( PlayerbotAI::MOVEMENT_STAY );
+                        bot->GetPlayerbotAI()->SetMovementOrder( PlayerbotAI::MOVEMENT_STAY );
                     else
                     {
                         for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
@@ -437,7 +437,7 @@ void PlayerbotMgr::HandleMasterIncomingPacket(const WorldPacket& packet)
 }
 void PlayerbotMgr::HandleMasterOutgoingPacket(const WorldPacket& packet)
 {
-	/*
+    /*
     switch (packet.GetOpcode())
     {
         // maybe our bots should only start looting after the master loots?

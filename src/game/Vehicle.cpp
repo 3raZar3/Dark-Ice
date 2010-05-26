@@ -28,8 +28,8 @@ Vehicle::Vehicle() : Creature(CREATURE_SUBTYPE_VEHICLE), m_vehicleId(0), m_vehic
                      despawn(false), m_creation_time(0), m_VehicleData(NULL)
 {
     m_updateFlag = (UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION | UPDATEFLAG_VEHICLE);
-	m_comboPointsForCast = 0;
-	m_regenUpdateTimer = 100;
+    m_comboPointsForCast = 0;
+    m_regenUpdateTimer = 100;
 }
 
 Vehicle::~Vehicle()
@@ -499,7 +499,7 @@ void Vehicle::AddPassenger(Unit *unit, int8 seatId, bool force)
             unit->SetUInt64Value(UNIT_FIELD_CHARM, GetGUID());
             if(unit->GetTypeId() == TYPEID_PLAYER)
             {
-				((Player*)unit)->SetMover(this);
+                ((Player*)unit)->SetMover(this);
                 ((Player*)unit)->SetMoverInQueve(this);
                 ((Player*)unit)->SetClientControl(this, 1);
             }

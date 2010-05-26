@@ -206,7 +206,7 @@ enum eConfigUInt32Values
     CONFIG_UINT32_MIN_LEVEL_STAT_SAVE,
     CONFIG_UINT32_NUMTHREADS,
 	
-	/* Honor Options for BG */
+    /* Honor Options for BG */
     CONFIG_UINT32_HONORABLE_KILL,
     CONFIG_UINT32_BONUS_HONOR_AB_WIN,
     CONFIG_UINT32_BONUS_HONOR_AB_END,
@@ -229,16 +229,16 @@ enum eConfigUInt32Values
     CONFIG_UINT32_FACTIONED_MAP_FACTION,
     CONFIG_UINT32_FACTIONED_MAP_TEAM,
 
-	/* Darkrulerz' customs */
-	CONFIG_UINT32_PVP_ID_1,
-	CONFIG_UINT32_PVP_ID_2,
-	CONFIG_UINT32_PVP_ID_3,
-	CONFIG_UINT32_PVP_ID_4,
-	CONFIG_UINT32_SANCTUARY_ID,
-	CONFIG_UINT32_ALLOWED_MOUNT1,
-	CONFIG_UINT32_ALLOWED_MOUNT2,
-	CONFIG_UINT32_ALLOWED_MOUNT3,
-	CONFIG_MIN_LEVEL_DUALSPEC,
+    /* Darkrulerz' customs */
+    CONFIG_UINT32_PVP_ID_1,
+    CONFIG_UINT32_PVP_ID_2,
+    CONFIG_UINT32_PVP_ID_3,
+    CONFIG_UINT32_PVP_ID_4,
+    CONFIG_UINT32_SANCTUARY_ID,
+    CONFIG_UINT32_ALLOWED_MOUNT1,
+    CONFIG_UINT32_ALLOWED_MOUNT2,
+    CONFIG_UINT32_ALLOWED_MOUNT3,
+    CONFIG_MIN_LEVEL_DUALSPEC,
     /* End of Darkrulerz' customs */
 
     CONFIG_UINT32_VALUE_COUNT
@@ -322,12 +322,12 @@ enum eConfigFloatValues
     CONFIG_FLOAT_GROUP_XP_DISTANCE,
     CONFIG_FLOAT_THREAT_RADIUS,
     CONFIG_FLOAT_VALUE_COUNT,
-	
-	///PVP Token
-	CONFIG_PVP_TOKEN_ENABLE,
-	CONFIG_PVP_TOKEN_ITEMID,
-	CONFIG_PVP_TOKEN_ITEMCOUNT,
-	CONFIG_PVP_TOKEN_RESTRICTION
+    
+    ///PVP Token
+    CONFIG_PVP_TOKEN_ENABLE,
+    CONFIG_PVP_TOKEN_ITEMID,
+    CONFIG_PVP_TOKEN_ITEMCOUNT,
+    CONFIG_PVP_TOKEN_RESTRICTION
 };
 
 /// Configuration elements
@@ -394,10 +394,10 @@ enum eConfigBoolValues
     CONFIG_BOOL_AHBOT_BUYPRICE_SELLER,
     CONFIG_BOOL_AHBOT_BUYPRICE_BUYER,
     /* End AHBot*/
-	
+    
     /* Broadcaster*/
     CONFIG_BOOL_BROADCAST_ENABLED,
-	
+    
     /* Darkrulerz' Customs*/
     CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE,
     CONFIG_BOOL_MAIL_ITEM_REFUNDABLE,
@@ -412,7 +412,7 @@ enum eConfigBoolValues
     CONFIG_BOOL_PLAYER_AUTO_RESS,
     CONFIG_BOOL_ALL_WEAPONS_FOR_CLASS_MAX_SKILL,
     /* End of Customs*/
-	
+    
     CONFIG_BOOL_VALUE_COUNT
 };
 
@@ -620,10 +620,10 @@ class World
         void SendZoneMessage(uint32 zone, WorldPacket *packet, WorldSession *self = 0, uint32 team = 0);
         void SendZoneText(uint32 zone, const char *text, WorldSession *self = 0, uint32 team = 0);
         void SendServerMessage(ServerMessageType type, const char *text = "", Player* player = NULL);
-		
-		///PVP Announcer
-		void SendPvPAnnounce(Player* killer, Player* killed);
-		
+        
+        ///PVP Announcer
+        void SendPvPAnnounce(Player* killer, Player* killed);
+        
         /// Are we in the middle of a shutdown?
         bool IsShutdowning() const { return m_ShutdownTimer > 0; }
         void ShutdownServ(uint32 time, uint32 options, uint8 exitcode);

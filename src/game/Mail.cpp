@@ -219,13 +219,13 @@ void WorldSession::HandleSendMail(WorldPacket & recv_data )
             pl->SendMailResult(0, MAIL_SEND, MAIL_ERR_CANT_SEND_WRAPPED_COD);
             return;
         }
-		
-		//When you send an item through the mailsystem, its no longer refundable
-		if (sWorld.getConfig(CONFIG_BOOL_MAIL_ITEM_REFUNDABLE))
-		{
-			if(item->HasFlag(ITEM_FIELD_FLAGS, ITEM_FLAGS_REFUNDABLE))
-				item->RemoveFlag(ITEM_FIELD_FLAGS, ITEM_FLAGS_REFUNDABLE);
-		}
+        
+        //When you send an item through the mailsystem, its no longer refundable
+        if (sWorld.getConfig(CONFIG_BOOL_MAIL_ITEM_REFUNDABLE))
+        {
+            if(item->HasFlag(ITEM_FIELD_FLAGS, ITEM_FLAGS_REFUNDABLE))
+                item->RemoveFlag(ITEM_FIELD_FLAGS, ITEM_FLAGS_REFUNDABLE);
+        }
 
         items[i] = item;
     }

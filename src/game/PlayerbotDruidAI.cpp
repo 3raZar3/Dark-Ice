@@ -38,7 +38,7 @@ PlayerbotDruidAI::PlayerbotDruidAI(Player* const master, Player* const bot, Play
     DIRE_BEAR_FORM      = ai->getSpellId("dire bear form");
     BEAR_FORM           = ai->getSpellId("bear form");
     CAT_FORM            = ai->getSpellId("cat form");
-	TREE_OF_LIFE        = 33891;
+    TREE_OF_LIFE        = 33891;
     //Cat Attack type's
     RAKE                = ai->getSpellId("rake");            //40 energy
     CLAW                = ai->getSpellId("claw");            //45
@@ -49,7 +49,7 @@ PlayerbotDruidAI::PlayerbotDruidAI(Player* const master, Player* const bot, Play
     RIP                 = ai->getSpellId("rip");             //30
     FEROCIOUS_BITE      = ai->getSpellId("ferocious bite");  //35
     MAIM                = ai->getSpellId("maim");            //35
-	//Bear/Dire Bear Attacks & Buffs
+    //Bear/Dire Bear Attacks & Buffs
     BASH                = ai->getSpellId("bash");            //10 rage
     MAUL                = ai->getSpellId("maul");            //15
     SWIPE               = ai->getSpellId("swipe");           //20
@@ -60,7 +60,7 @@ PlayerbotDruidAI::PlayerbotDruidAI(Player* const master, Player* const bot, Play
 
     RECENTLY_BANDAGED   = 11196; // first aid check
 
-	// racial
+    // racial
     SHADOWMELD              = ai->getSpellId("shadowmeld"); // night elf
     WAR_STOMP               = ai->getSpellId("war stomp"); // tauren
 }
@@ -75,22 +75,22 @@ void PlayerbotDruidAI::HealTarget(Unit &target, uint8 hp)
     if (hp < 70 && REJUVENATION > 0 && !target.HasAura(REJUVENATION, EFFECT_INDEX_0) && !target.HasAura(REGROWTH, EFFECT_INDEX_0) && ai->GetManaPercent() >=21)
         ai->CastSpell(REJUVENATION, target);
 
-	if (hp < 60 && LIFEBLOOM > 0 && !target.HasAura(LIFEBLOOM, EFFECT_INDEX_0) && ai->GetManaPercent() >= 28)
+    if (hp < 60 && LIFEBLOOM > 0 && !target.HasAura(LIFEBLOOM, EFFECT_INDEX_0) && ai->GetManaPercent() >= 28)
         ai->CastSpell(LIFEBLOOM, target);
 
     if (hp < 55 && REGROWTH > 0 && !target.HasAura(REGROWTH, EFFECT_INDEX_0) && !target.HasAura(REJUVENATION, EFFECT_INDEX_0) && ai->GetManaPercent() >= 33)
         ai->CastSpell(REGROWTH, target);
 
-	if (hp < 50 && SWIFTMEND > 0 && target.HasAura(REJUVENATION, EFFECT_INDEX_0) || target.HasAura(REGROWTH, EFFECT_INDEX_0) && ai->GetManaPercent() >= 16)
+    if (hp < 50 && SWIFTMEND > 0 && target.HasAura(REJUVENATION, EFFECT_INDEX_0) || target.HasAura(REGROWTH, EFFECT_INDEX_0) && ai->GetManaPercent() >= 16)
         ai->CastSpell(SWIFTMEND, target);
 
     if (hp < 45 && WILD_GROWTH > 0 && !target.HasAura(WILD_GROWTH, EFFECT_INDEX_0) && ai->GetManaPercent() >= 26)
         ai->CastSpell(WILD_GROWTH, target);
 
-	if (hp < 30 && NOURISH > 0 && ai->GetManaPercent() >= 18)
+    if (hp < 30 && NOURISH > 0 && ai->GetManaPercent() >= 18)
         ai->CastSpell(NOURISH, target);
 
-	if (hp < 25 && HEALING_TOUCH > 0 && ai->GetManaPercent() >= 38)
+    if (hp < 25 && HEALING_TOUCH > 0 && ai->GetManaPercent() >= 38)
         ai->CastSpell(HEALING_TOUCH, target);
 } // end HealTarget
 
@@ -144,7 +144,7 @@ void PlayerbotDruidAI::DoNextCombatManeuver(Unit *pTarget)
                 m_bot->RemoveAurasDueToSpell(768);
                 //ai->TellMaster("FormClearCat");
             }
-			if (MOONKIN_FORM > 0 && !m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0))
+            if (MOONKIN_FORM > 0 && !m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0))
             {
                 ai->CastSpell (MOONKIN_FORM);
             }
@@ -152,7 +152,7 @@ void PlayerbotDruidAI::DoNextCombatManeuver(Unit *pTarget)
             {
                 ai->CastSpell (DIRE_BEAR_FORM);
             }
-			else if (BEAR_FORM > 0 && !m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && !m_bot->HasAura(DIRE_BEAR_FORM, EFFECT_INDEX_0) && !m_bot->HasAura(BEAR_FORM, EFFECT_INDEX_0))
+            else if (BEAR_FORM > 0 && !m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && !m_bot->HasAura(DIRE_BEAR_FORM, EFFECT_INDEX_0) && !m_bot->HasAura(BEAR_FORM, EFFECT_INDEX_0))
             {
                 ai->CastSpell (BEAR_FORM);
             }
@@ -160,29 +160,29 @@ void PlayerbotDruidAI::DoNextCombatManeuver(Unit *pTarget)
             {
                 ai->CastSpell(DEMORALIZING_ROAR, *pTarget);
             }
-			if (FAERIE_FIRE > 0 && DruidSpellCombat < 1 && !pTarget->HasAura(FAERIE_FIRE, EFFECT_INDEX_0))
+            if (FAERIE_FIRE > 0 && DruidSpellCombat < 1 && !pTarget->HasAura(FAERIE_FIRE, EFFECT_INDEX_0))
             {
                 ai->CastSpell(FAERIE_FIRE, *pTarget);
                 DruidSpellCombat++;
                 break;
             }
-			else if (MOONFIRE > 0 && m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && DruidSpellCombat < 2 && !pTarget->HasAura(MOONFIRE, EFFECT_INDEX_0) && ai->GetManaPercent() >= 24)
+            else if (MOONFIRE > 0 && m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && DruidSpellCombat < 2 && !pTarget->HasAura(MOONFIRE, EFFECT_INDEX_0) && ai->GetManaPercent() >= 24)
             {
                 ai->CastSpell(MOONFIRE, *pTarget);
                 DruidSpellCombat++;
                 break;
             }
-			else if (ROOTS > 0 && m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && DruidSpellCombat < 3 && !pTarget->HasAura(ROOTS, EFFECT_INDEX_0) && ai->GetManaPercent() >= 8)
+            else if (ROOTS > 0 && m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && DruidSpellCombat < 3 && !pTarget->HasAura(ROOTS, EFFECT_INDEX_0) && ai->GetManaPercent() >= 8)
             {
                 ai->CastSpell(ROOTS, *pTarget);
                 DruidSpellCombat++;
                 break;
             }
-			else if (HURRICANE > 0 && m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && ai->GetAttackerCount()>=5 && DruidSpellCombat < 4 && ai->GetManaPercent() >= 91)
+            else if (HURRICANE > 0 && m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && ai->GetAttackerCount()>=5 && DruidSpellCombat < 4 && ai->GetManaPercent() >= 91)
             {
-				//ai->TellMaster("casting hurricane!");
+                //ai->TellMaster("casting hurricane!");
                 ai->CastSpell(HURRICANE, *pTarget);
-				ai->SetIgnoreUpdateTime(10);
+                ai->SetIgnoreUpdateTime(10);
                 DruidSpellCombat++;
                 break;
             }
@@ -204,32 +204,32 @@ void PlayerbotDruidAI::DoNextCombatManeuver(Unit *pTarget)
                 DruidSpellCombat++;
                 break;
             }
-			else if (FORCE_OF_NATURE > 0 && m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && DruidSpellCombat < 8 && ai->GetManaPercent() >= 12)
+            else if (FORCE_OF_NATURE > 0 && m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && DruidSpellCombat < 8 && ai->GetManaPercent() >= 12)
             {
-				//ai->TellMaster("summoning treants.");
+                //ai->TellMaster("summoning treants.");
                 ai->CastSpell(FORCE_OF_NATURE);
                 DruidSpellCombat++;
                 break;
             }
-			else if (STARFALL > 0 && m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && !m_bot->HasAura(STARFALL, EFFECT_INDEX_0) && ai->GetAttackerCount()>=3 && DruidSpellCombat < 9 && ai->GetManaPercent() >= 39)
+            else if (STARFALL > 0 && m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && !m_bot->HasAura(STARFALL, EFFECT_INDEX_0) && ai->GetAttackerCount()>=3 && DruidSpellCombat < 9 && ai->GetManaPercent() >= 39)
             {
                 ai->CastSpell(STARFALL, *pTarget);
                 DruidSpellCombat++;
                 break;
             }
-			else if (BARKSKIN > 0 && pVictim == m_bot && m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && ai->GetHealthPercent() < 75 && DruidSpellCombat < 10 && !m_bot->HasAura(BARKSKIN, EFFECT_INDEX_0))
+            else if (BARKSKIN > 0 && pVictim == m_bot && m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && ai->GetHealthPercent() < 75 && DruidSpellCombat < 10 && !m_bot->HasAura(BARKSKIN, EFFECT_INDEX_0))
             {
                 ai->CastSpell(BARKSKIN, *m_bot);
                 DruidSpellCombat++;
                 break;
             }
-			else if (INNERVATE > 0 && m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && ai->GetManaPercent() < 50 && DruidSpellCombat < 11 && !m_bot->HasAura(INNERVATE, EFFECT_INDEX_0))
+            else if (INNERVATE > 0 && m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && ai->GetManaPercent() < 50 && DruidSpellCombat < 11 && !m_bot->HasAura(INNERVATE, EFFECT_INDEX_0))
             {
                 ai->CastSpell(INNERVATE, *m_bot);
                 DruidSpellCombat++;
                 break;
             }
-			else if (MANA_REJUVENATION > 0 && m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && ai->GetManaPercent() < 50 && !m_bot->HasAura(INNERVATE, EFFECT_INDEX_0) && DruidSpellCombat < 12 && !m_bot->HasAura(MANA_REJUVENATION, EFFECT_INDEX_0))
+            else if (MANA_REJUVENATION > 0 && m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0) && ai->GetManaPercent() < 50 && !m_bot->HasAura(INNERVATE, EFFECT_INDEX_0) && DruidSpellCombat < 12 && !m_bot->HasAura(MANA_REJUVENATION, EFFECT_INDEX_0))
             {
                 ai->CastSpell(MANA_REJUVENATION, *m_bot);
                 DruidSpellCombat++;
@@ -271,7 +271,7 @@ void PlayerbotDruidAI::DoNextCombatManeuver(Unit *pTarget)
                 DruidSpellCombat = DruidSpellCombat +2;
                 break;
             }
-			else if (DruidSpellCombat > 13)
+            else if (DruidSpellCombat > 13)
             {
                 DruidSpellCombat = 0;
                 break;
@@ -297,13 +297,13 @@ void PlayerbotDruidAI::DoNextCombatManeuver(Unit *pTarget)
                 //ai->TellMaster("FormClearBear");
                 break;
             }
-			if(m_bot->HasAura(DIRE_BEAR_FORM, EFFECT_INDEX_0))
+            if(m_bot->HasAura(DIRE_BEAR_FORM, EFFECT_INDEX_0))
             {
                 m_bot->RemoveAurasDueToSpell(9634);
                 //ai->TellMaster("FormClearDireBear");
                 break;
             }
-			if(m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0))
+            if(m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0))
             {
                 m_bot->RemoveAurasDueToSpell(24858);
                 //ai->TellMaster("FormClearMoonkin");
@@ -321,21 +321,21 @@ void PlayerbotDruidAI::DoNextCombatManeuver(Unit *pTarget)
                 DruidSpellCombat++;
                 break;
             }
-			else if (ROOTS > 0 && DruidSpellCombat < 3 && !pTarget->HasAura(ROOTS, EFFECT_INDEX_0) && ai->GetManaPercent() >= 8)
+            else if (ROOTS > 0 && DruidSpellCombat < 3 && !pTarget->HasAura(ROOTS, EFFECT_INDEX_0) && ai->GetManaPercent() >= 8)
             {
                 ai->CastSpell(ROOTS, *pTarget);
                 DruidSpellCombat++;
                 break;
             }
-			else if (HURRICANE > 0 && ai->GetAttackerCount()>=5 && DruidSpellCombat < 4 && ai->GetManaPercent() >= 91)
+            else if (HURRICANE > 0 && ai->GetAttackerCount()>=5 && DruidSpellCombat < 4 && ai->GetManaPercent() >= 91)
             {
-				//ai->TellMaster("casting hurricane!");
+                //ai->TellMaster("casting hurricane!");
                 ai->CastSpell(HURRICANE, *pTarget);
-				ai->SetIgnoreUpdateTime(10);
+                ai->SetIgnoreUpdateTime(10);
                 DruidSpellCombat++;
                 break;
             }
-			else if (WRATH > 0 && DruidSpellCombat < 5 && ai->GetManaPercent() >= 13)
+            else if (WRATH > 0 && DruidSpellCombat < 5 && ai->GetManaPercent() >= 13)
             {
                 ai->CastSpell(WRATH, *pTarget);
                 DruidSpellCombat++;
@@ -353,38 +353,38 @@ void PlayerbotDruidAI::DoNextCombatManeuver(Unit *pTarget)
                 DruidSpellCombat++;
                 break;
             }
-			else if (FORCE_OF_NATURE > 0 && DruidSpellCombat < 8 && ai->GetManaPercent() >= 12)
+            else if (FORCE_OF_NATURE > 0 && DruidSpellCombat < 8 && ai->GetManaPercent() >= 12)
             {
-				//ai->TellMaster("summoning treants.");
+                //ai->TellMaster("summoning treants.");
                 ai->CastSpell(FORCE_OF_NATURE);
                 DruidSpellCombat++;
                 break;
             }
-			else if (STARFALL > 0 && !m_bot->HasAura(STARFALL, EFFECT_INDEX_0) && ai->GetAttackerCount()>=3 && DruidSpellCombat < 9 && ai->GetManaPercent() >= 39)
+            else if (STARFALL > 0 && !m_bot->HasAura(STARFALL, EFFECT_INDEX_0) && ai->GetAttackerCount()>=3 && DruidSpellCombat < 9 && ai->GetManaPercent() >= 39)
             {
                 ai->CastSpell(STARFALL, *pTarget);
                 DruidSpellCombat++;
                 break;
             }
-			else if (BARKSKIN > 0 && pVictim == m_bot && ai->GetHealthPercent() < 75 && DruidSpellCombat < 10 && !m_bot->HasAura(BARKSKIN, EFFECT_INDEX_0))
+            else if (BARKSKIN > 0 && pVictim == m_bot && ai->GetHealthPercent() < 75 && DruidSpellCombat < 10 && !m_bot->HasAura(BARKSKIN, EFFECT_INDEX_0))
             {
                 ai->CastSpell(BARKSKIN, *m_bot);
                 DruidSpellCombat++;
                 break;
             }
-			else if (INNERVATE > 0 && ai->GetManaPercent() < 50 && DruidSpellCombat < 11 && !m_bot->HasAura(INNERVATE, EFFECT_INDEX_0))
+            else if (INNERVATE > 0 && ai->GetManaPercent() < 50 && DruidSpellCombat < 11 && !m_bot->HasAura(INNERVATE, EFFECT_INDEX_0))
             {
                 ai->CastSpell(INNERVATE, *m_bot);
                 DruidSpellCombat++;
                 break;
             }
-			else if (MANA_REJUVENATION > 0 && ai->GetManaPercent() < 50 && DruidSpellCombat < 12 && !m_bot->HasAura(INNERVATE, EFFECT_INDEX_0) && !m_bot->HasAura(MANA_REJUVENATION, EFFECT_INDEX_0))
+            else if (MANA_REJUVENATION > 0 && ai->GetManaPercent() < 50 && DruidSpellCombat < 12 && !m_bot->HasAura(INNERVATE, EFFECT_INDEX_0) && !m_bot->HasAura(MANA_REJUVENATION, EFFECT_INDEX_0))
             {
                 ai->CastSpell(MANA_REJUVENATION, *m_bot);
                 DruidSpellCombat++;
                 break;
             }
-			else if (DruidSpellCombat > 13)
+            else if (DruidSpellCombat > 13)
             {
                 DruidSpellCombat = 0;
                 break;
@@ -416,7 +416,7 @@ void PlayerbotDruidAI::DoNextCombatManeuver(Unit *pTarget)
                 //ai->TellMaster("FormClearDireBear");
                 break;
             }
-			if(m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0))
+            if(m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0))
             {
                 m_bot->RemoveAurasDueToSpell(24858);
                 //ai->TellMaster("FormClearMoonkin");
@@ -453,13 +453,13 @@ void PlayerbotDruidAI::DoNextCombatManeuver(Unit *pTarget)
                 //ai->TellMaster("FormClearBear");
                 break;
             }
-			if(m_bot->HasAura(DIRE_BEAR_FORM, EFFECT_INDEX_0))
+            if(m_bot->HasAura(DIRE_BEAR_FORM, EFFECT_INDEX_0))
             {
                 m_bot->RemoveAurasDueToSpell(9634);
                 //ai->TellMaster("FormClearDireBear");
                 break;
             }
-			if(m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0))
+            if(m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0))
             {
                 m_bot->RemoveAurasDueToSpell(24858);
                 //ai->TellMaster("FormClearMoonkin");
@@ -563,11 +563,11 @@ void PlayerbotDruidAI::DoNextCombatManeuver(Unit *pTarget)
                     //ai->TellMaster("Else Maim");
                 }
                 break;
-			}
+            }
             else
             {
-				DruidSpellCombat = 0;
-				break;
+                DruidSpellCombat = 0;
+                break;
             }
             break;
     }
@@ -579,7 +579,7 @@ void PlayerbotDruidAI::DoNonCombatActions()
     if (!m_bot)
         return;
 
-	PlayerbotAI* ai = GetAI();
+    PlayerbotAI* ai = GetAI();
 
     if(m_bot->HasAura(CAT_FORM, EFFECT_INDEX_0))
     {
@@ -591,12 +591,12 @@ void PlayerbotDruidAI::DoNonCombatActions()
         m_bot->RemoveAurasDueToSpell(5487);
         //ai->TellMaster("FormClearBear");
     }
-	if(m_bot->HasAura(DIRE_BEAR_FORM, EFFECT_INDEX_0))
+    if(m_bot->HasAura(DIRE_BEAR_FORM, EFFECT_INDEX_0))
     {
         m_bot->RemoveAurasDueToSpell(9634);
         //ai->TellMaster("FormClearDireBear");
     }
-	if(m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0))
+    if(m_bot->HasAura(MOONKIN_FORM, EFFECT_INDEX_0))
     {
         m_bot->RemoveAurasDueToSpell(24858);
         //ai->TellMaster("FormClearMoonkin");
@@ -614,7 +614,7 @@ void PlayerbotDruidAI::DoNonCombatActions()
         m_bot->SetStandState(UNIT_STAND_STATE_STAND);
 
     Item* pItem = ai->FindDrink();
-	Item* fItem = ai->FindBandage();
+    Item* fItem = ai->FindBandage();
 
     if (pItem != NULL && ai->GetManaPercent() < 30)
     {
@@ -623,16 +623,16 @@ void PlayerbotDruidAI::DoNonCombatActions()
         ai->SetIgnoreUpdateTime(30);
         return;
     }
-	else if(pItem == NULL && INNERVATE>0 && !m_bot->HasAura(INNERVATE, EFFECT_INDEX_0) && ai->GetManaPercent() <= 70)
+    else if(pItem == NULL && INNERVATE>0 && !m_bot->HasAura(INNERVATE, EFFECT_INDEX_0) && ai->GetManaPercent() <= 70)
     {
-		ai->CastSpell(INNERVATE, *m_bot);
-		//ai->TellMaster("casting innervate.");
+        ai->CastSpell(INNERVATE, *m_bot);
+        //ai->TellMaster("casting innervate.");
         return;
     }
-	else if(pItem == NULL && MANA_REJUVENATION>0 && !m_bot->HasAura(INNERVATE, EFFECT_INDEX_0) && !m_bot->HasAura(MANA_REJUVENATION, EFFECT_INDEX_0) && ai->GetManaPercent() <= 70)
+    else if(pItem == NULL && MANA_REJUVENATION>0 && !m_bot->HasAura(INNERVATE, EFFECT_INDEX_0) && !m_bot->HasAura(MANA_REJUVENATION, EFFECT_INDEX_0) && ai->GetManaPercent() <= 70)
     {
-		ai->CastSpell(MANA_REJUVENATION, *m_bot);
-		//ai->TellMaster("casting mana rejuvenation.");
+        ai->CastSpell(MANA_REJUVENATION, *m_bot);
+        //ai->TellMaster("casting mana rejuvenation.");
         return;
     }
 
@@ -669,7 +669,7 @@ void PlayerbotDruidAI::DoNonCombatActions()
 
              // buff and heal
              (!tPlayer->HasAura(MARK_OF_THE_WILD, EFFECT_INDEX_0) && ai->CastSpell (MARK_OF_THE_WILD, *tPlayer));
-			 //(!tPlayer->HasAura(THORNS, EFFECT_INDEX_0) && ai->CastSpell (THORNS, *tPlayer));
+             //(!tPlayer->HasAura(THORNS, EFFECT_INDEX_0) && ai->CastSpell (THORNS, *tPlayer));
              (HealTarget(*tPlayer, tPlayer->GetHealth()*100 / tPlayer->GetMaxHealth()));
         }
     }

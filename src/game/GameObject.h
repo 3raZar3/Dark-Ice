@@ -523,7 +523,7 @@ union GameObjectValue
     {
         uint32 health;
     }
-	destructibleBuilding;
+    destructibleBuilding;
 };
 
 // GCC have alternative #pragma pack() syntax and old gcc version not support pack(pop), also any gcc version not support it at some platform
@@ -703,8 +703,8 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
 
         uint32 m_groupLootTimer;                            // (msecs)timer used for group loot
         uint32 m_groupLootId;                               // used to find group which is looting corpse
-		
-		bool hasQuest(uint32 quest_id) const;
+        
+        bool hasQuest(uint32 quest_id) const;
         bool hasInvolvedQuest(uint32 quest_id) const;
         bool ActivateToQuest(Player *pTarget) const;
         void UseDoorOrButton(uint32 time_to_restore = 0, bool alternative = false);
@@ -721,7 +721,7 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
 
         GameObject* LookupFishingHoleAround(float range);
 
-		void TakenDamage(uint32 damage, Unit* who = NULL);
+        void TakenDamage(uint32 damage, Unit* who = NULL);
         void Rebuild();
 
         GridReference<GameObject> &GetGridRef() { return m_gridRef; }
@@ -745,7 +745,7 @@ class MANGOS_DLL_SPEC GameObject : public WorldObject
 
         uint32 m_DBTableGuid;                               ///< For new or temporary gameobjects is 0 for saved it is lowguid
         GameObjectInfo const* m_goInfo;
-		GameObjectData const* m_goData;
+        GameObjectData const* m_goData;
         GameObjectValue * const m_goValue;
         uint64 m_rotation;
     private:

@@ -92,7 +92,7 @@ void World::SendPvPAnnounce(Player* killer, Player* killed)
 
   msg << "|CFFFFFF01[" << KillerName.str().c_str() << "]" << "|CFF0042FF Has Killed " << "|CFFFFFF01[" << KilledName.str().c_str() << "]" << "|CFFE55BB0 in " << "|CFFFE8A0E[" << killer->GetBaseMap()->GetMapName() << "]";
   if (sWorld.getConfig(CONFIG_BOOL_PVP_ANNOUNCER))
-	SendWorldText(LANG_SYSTEMMESSAGE, msg.str().c_str());
+    SendWorldText(LANG_SYSTEMMESSAGE, msg.str().c_str());
 }
 
 /// World constructor
@@ -813,36 +813,36 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_UINT32_TIMERBAR_FIRE_GMLEVEL,    "TimerBar.Fire.GMLevel", SEC_CONSOLE);
     setConfig(CONFIG_UINT32_TIMERBAR_FIRE_MAX,        "TimerBar.Fire.Max", 1);
 
-	/* PvP Token System */
-	setConfig(CONFIG_PVP_TOKEN_ENABLE,"PvPToken.Enable", true);
+    /* PvP Token System */
+    setConfig(CONFIG_PVP_TOKEN_ENABLE,"PvPToken.Enable", true);
     setConfig(CONFIG_PVP_TOKEN_ITEMID,"PvPToken.ItemID", 29434);
     setConfig(CONFIG_PVP_TOKEN_ITEMCOUNT,"PvPToken.ItemCount", 1);
     setConfig(CONFIG_PVP_TOKEN_RESTRICTION,"PvPToken.MapRestriction", 4);
 
     if(getConfig(CONFIG_PVP_TOKEN_ITEMCOUNT) < 1)
-		setConfig(CONFIG_PVP_TOKEN_ITEMCOUNT,"PvPToken.ItemCount",1);
+        setConfig(CONFIG_PVP_TOKEN_ITEMCOUNT,"PvPToken.ItemCount",1);
 
     setConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE, "Custom.AllowFlyingMountsEverywhere", false);
-	setConfig(CONFIG_BOOL_MAIL_ITEM_REFUNDABLE, "Custom.MailItemRefundable", false);
-	setConfig(CONFIG_MIN_LEVEL_DUALSPEC, "Custom.MinLevelDualSpec", 40);
-	setConfig(CONFIG_BOOL_EVERYONE_DRUNK, "Custom.EveryoneDrunk", false);
-	setConfig(CONFIG_BOOL_DK_NO_QUESTS_FOR_TP, "Custom.DeathKnightNoQuestsForTP", false);
-	setConfig(CONFIG_BOOL_PVP_ANNOUNCER, "Custom.PvPAnnouncer", false);
-	setConfig(CONFIG_BOOL_DUALSPEC_AT_CREATE, "Custom.DualSpecAtCreate", false);
-	setConfig(CONFIG_BOOL_EXTRA_SANCTUARY, "Custom.AddExtraSanctuary", false);
-	setConfig(CONFIG_BOOL_EXTRA_PVP, "Custom.AddExtraPvPZones", false);
-	setConfig(CONFIG_UINT32_SANCTUARY_ID, "Custom.SanctuaryZone", 0);
-	setConfig(CONFIG_UINT32_PVP_ID_1, "Custom.PvPZone1", 0);
-	setConfig(CONFIG_UINT32_PVP_ID_2, "Custom.PvPZone2", 0);
-	setConfig(CONFIG_UINT32_PVP_ID_3, "Custom.PvPZone3", 0);
-	setConfig(CONFIG_UINT32_PVP_ID_4, "Custom.PvPZone4", 0);
-	setConfig(CONFIG_BOOL_LIMIT_ALLOWED_MOUNTS, "Custom.LimitAllowedMounts", false);
-	setConfig(CONFIG_UINT32_ALLOWED_MOUNT1, "Custom.AllowedMount1", 0);
-	setConfig(CONFIG_UINT32_ALLOWED_MOUNT2, "Custom.AllowedMount2", 0);
-	setConfig(CONFIG_UINT32_ALLOWED_MOUNT3, "Custom.AllowedMount3", 0);
-	setConfig(CONFIG_BOOL_ALL_WEAPONS_MAX_SKILL, "Custom.AllWeaponSkillsAtMax", false);
-	setConfig(CONFIG_BOOL_PLAYER_AUTO_RESS, "Custom.AutoRessPlayersOnDeath", false);
-	setConfig(CONFIG_BOOL_ALL_WEAPONS_FOR_CLASS_MAX_SKILL, "Custom.AllWeaponSkillsForClassAtMax", false);
+    setConfig(CONFIG_BOOL_MAIL_ITEM_REFUNDABLE, "Custom.MailItemRefundable", false);
+    setConfig(CONFIG_MIN_LEVEL_DUALSPEC, "Custom.MinLevelDualSpec", 40);
+    setConfig(CONFIG_BOOL_EVERYONE_DRUNK, "Custom.EveryoneDrunk", false);
+    setConfig(CONFIG_BOOL_DK_NO_QUESTS_FOR_TP, "Custom.DeathKnightNoQuestsForTP", false);
+    setConfig(CONFIG_BOOL_PVP_ANNOUNCER, "Custom.PvPAnnouncer", false);
+    setConfig(CONFIG_BOOL_DUALSPEC_AT_CREATE, "Custom.DualSpecAtCreate", false);
+    setConfig(CONFIG_BOOL_EXTRA_SANCTUARY, "Custom.AddExtraSanctuary", false);
+    setConfig(CONFIG_BOOL_EXTRA_PVP, "Custom.AddExtraPvPZones", false);
+    setConfig(CONFIG_UINT32_SANCTUARY_ID, "Custom.SanctuaryZone", 0);
+    setConfig(CONFIG_UINT32_PVP_ID_1, "Custom.PvPZone1", 0);
+    setConfig(CONFIG_UINT32_PVP_ID_2, "Custom.PvPZone2", 0);
+    setConfig(CONFIG_UINT32_PVP_ID_3, "Custom.PvPZone3", 0);
+    setConfig(CONFIG_UINT32_PVP_ID_4, "Custom.PvPZone4", 0);
+    setConfig(CONFIG_BOOL_LIMIT_ALLOWED_MOUNTS, "Custom.LimitAllowedMounts", false);
+    setConfig(CONFIG_UINT32_ALLOWED_MOUNT1, "Custom.AllowedMount1", 0);
+    setConfig(CONFIG_UINT32_ALLOWED_MOUNT2, "Custom.AllowedMount2", 0);
+    setConfig(CONFIG_UINT32_ALLOWED_MOUNT3, "Custom.AllowedMount3", 0);
+    setConfig(CONFIG_BOOL_ALL_WEAPONS_MAX_SKILL, "Custom.AllWeaponSkillsAtMax", false);
+    setConfig(CONFIG_BOOL_PLAYER_AUTO_RESS, "Custom.AutoRessPlayersOnDeath", false);
+    setConfig(CONFIG_BOOL_ALL_WEAPONS_FOR_CLASS_MAX_SKILL, "Custom.AllWeaponSkillsForClassAtMax", false);
 
     m_VisibleUnitGreyDistance = sConfig.GetFloatDefault("Visibility.Distance.Grey.Unit", 1);
     if(m_VisibleUnitGreyDistance >  MAX_VISIBILITY_DISTANCE)
@@ -1323,6 +1323,9 @@ void World::SetInitialWorldSettings()
     sLog.outString( "Returning old mails..." );
     sObjectMgr.ReturnOrDeleteOldMails(false);
 
+    // Loads the jail conf out of the database
+    sObjectMgr.LoadJailConf();
+
     ///- Load and initialize scripts
     sLog.outString( "Loading Scripts..." );
     sLog.outString();
@@ -1431,14 +1434,14 @@ void World::SetInitialWorldSettings()
     sLog.outString("Starting Game Event system..." );
     uint32 nextGameEvent = sGameEventMgr.Initialize();
     m_timers[WUPDATE_EVENTS].SetInterval(nextGameEvent);    //depend on next event
-	
-	// Delete all characters which have been deleted X days before
+    
+    // Delete all characters which have been deleted X days before
     Player::DeleteOldCharacters();
 
     sLog.outString("Starting AuctionHouseBot System...");
     auctionbot.Initialize();
-	
-	sLog.outString("Starting Autobroadcast system...");
+    
+    sLog.outString("Starting Autobroadcast system...");
     
     sLog.outString( "WORLD: World initialized" );
 
@@ -1508,7 +1511,7 @@ void World::Update(uint32 diff)
 
     /// Handle daily quests reset time
     if (m_gameTime > m_NextDailyQuestReset)
-	{
+    {
         ResetDailyQuests();
         ResetBGDaily();
     }
@@ -2186,7 +2189,7 @@ void World::InitDailyQuestResetTime()
 void World::ResetBGDaily()
 {
     CharacterDatabase.Execute("DELETE FROM character_battleground_status");
-	for(SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+    for(SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
         if (itr->second->GetPlayer())
             itr->second->GetPlayer()->ResetBGStatus();
 }

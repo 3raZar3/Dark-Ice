@@ -230,7 +230,7 @@ struct CreatureDataAddon
     uint32 bytes1;
     uint32 bytes2;
     uint32 emote;
-	uint32 splineFlags;
+    uint32 splineFlags;
     uint32 vehicle_id;
     CreatureDataAddonPassengers const* passengers;          // loaded as char* "entry1 seatid1 entry2 seatid2 ... "  
     CreatureDataAddonAura const* auras;                     // loaded as char* "spell1 eff1 spell2 eff2 ... "
@@ -604,10 +604,10 @@ class MANGOS_DLL_SPEC Creature : public Unit
 
         float GetRespawnRadius() const { return m_respawnradius; }
         void SetRespawnRadius(float dist) { m_respawnradius = dist; }
-		
-		uint32 m_groupLootTimer;                            // (msecs)timer used for group loot
+        
+        uint32 m_groupLootTimer;                            // (msecs)timer used for group loot
         uint32 m_groupLootId;                               // used to find group which is looting corpse
-		
+        
         void SendZoneUnderAttackMessage(Player* attacker);
 
         void SetInCombatWithZone();

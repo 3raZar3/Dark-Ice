@@ -929,6 +929,6 @@ MANGOS_DLL_SPEC DBCStorage <CreatureDisplayInfoEntry> 	const* GetCreatureDisplay
 MANGOS_DLL_SPEC DBCStorage <EmotesEntry>        		const* GetEmotesStore()         	{ return &sEmotesStore;         }
 MANGOS_DLL_SPEC DBCStorage <AchievementEntry>                   const* GetAchievementStore()    { return &sAchievementStore;    }
 MANGOS_DLL_SPEC DBCStorage <EmotesTextEntry>
-    		const* GetEmotesTextStore()    		{ return &sEmotesTextStore;     }
+            const* GetEmotesTextStore()    		{ return &sEmotesTextStore;     }
 MANGOS_DLL_SPEC DBCStorage <CharTitlesEntry>
- 			const* GetCharTitlesStore() 		{ return &sCharTitlesStore; 	}
+             const* GetCharTitlesStore() 		{ return &sCharTitlesStore; 	}

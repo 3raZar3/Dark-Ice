@@ -2561,8 +2561,8 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                 }
                 break;
             }
-			case SPELLFAMILY_ROGUE:
-			{
+            case SPELLFAMILY_ROGUE:
+            {
                 if (GetId() == 52916) // Honor Among Thieves
                 {
                     if(m_target->GetTypeId() == TYPEID_PLAYER)
@@ -2574,7 +2574,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                     }
                 }
                 break;
-			}
+            }
         }
     }
     // AT REMOVE
@@ -4508,7 +4508,7 @@ void Aura::HandleAuraModSilence(bool apply, bool Real)
                 if(spell->m_spellInfo->PreventionType == SPELL_PREVENTION_TYPE_SILENCE)
                     // Stop spells on prepare or casting state
                     m_target->InterruptSpell(CurrentSpellTypes(i), false);
-	}
+    }
     else
     {
         // Real remove called after current aura remove from lists, check if other similar auras active
@@ -4957,14 +4957,19 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
                 if (m_removeMode == AURA_REMOVE_BY_DEFAULT && GetEffIndex() + 1 < MAX_EFFECT_INDEX)
                     m_target->CastSpell(m_target, m_spellProto->CalculateSimpleValue(SpellEffectIndex(GetEffIndex()+1)), true);
                 return;
-			case 46221:                                     // Animal Blood
-				if (m_removeMode == AURA_REMOVE_BY_DEFAULT && m_target->IsInWater())
-				{
-					LiquidData liquid_status;
+            case 46221:                                     // Animal Blood
+                if (m_removeMode == AURA_REMOVE_BY_DEFAULT && m_target->IsInWater())
+                {
+                    LiquidData liquid_status;
 
-					if (m_target->GetMap()->getLiquidStatus(m_target->GetPositionX(), m_target->GetPositionY(), m_target->GetPositionZ(), MAP_ALL_LIQUIDS, &liquid_status))
-						m_target->CastSpell(m_target->GetPositionX(), m_target->GetPositionY(), liquid_status.level, 63471, true, NULL, this);
-				}
+                    if (m_target->GetMap()->getLiquidStatus(m_target->GetPositionX(), m_target->GetPositionY(), m_target->GetPositionZ(), MAP_ALL_LIQUIDS, &liquid_status))
+                        m_target->CastSpell(m_target->GetPositionX(), m_target->GetPositionY(), liquid_status.level, 63471, true, NULL, this);
+                }
+                return;
+            case 43648:                                     // Electrical Storm - remove cloud around caster
+                if (m_target->HasAura(45213))
+                    m_target->RemoveAurasDueToSpell(45213);
+                return;
             case 51912:                                     // Ultra-Advanced Proto-Typical Shortening Blaster
                 if (m_removeMode == AURA_REMOVE_BY_DEFAULT && m_duration <= 0)
                 {
@@ -6568,7 +6573,7 @@ void Aura::HandleSpellSpecificBoosts(bool apply)
                     spellId1 = 38639;                           // Nether Exhaustion
                     break;
                 }
-				return;
+                return;
             }
             else
                 return;
@@ -6661,7 +6666,7 @@ void Aura::HandleSpellSpecificBoosts(bool apply)
                 spellId1 = 30069;                           // Blood Frenzy (Rank 1)
                 spellId2 = 30070;                           // Blood Frenzy (Rank 2)
             }
-			else
+            else
             {
                 // Bloodrage & Item - Warrior T10 Protection 4P Bonus
                 if (GetId() == 29131 && m_target->HasAura(70844))
@@ -6805,7 +6810,7 @@ void Aura::HandleSpellSpecificBoosts(bool apply)
             }
             break;
         }
-		case SPELLFAMILY_DRUID:
+        case SPELLFAMILY_DRUID:
         {
             // Item - Druid T10 Feral 4P Bonus
             if (GetId() == 5229 && m_target->HasAura(70726))// Enrage
@@ -8433,12 +8438,12 @@ void Aura::PeriodicDummyTick()
             // Mirror Image
             if (spell->Id == 55342)
             {
-				if(m_target->GetTypeId() != TYPEID_PLAYER)
-					break;
-				//Clear target
-				WorldPacket data(SMSG_CLEAR_TARGET, 8);
-				data << m_target->GetGUID();
-				((Player*)m_target)->SendMessageToSetInRange(&data, 80.0f, false, false, true);
+                if(m_target->GetTypeId() != TYPEID_PLAYER)
+                    break;
+                //Clear target
+                WorldPacket data(SMSG_CLEAR_TARGET, 8);
+                data << m_target->GetGUID();
+                ((Player*)m_target)->SendMessageToSetInRange(&data, 80.0f, false, false, true);
                 // Set name of summons to name of caster
                 m_target->CastSpell(m_target, m_spellProto->EffectTriggerSpell[m_effIndex], true);
                 m_isPeriodic = false;
@@ -8617,7 +8622,7 @@ void Aura::PeriodicDummyTick()
             // Blood of the North
 //            if (spell->SpellIconID == 30412)
 //                return;
-			// Hysteria
+            // Hysteria
             if (spell->SpellFamilyFlags & UI64LIT(0x0000000020000000))
             {
                 uint32 deal = m_modifier.m_amount * m_target->GetMaxHealth() / 100;
@@ -8726,7 +8731,7 @@ void Aura::HandleAuraControlVehicle(bool apply, bool Real)
     {
         // some SPELL_AURA_CONTROL_VEHICLE auras have a dummy effect on the player - remove them
         caster->RemoveAurasDueToSpell(GetId());
-		caster->RemoveSingleSpellAurasFromStack(53797);
+        caster->RemoveSingleSpellAurasFromStack(53797);
     }
 }
 
@@ -8822,12 +8827,12 @@ void Aura::HandlePhase(bool apply, bool Real)
             }
         }
           
-	if(m_target->GetCharm() && !apply)//remove other auras from charm on unapply
-	{
-		Creature * creat=((Creature*)m_target->GetCharm());						
-		creat->GetMap()->CreatureRelocation(creat,m_target->GetPositionX(),m_target->GetPositionY(),m_target->GetPositionZ(),m_target->GetOrientation());
-		creat->RemoveAurasDueToSpellByCancel(GetId());			
-	} 
+    if(m_target->GetCharm() && !apply)//remove other auras from charm on unapply
+    {
+        Creature * creat=((Creature*)m_target->GetCharm());						
+        creat->GetMap()->CreatureRelocation(creat,m_target->GetPositionX(),m_target->GetPositionY(),m_target->GetPositionZ(),m_target->GetOrientation());
+        creat->RemoveAurasDueToSpellByCancel(GetId());			
+    } 
     }
     else
         m_target->SetPhaseMask(apply ? GetMiscValue() : PHASEMASK_NORMAL, false);
@@ -9047,9 +9052,9 @@ void Aura::HandleAuraInitializeImages(bool Apply, bool Real)
     pImmage->setFaction(creator->getFaction());
     pImmage->SetUInt32Value(UNIT_FIELD_FLAGS_2, UNIT_FLAG2_MIRROR_IMAGE | UNIT_FLAG2_REGENERATE_POWER);
     if (creator->IsPvP())
-	    pImmage->SetPvP(true);
+        pImmage->SetPvP(true);
     
-	if (creator->isInCombat() && pImmage->isAlive())
+    if (creator->isInCombat() && pImmage->isAlive())
         pImmage->CastSpell(pImmage, 58838, true);
     else
    {

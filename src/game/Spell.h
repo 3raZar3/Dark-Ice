@@ -185,7 +185,7 @@ class SpellCastTargets
 
         float m_srcX, m_srcY, m_srcZ, m_srcO;
         float m_destX, m_destY, m_destZ;
-		float m_elevation, m_speed;
+        float m_elevation, m_speed;
         std::string m_strTarget;
 
         uint32 m_targetMask;
@@ -360,10 +360,10 @@ class Spell
         void EffectPlayMusic(SpellEffectIndex eff_idx);
         void EffectSpecCount(SpellEffectIndex eff_idx);
         void EffectActivateSpec(SpellEffectIndex eff_idx);
-		void EffectSummonPossessed(SpellEffectIndex eff_idx); 
+        void EffectSummonPossessed(SpellEffectIndex eff_idx); 
         void EffectSummonVehicle(SpellEffectIndex eff_idx);
         void EffectSummonSnakes(SpellEffectIndex eff_idx);
-		void EffectWMODamage(SpellEffectIndex eff_idx);
+        void EffectWMODamage(SpellEffectIndex eff_idx);
         void EffectWMORepair(SpellEffectIndex eff_idx);
 
         Spell( Unit* caster, SpellEntry const *info, bool triggered, ObjectGuid originalCasterGUID = ObjectGuid(), Spell** triggeringContainer = NULL );
@@ -380,7 +380,7 @@ class Spell
 
         SpellCastResult CheckCast(bool strict);
         SpellCastResult CheckPetCast(Unit* target);
-		bool IsValidSingleTargetEffect(Unit const* target, Targets type) const;
+        bool IsValidSingleTargetEffect(Unit const* target, Targets type) const;
         bool IsValidSingleTargetSpell(Unit const* target) const;
 
 
@@ -418,7 +418,7 @@ class Spell
 
         typedef std::list<Unit*> UnitList;
         void FillTargetMap();
-		void FillCustomTargetMap(uint32 i, UnitList &targetUnitMap); 
+        void FillCustomTargetMap(uint32 i, UnitList &targetUnitMap); 
         void SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList &targetUnitMap);
 
         void FillAreaTargets(UnitList &targetUnitMap, float x, float y, float radius, SpellNotifyPushType pushType, SpellTargets spellTargets, WorldObject* originalCaster = NULL);

@@ -127,15 +127,15 @@ class ChatHandler
         bool HandleCastTargetCommand(const char *args);
 
         bool HandleCharacterCustomizeCommand(const char * args);
-		bool HandleCharacterChangeFactionCommand(const char* args);
-		bool HandleCharacterChangeRaceCommand(const char* args);
+        bool HandleCharacterChangeFactionCommand(const char* args);
+        bool HandleCharacterChangeRaceCommand(const char* args);
         bool HandleCharacterDeletedDeleteCommand(const char* args);
         bool HandleCharacterDeletedListCommand(const char* args);
         bool HandleCharacterDeletedRestoreCommand(const char* args);
         bool HandleCharacterDeletedOldCommand(const char* args);
         bool HandleCharacterEraseCommand(const char* args);
         bool HandleCharacterLevelCommand(const char* args);
-		bool HandleCharacterGMLevelCommand(const char* args);
+        bool HandleCharacterGMLevelCommand(const char* args);
         bool HandleCharacterRenameCommand(const char * args);
         bool HandleCharacterReputationCommand(const char* args);
         bool HandleCharacterTitlesCommand(const char* args);
@@ -472,7 +472,7 @@ class ChatHandler
         bool HandleGroupgoCommand(const char* args);
         bool HandleRecallCommand(const char* args);
         bool HandleAnnounceCommand(const char* args);
-		bool HandleNameAnnounceCommand(const char* args);
+        bool HandleNameAnnounceCommand(const char* args);
         bool HandleNotifyCommand(const char* args);
         bool HandleGPSCommand(const char* args);
         bool HandleTaxiCheatCommand(const char* args);
@@ -525,6 +525,11 @@ class ChatHandler
         bool HandleWaterwalkCommand(const char* args);
         bool HandlePlayerbotCommand(const char* args);
         bool HandleQuitCommand(const char* args);
+        // Jail by WarHead
+        bool HandleJailCommand(const char* args);
+        bool HandleJailInfoCommand(const char* args);
+        bool HandleUnJailCommand(const char* args);
+        bool HandleJailReloadCommand(const char* args);
 
         //! Development Commands
         bool HandleSaveAllCommand(const char* args);

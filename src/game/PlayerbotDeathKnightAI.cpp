@@ -56,7 +56,7 @@ PlayerbotDeathKnightAI::PlayerbotDeathKnightAI(Player* const master, Player* con
 
     RECENTLY_BANDAGED = 11196; // first aid check
 
-	// racial
+    // racial
     ARCANE_TORRENT          = ai->getSpellId("arcane torrent"); // blood elf
     GIFT_OF_THE_NAARU       = ai->getSpellId("gift of the naaru"); // draenei
     STONEFORM               = ai->getSpellId("stoneform"); // dwarf
@@ -96,7 +96,7 @@ void PlayerbotDeathKnightAI::DoNextCombatManeuver(Unit *pTarget)
     Unit* pVictim = pTarget->getVictim();
     Pet *pet = m_bot->GetPet();
     float dist = m_bot->GetDistance( pTarget );
-	std::ostringstream out;
+    std::ostringstream out;
 
     switch (SpellSequence)
     {

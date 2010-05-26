@@ -531,6 +531,13 @@ bool ChatHandler::HandleAHBotOptionsCommand(const char* args)
 }
 
 //reload commands
+bool ChatHandler::HandleJailReloadCommand(const char* arg)
+{
+    sObjectMgr.LoadJailConf();
+    SendSysMessage(LANG_JAIL_RELOAD);
+    return true;
+}
+
 bool ChatHandler::HandleReloadAllCommand(const char*)
 {
     HandleReloadSkillFishingBaseLevelCommand("");
@@ -1377,7 +1384,7 @@ bool ChatHandler::HandleReloadSpellDisabledCommand(const char* /*arg*/)
     sLog.outString( "Re-Loading spell disabled table...");
     sObjectMgr.LoadSpellDisabledEntrys();
     SendGlobalSysMessage("DB table `spell_disabled` reloaded.");
-	return true;
+    return true;
 }
 
 bool ChatHandler::HandleReloadVehicleDataCommand(const char*)
@@ -4557,20 +4564,20 @@ bool ChatHandler::HandleCharacterGMLevelCommand(const char* args)
     if(newlevel < 0)
         return false;                                       // invalid level
 
-	if (oldlevel >= m_session->GetSecurity())
-	{
-		PSendSysMessage("You too low level to affect this player");
-		return true;
-	}
+    if (oldlevel >= m_session->GetSecurity())
+    {
+        PSendSysMessage("You too low level to affect this player");
+        return true;
+    }
 
-	if (newlevel >= m_session->GetSecurity())
-	{
-		PSendSysMessage("You cannot set a level equal to or greater than your own");
-		return true;
-	}
+    if (newlevel >= m_session->GetSecurity())
+    {
+        PSendSysMessage("You cannot set a level equal to or greater than your own");
+        return true;
+    }
 
-	target->SetSecurity(newlevel);
-	target->SaveToDB();
+    target->SetSecurity(newlevel);
+    target->SaveToDB();
 
     return true;
 }

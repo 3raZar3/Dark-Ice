@@ -603,7 +603,7 @@ void WorldSession::HandlePetSpellAutocastOpcode( WorldPacket& recvPacket )
 void WorldSession::HandlePetCastSpellOpcode( WorldPacket& recvPacket )
 {
     DETAIL_LOG("WORLD: CMSG_PET_CAST_SPELL");
-	recvPacket.hexlike();
+    recvPacket.hexlike();
     recvPacket.print_storage();
 
     //2 - 0 - 0 - 43 - 129 - 0 - 80 - 241 | - 42 - 211 - 253 - 0 | - 0 | - 2 |- 96 - 0 - 0 - 0 | - 0 - 26
@@ -667,8 +667,8 @@ void WorldSession::HandlePetCastSpellOpcode( WorldPacket& recvPacket )
     //recvPacket >> pos1 >> pos2;
 
     pet->clearUnitState(UNIT_STAT_MOVING);
-	
-	//mask: 96, elevation: 0.167906, speed: 120.002441, pos1: 1, pos: 183
+    
+    //mask: 96, elevation: 0.167906, speed: 120.002441, pos1: 1, pos: 183
  
     //sLog.outDebug("mask: %u, elevation: %f, speed: %f, pos1: %u, pos: %u", targets.m_targetMask, elevation, speed, pos1, pos2);
  

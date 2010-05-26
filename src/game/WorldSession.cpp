@@ -203,10 +203,10 @@ bool WorldSession::Update(uint32 /*diff*/)
                     }
                     // lag can cause STATUS_LOGGEDIN opcodes to arrive after the player started a transfer
 
-					// playerbot mod
-					if (_player && _player->GetPlayerbotMgr())
-						_player->GetPlayerbotMgr()->HandleMasterIncomingPacket(*packet);
-					// playerbot mod end
+                    // playerbot mod
+                    if (_player && _player->GetPlayerbotMgr())
+                        _player->GetPlayerbotMgr()->HandleMasterIncomingPacket(*packet);
+                    // playerbot mod end
                     break;
                 case STATUS_LOGGEDIN_OR_RECENTLY_LOGGEDOUT:
                     if(!_player && !m_playerRecentlyLogout)
@@ -485,7 +485,7 @@ void WorldSession::LogoutPlayer(bool Save)
         sSocialMgr.SendFriendStatus(_player, FRIEND_OFFLINE, _player->GetGUIDLow(), true);
         sSocialMgr.RemovePlayerSocial (_player->GetGUIDLow ());
 
-		// Playerbot - remember player GUID for update SQL below
+        // Playerbot - remember player GUID for update SQL below
         uint32 guid = _player->GetGUIDLow();
 
         ///- Remove the player from the world

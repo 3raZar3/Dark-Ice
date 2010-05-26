@@ -456,7 +456,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
             float trans_rad = movementInfo.GetTransportPos()->x*movementInfo.GetTransportPos()->x + movementInfo.GetTransportPos()->y*movementInfo.GetTransportPos()->y + movementInfo.GetTransportPos()->z*movementInfo.GetTransportPos()->z;
             if (trans_rad > 3600.0f) // transport radius = 60 yards //cheater with on_transport_flag
             {
- 	            return;
+                 return;
             }
             // elevators also cause the client to send MOVEFLAG_ONTRANSPORT - just unmount if the guid can be found in the transport list
             for (MapManager::TransportSet::const_iterator iter = sMapMgr.m_Transports.begin(); iter != sMapMgr.m_Transports.end(); ++iter)
@@ -478,8 +478,8 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
     }
 
     // fall damage generation (ignore in flight case that can be triggered also at lags in moment teleportation to another map).
-	if (opcode == MSG_MOVE_FALL_LAND && plMover && !plMover->isInFlight())
-		plMover->HandleFall(movementInfo);
+    if (opcode == MSG_MOVE_FALL_LAND && plMover && !plMover->isInFlight())
+        plMover->HandleFall(movementInfo);
 
     if (plMover && (movementInfo.HasMovementFlag(MOVEFLAG_SWIMMING) != plMover->IsInWater()))
     {
@@ -654,8 +654,8 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
     movementInfo.UpdateTime(getMSTime());
 
     WorldPacket data(opcode, recv_data.size());
-	
-	if(plMover)                                             // nothing is charmed, or player charmed
+    
+    if(plMover)                                             // nothing is charmed, or player charmed
     {
         data.appendPackGUID(mover->GetGUID());                  // write guid
         movementInfo.Write(data);                               // write data
@@ -792,7 +792,7 @@ void WorldSession::HandleSetActiveMoverOpcode(WorldPacket &recv_data)
 
     uint64 guid;
     recv_data >> guid;
-	
+    
     if(_player->m_mover_in_queve && _player->m_mover_in_queve->GetGUID() == guid)
     {
         _player->m_mover = _player->m_mover_in_queve;

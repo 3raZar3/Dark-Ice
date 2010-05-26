@@ -65,7 +65,7 @@ PlayerbotPaladinAI::PlayerbotPaladinAI(Player* const master, Player* const bot, 
 
     RECENTLY_BANDAGED            = 11196; // first aid check
 
-	// racial
+    // racial
     ARCANE_TORRENT               = ai->getSpellId("arcane torrent"); // blood elf
     GIFT_OF_THE_NAARU            = ai->getSpellId("gift of the naaru"); // draenei
     STONEFORM                    = ai->getSpellId("stoneform"); // dwarf
@@ -78,23 +78,23 @@ void PlayerbotPaladinAI::HealTarget(Unit &target, uint8 hp)
 {
     PlayerbotAI* ai = GetAI();
 
-	if (hp < 40 && HOLY_LIGHT > 0 && ai->GetManaPercent() >= 34)
+    if (hp < 40 && HOLY_LIGHT > 0 && ai->GetManaPercent() >= 34)
         ai->CastSpell(HOLY_LIGHT, target);
 
-	if (hp < 35 && HOLY_SHOCK > 0 && ai->GetManaPercent() >= 21)
+    if (hp < 35 && HOLY_SHOCK > 0 && ai->GetManaPercent() >= 21)
         ai->CastSpell(HOLY_SHOCK, target);
 
-	if (hp < 30 && FLASH_OF_LIGHT > 0 && ai->GetManaPercent() >= 8)
+    if (hp < 30 && FLASH_OF_LIGHT > 0 && ai->GetManaPercent() >= 8)
         ai->CastSpell(FLASH_OF_LIGHT, target);
 
-	if (hp < 25 && LAY_ON_HANDS > 0 && ai->GetHealthPercent() > 30 && ai->GetManaPercent() >= 8)
+    if (hp < 25 && LAY_ON_HANDS > 0 && ai->GetHealthPercent() > 30 && ai->GetManaPercent() >= 8)
         ai->CastSpell(LAY_ON_HANDS, target);
 
 } // end HealTarget
 
 void PlayerbotPaladinAI::DoNextCombatManeuver(Unit *pTarget)
 {
-	Unit* pVictim = pTarget->getVictim();
+    Unit* pVictim = pTarget->getVictim();
     PlayerbotAI* ai = GetAI();
     if (!ai)
         return;
@@ -121,7 +121,7 @@ void PlayerbotPaladinAI::DoNextCombatManeuver(Unit *pTarget)
         if (masterHP < 25 && HAND_OF_PROTECTION > 0 && !GetMaster()->HasAura(FORBEARANCE, EFFECT_INDEX_0) && !GetMaster()->HasAura(HAND_OF_PROTECTION, EFFECT_INDEX_0) && !GetMaster()->HasAura(DIVINE_PROTECTION, EFFECT_INDEX_0) && !GetMaster()->HasAura(DIVINE_SHIELD, EFFECT_INDEX_0))
               ai->CastSpell(HAND_OF_PROTECTION, *GetMaster());
 
-	// heal group inside combat, but do not heal if tank
+    // heal group inside combat, but do not heal if tank
     if( m_group && pVictim != m_bot ) // possible tank
     {
         Group::MemberSlotList const& groupSlot = m_group->GetMemberSlots();
@@ -137,7 +137,7 @@ void PlayerbotPaladinAI::DoNextCombatManeuver(Unit *pTarget)
         }
     }
 
-	if (RIGHTEOUS_FURY > 0 && !m_bot->HasAura(RIGHTEOUS_FURY, EFFECT_INDEX_0))
+    if (RIGHTEOUS_FURY > 0 && !m_bot->HasAura(RIGHTEOUS_FURY, EFFECT_INDEX_0))
         ai->CastSpell (RIGHTEOUS_FURY, *m_bot);
 
     if (SHADOW_RESISTANCE_AURA > 0 && !m_bot->HasAura(SHADOW_RESISTANCE_AURA, EFFECT_INDEX_0) && pTarget->getClass() == CLASS_WARLOCK)
@@ -321,7 +321,7 @@ void PlayerbotPaladinAI::DoNonCombatActions()
         return;
 
     // buff myself
-	if (GREATER_BLESSING_OF_MIGHT > 0 && !m_bot->HasAura(GREATER_BLESSING_OF_MIGHT, EFFECT_INDEX_0))
+    if (GREATER_BLESSING_OF_MIGHT > 0 && !m_bot->HasAura(GREATER_BLESSING_OF_MIGHT, EFFECT_INDEX_0))
         ai->CastSpell (GREATER_BLESSING_OF_MIGHT, *m_bot);
     else if (BLESSING_OF_MIGHT > 0 && !m_bot->HasAura(GREATER_BLESSING_OF_MIGHT, EFFECT_INDEX_0) && !m_bot->HasAura(BLESSING_OF_MIGHT, EFFECT_INDEX_0))
         ai->CastSpell (BLESSING_OF_MIGHT, *m_bot);
@@ -394,7 +394,7 @@ void PlayerbotPaladinAI::DoNonCombatActions()
         m_bot->SetStandState(UNIT_STAND_STATE_STAND);
 
     Item* pItem = ai->FindDrink();
-	Item* fItem = ai->FindBandage();
+    Item* fItem = ai->FindBandage();
 
     if (pItem != NULL && ai->GetManaPercent() < 40)
     {

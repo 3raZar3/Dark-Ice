@@ -1038,7 +1038,7 @@ void AuctionHouseBot::Initialize()
         sLog.outString("loaded %d orange items", orangeItemsBin.size());
         sLog.outString("loaded %d yellow items", yellowItemsBin.size());
     }
-	sLog.outString("AuctionHouseBot is now loaded.");
+    sLog.outString("AuctionHouseBot is now loaded.");
     sLog.outString("AuctionHouseBot: updated by Xeross and Darkrulerz");
 }
 

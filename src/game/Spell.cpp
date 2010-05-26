@@ -567,9 +567,9 @@ void Spell::FillTargetMap()
                     case TARGET_EFFECT_SELECT:
                         SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetA[i], tmpUnitMap);
                         break;
-					case TARGET_AREAEFFECT_CUSTOM:
-					case TARGET_ALL_ENEMY_IN_AREA_INSTANT:
-						FillCustomTargetMap(i,tmpUnitMap);
+                    case TARGET_AREAEFFECT_CUSTOM:
+                    case TARGET_ALL_ENEMY_IN_AREA_INSTANT:
+                        FillCustomTargetMap(i,tmpUnitMap);
                         break;
                     case TARGET_INNKEEPER_COORDINATES:
                     case TARGET_TABLE_X_Y_Z_COORDINATES:
@@ -650,9 +650,9 @@ void Spell::FillTargetMap()
                     case TARGET_EFFECT_SELECT:
                         SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetA[i], tmpUnitMap);
                         break;
-					case TARGET_RANDOM_NEARBY_DEST: 
-						SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetA[i], tmpUnitMap);
-						break;
+                    case TARGET_RANDOM_NEARBY_DEST: 
+                        SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetA[i], tmpUnitMap);
+                        break;
                     // most A/B target pairs is self->negative and not expect adding caster to target list
                     default:
                         SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetB[i], tmpUnitMap);
@@ -843,8 +843,8 @@ void Spell::AddUnitTarget(Unit* pVictim, SpellEffectIndex effIndex)
 
     // Check for effect immune skip if immuned
     bool immuned = pVictim->IsImmunedToSpellEffect(m_spellInfo, effIndex);
-	
-	//Deep Freeze dmg if immune to stun
+    
+    //Deep Freeze dmg if immune to stun
     if(m_spellInfo->Id == 44572 && immuned && pVictim->GetTypeId() != TYPEID_PLAYER)
         m_caster->CastSpell(pVictim, 71757, true);
 
@@ -1034,8 +1034,8 @@ void Spell::DoAllEffectOnTarget(TargetInfo *target)
         DoSpellHitOnUnit(unit, mask);
     else
     {
-		if (missInfo == SPELL_MISS_REFLECT && target->reflectResult == SPELL_MISS_NONE)       // In case spell reflect from target, do all effect on caster (if hit)
-			DoSpellHitOnUnit(m_caster, mask);
+        if (missInfo == SPELL_MISS_REFLECT && target->reflectResult == SPELL_MISS_NONE)       // In case spell reflect from target, do all effect on caster (if hit)
+            DoSpellHitOnUnit(m_caster, mask);
 
         else if (missInfo != SPELL_MISS_EVADE && target->reflectResult != SPELL_MISS_EVADE && real_caster)   // We still need to start combat (not for evade...)
         {
@@ -1114,31 +1114,13 @@ void Spell::DoAllEffectOnTarget(TargetInfo *target)
             (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0004000000000000)))
             if(Aura* dummy = unitTarget->GetDummyAura(m_spellInfo->Id))
                 dummy->GetModifier()->m_amount = damageInfo.damage;
-		// Scourge Strike (Shadow Damage part) 
-        if (m_spellInfo->SpellFamilyName == SPELLFAMILY_DEATHKNIGHT && m_spellInfo->SpellIconID == 3143) 
-        { 
-            int32 diseaseCount = 0; 
-            Unit::AuraMap const& auras = unitTarget->GetAuras(); 
-            for(Unit::AuraMap::const_iterator itr = auras.begin(); itr!=auras.end(); ++itr) 
-            { 
-                if(itr->second->GetSpellProto()->Dispel == DISPEL_DISEASE && 
-                   itr->second->GetCasterGUID() == caster->GetGUID() && 
-                   IsSpellLastAuraEffect(itr->second->GetSpellProto(), itr->second->GetEffIndex())) 
-                    ++diseaseCount; 
-            } 
-            if (diseaseCount) 
-            { 
-                int32 bp0 = int32(damageInfo.damage * diseaseCount * m_spellInfo->CalculateSimpleValue(EFFECT_INDEX_2) / 100); 
-                caster->CastCustomSpell(unitTarget, 70890, &bp0, NULL, NULL, true); 
-            } 
-        } 
-				caster->DealSpellDamage(&damageInfo, true);
-				
-		// Divine Storm (use m_healthLeech to store damage for all targets)
+                caster->DealSpellDamage(&damageInfo, true);
+                
+        // Divine Storm (use m_healthLeech to store damage for all targets)
         if (m_spellInfo->Id == 53385)
-		{
+        {
             m_healthLeech += damageInfo.damage;
-			if(Aura * pGlyph = caster->GetAura(63220, EFFECT_INDEX_0))
+            if(Aura * pGlyph = caster->GetAura(63220, EFFECT_INDEX_0))
                 m_healthLeech += (m_healthLeech * pGlyph->GetModifier()->m_amount / 100);
         }
 
@@ -1202,9 +1184,9 @@ void Spell::DoAllEffectOnTarget(TargetInfo *target)
 
 void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
 {
-	if (m_caster->HasAura(5384)) // Feign Death
+    if (m_caster->HasAura(5384)) // Feign Death
         return;
-	
+    
     if (!unit || !effectMask)
         return;
 
@@ -1222,8 +1204,8 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
         ResetEffectDamageAndHeal();
         return;
     }
-	
-	// Recheck deflection (only for delayed spells)
+    
+    // Recheck deflection (only for delayed spells)
     if (m_spellInfo->speed && unit->HasAura(19263))
     {
         if (realCaster)
@@ -1647,14 +1629,14 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
     switch(targetMode)
     {
         case TARGET_RANDOM_NEARBY_LOC:
-			// Get a random point IN circle around the CASTER(!). Use sqrt(rand) to correct distribution when converting polar to Cartesian coordinates.
+            // Get a random point IN circle around the CASTER(!). Use sqrt(rand) to correct distribution when converting polar to Cartesian coordinates.
             radius *= sqrtf(rand_norm_f());
             // no 'break' expected since we use code in case TARGET_RANDOM_CIRCUMFERENCE_POINT!!! 
         case TARGET_RANDOM_POINT_AROUND_CASTER:  
         case TARGET_RANDOM_CIRCUMFERENCE_POINT:
         {
             // Get a random point AT the CIRCUMREFERENCE(!).
-			float angle = 2.0f * M_PI_F * rand_norm_f();
+            float angle = 2.0f * M_PI_F * rand_norm_f();
             float dest_x, dest_y, dest_z;
             m_caster->GetClosePoint(dest_x, dest_y, dest_z, 0.0f, radius, angle);
             m_targets.setDestination(dest_x, dest_y, dest_z);
@@ -1667,7 +1649,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
             // Get a random point IN the CIRCEL around current M_TARGETS COORDINATES(!).
             if (radius > 0)
             {
-				// Use sqrt(rand) to correct distribution when converting polar to Cartesian coordinates.
+                // Use sqrt(rand) to correct distribution when converting polar to Cartesian coordinates.
                 radius *= sqrtf(rand_norm_f());
                 float angle = 2.0f * M_PI_F * rand_norm_f();
                 float dest_x = m_targets.m_destX + cos(angle) * radius;
@@ -1675,8 +1657,8 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 float dest_z = m_caster->GetPositionZ();
                 m_caster->UpdateGroundPositionZ(dest_x, dest_y, dest_z);
                 m_targets.setDestination(dest_x, dest_y, dest_z);
-			}
-			// This targetMode is often used as 'last' implicitTarget for positive spells, that just require coordinates
+            }
+            // This targetMode is often used as 'last' implicitTarget for positive spells, that just require coordinates
             // and no unitTarget (e.g. summon effects). As MaNGOS always needs a unitTarget we add just the caster here.
             if (IsPositiveSpell(m_spellInfo->Id))
                 targetUnitMap.push_back(m_caster);
@@ -2815,7 +2797,7 @@ void Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura)
     if(result != SPELL_CAST_OK && !IsAutoRepeat())          //always cast autorepeat dummy for triggering
     {
         //error_log("Spatne 1, spell %s", m_spellInfo->SpellName[0]);
-		if(triggeredByAura)
+        if(triggeredByAura)
         {
             SendChannelUpdate(0);
             triggeredByAura->SetAuraDuration(0);
@@ -2987,20 +2969,20 @@ void Spell::cast(bool skipCheck)
                 AddPrecastSpell(65047);                     // Mirror Image (summon 4th immage)
             break;
         }
-		case SPELLFAMILY_WARRIOR:
+        case SPELLFAMILY_WARRIOR:
         {
             // Item - Warrior T10 Melee 4P Bonus
             if (m_spellInfo->Id == 46916 || m_spellInfo->Id == 52437)
-			{
+            {
                 if (Aura *aur = m_caster->GetAura(70847, EFFECT_INDEX_0))
-				{
+                {
                     if (roll_chance_i(aur->GetModifier()->m_amount))
-					{
+                    {
                         AddTriggeredSpell(70849);
-					}
-				}
-			}
-			// Shattering Throw
+                    }
+                }
+            }
+            // Shattering Throw
             else if (m_spellInfo->Id == 64382)
                 AddPrecastSpell(64380);
             break;
@@ -3038,9 +3020,12 @@ void Spell::cast(bool skipCheck)
             // Faerie Fire (Feral)
             if (m_spellInfo->Id == 16857 && m_caster->m_form != FORM_CAT)
                 AddTriggeredSpell(60089);
-			// Item - Druid T10 Balance 2P Bonus
+            // Item - Druid T10 Balance 2P Bonus
             else if (m_spellInfo->Id == 16870 && m_caster->HasAura(70718))
                 AddTriggeredSpell(70721);
+            // Berserk (Bear Mangle part)
+            else if (m_spellInfo->Id == 50334 && (m_caster->m_form == FORM_BEAR || m_caster->m_form == FORM_DIREBEAR))
+                AddTriggeredSpell(58923); 
             break;
         }
         case SPELLFAMILY_HUNTER:
@@ -3149,14 +3134,14 @@ void Spell::cast(bool skipCheck)
     SendCastResult(castResult);
     SendSpellGo();                                          // we must send smsg_spell_go packet before m_castItem delete in TakeCastItem()...
 
-	// Cache combo points used for spell and clear real one to prevent mutlti-casting delayed spells
-	if(m_caster->GetTypeId() != TYPEID_PLAYER && ((Creature*)m_caster)->isVehicle() && NeedsComboPoints(m_spellInfo))
-	{
-	((Vehicle*)m_caster)->m_comboPointsForCast = ((Player*)m_caster->GetCharmer())->GetComboPoints();
-	((Player*)m_caster->GetCharmer())->ClearComboPoints();
-	}
-	
-	InitializeDamageMultipliers();
+    // Cache combo points used for spell and clear real one to prevent mutlti-casting delayed spells
+    if(m_caster->GetTypeId() != TYPEID_PLAYER && ((Creature*)m_caster)->isVehicle() && NeedsComboPoints(m_spellInfo))
+    {
+    ((Vehicle*)m_caster)->m_comboPointsForCast = ((Player*)m_caster->GetCharmer())->GetComboPoints();
+    ((Player*)m_caster->GetCharmer())->ClearComboPoints();
+    }
+    
+    InitializeDamageMultipliers();
 
     // Okay, everything is prepared. Now we need to distinguish between immediate and evented delayed spells
     if (m_spellInfo->speed > 0.0f || m_spellInfo->Id == 14157)
@@ -3640,7 +3625,7 @@ void Spell::SendCastResult(Player* caster, SpellEntry const* spellInfo, uint8 ca
                     break;
             }
             break;
-		case SPELL_FAILED_REAGENTS:
+        case SPELL_FAILED_REAGENTS:
             // normally client checks reagents, just some script effects here
             if(spellInfo->Id == 46584)                      // Raise Dead
                 data << uint32(37201);                      // Corpse Dust
@@ -4779,14 +4764,14 @@ SpellCastResult Spell::CheckCast(bool strict)
         !IsPassiveSpell(m_spellInfo->Id) && !(m_spellInfo->Attributes & SPELL_ATTR_CASTABLE_WHILE_MOUNTED))
     {
         if (m_caster->isInFlight())
-		{
+        {
             return SPELL_FAILED_NOT_ON_TAXI;
-		}			
+        }			
         else if(m_caster->GetVehicleGUID())
         {
             if(!(m_caster->m_SeatData.s_flags & SF_CAN_CAST))
                 return SPELL_FAILED_NOT_MOUNTED;
-		}
+        }
         else if ((sWorld.getConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE)) && (m_spellInfo->Id==55884))
         {
             Player* player = (Player*)m_caster;
@@ -5388,7 +5373,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                         return SPELL_FAILED_CANT_DO_THAT_RIGHT_NOW; 
                 break;
             }
-			case SPELL_EFFECT_TRANS_DOOR:
+            case SPELL_EFFECT_TRANS_DOOR:
             {
                 if(m_caster->GetTypeId() == TYPEID_PLAYER)
                 {
@@ -5550,7 +5535,7 @@ SpellCastResult Spell::CheckCast(bool strict)
 
                 break;
             }
-			case SPELL_AURA_MOD_INCREASE_SPEED:
+            case SPELL_AURA_MOD_INCREASE_SPEED:
             {
                 // Dash in Cat Form check
                 if (m_spellInfo->SpellFamilyName == SPELLFAMILY_DRUID && m_spellInfo->SpellIconID == 959)
@@ -5686,9 +5671,9 @@ SpellCastResult Spell::CheckCasterAuras() const
             mechanic_immune = IMMUNE_TO_MOVEMENT_IMPAIRMENT_AND_LOSS_CONTROL_MASK;
     }
 
-	// Caster with Cyclone can only use PvP trinket
-	if (m_caster->HasAura(33786) && mechanic_immune != IMMUNE_TO_MOVEMENT_IMPAIRMENT_AND_LOSS_CONTROL_MASK)
-		return SPELL_FAILED_STUNNED;
+    // Caster with Cyclone can only use PvP trinket
+    if (m_caster->HasAura(33786) && mechanic_immune != IMMUNE_TO_MOVEMENT_IMPAIRMENT_AND_LOSS_CONTROL_MASK)
+        return SPELL_FAILED_STUNNED;
 
     // Check whether the cast should be prevented by any state you might have.
     SpellCastResult prevented_reason = SPELL_CAST_OK;
@@ -6598,7 +6583,7 @@ bool Spell::CheckTarget( Unit* target, SpellEffectIndex eff )
             m_spellInfo->EffectImplicitTargetB[eff] != TARGET_SCRIPT &&
             m_spellInfo->EffectImplicitTargetA[eff] != TARGET_AREAEFFECT_CUSTOM &&
             m_spellInfo->EffectImplicitTargetB[eff] != TARGET_AREAEFFECT_CUSTOM &&
-			m_spellInfo->EffectImplicitTargetA[eff] != TARGET_MASTER )
+            m_spellInfo->EffectImplicitTargetA[eff] != TARGET_MASTER )
             return false;
     }
 

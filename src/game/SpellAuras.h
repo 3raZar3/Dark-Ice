@@ -301,7 +301,7 @@ class MANGOS_DLL_SPEC Aura
 
         void SetAura(bool remove) { m_target->SetVisibleAura(m_auraSlot, remove ? 0 : GetId()); }
         void SendAuraUpdate(bool remove);
-		void SendFakeAuraUpdate(uint32 auraId, bool remove);
+        void SendFakeAuraUpdate(uint32 auraId, bool remove);
 
         uint8 GetStackAmount() {return m_stackAmount;}
         void SetStackAmount(uint8 num);
@@ -360,7 +360,7 @@ class MANGOS_DLL_SPEC Aura
         bool isAffectedOnSpell(SpellEntry const *spell) const;
         bool isWeaponBuffCoexistableWith(Aura* ref);
 
-		void ApplyHasteToPeriodic();
+        void ApplyHasteToPeriodic();
     protected:
         Aura(SpellEntry const* spellproto, SpellEffectIndex eff, int32 *currentBasePoints, Unit *target, Unit *caster = NULL, Item* castItem = NULL);
 
@@ -389,7 +389,7 @@ class MANGOS_DLL_SPEC Aura
         int32 m_timeCla;                                    // Timer for power per sec calcultion
         int32 m_periodicTimer;                              // Timer for periodic auras
         uint32 m_periodicTick;                              // Tick count pass (including current if use in tick code) from aura apply, used for some tick count dependent aura effects
-		uint32 m_origDuration;                              // Duration before applying haste, etc...
+        uint32 m_origDuration;                              // Duration before applying haste, etc...
 
         AuraRemoveMode m_removeMode:8;                      // Store info for know remove aura reason
         DiminishingGroup m_AuraDRGroup:8;                   // Diminishing
