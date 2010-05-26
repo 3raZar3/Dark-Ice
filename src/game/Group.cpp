@@ -550,7 +550,7 @@ void Group::SendLootAllPassed(Roll const& r)
     }
 }
 
-void Group::GroupLoot(WorldObject *object, Loot *loot)
+void Group::GroupLoot(Creature *creature, Loot *loot)
 {
     for(uint8 itemSlot = 0; itemSlot < loot->items.size(); ++itemSlot)
     {
@@ -564,13 +564,13 @@ void Group::GroupLoot(WorldObject *object, Loot *loot)
 
         //roll for over-threshold item if it's one-player loot
         if (itemProto->Quality >= uint32(m_lootThreshold) && !lootItem.freeforall)
-            StartLootRool(object,loot,itemSlot,false);
+            StartLootRool(creature,loot,itemSlot,false);
         else
             lootItem.is_underthreshold = 1;
     }
 }
 
-void Group::NeedBeforeGreed(WorldObject *object, Loot *loot)
+void Group::NeedBeforeGreed(Creature *creature, Loot *loot)
 {
     for(uint8 itemSlot = 0; itemSlot < loot->items.size(); ++itemSlot)
     {
@@ -584,23 +584,14 @@ void Group::NeedBeforeGreed(WorldObject *object, Loot *loot)
 
         //only roll for one-player items, not for ones everyone can get
         if (itemProto->Quality >= uint32(m_lootThreshold) && !lootItem.freeforall)
-            StartLootRool(object, loot, itemSlot, true);
+            StartLootRool(creature, loot, itemSlot, true);
         else
             lootItem.is_underthreshold = 1;
     }
 }
 
-void Group::MasterLoot(Creature *creature, Loot* loot)
+void Group::MasterLoot(Creature *creature, Loot* /*loot*/)
 {
-    for (LootItemList::iterator i=loot->items.begin(); i != loot->items.end(); ++i)
-    {
-        ItemPrototype const *item = ObjectMgr::GetItemPrototype(i->itemid);
-        if (!item)
-            continue;
-        if (item->Quality < uint32(m_lootThreshold))
-            i->is_underthreshold = 1;
-    }
-
     uint32 real_count = 0;
 
     WorldPacket data(SMSG_LOOT_MASTER_LIST, 330);
@@ -698,7 +689,7 @@ bool Group::CountRollVote(ObjectGuid const& playerGUID, Rolls::iterator& rollI, 
     return false;
 }
 
-void Group::StartLootRool(WorldObject* lootTarget, Loot* loot, uint8 itemSlot, bool skipIfCanNotUse)
+void Group::StartLootRool(Creature* lootTarget, Loot* loot, uint8 itemSlot, bool skipIfCanNotUse)
 {
     if (itemSlot >= loot->items.size())
         return;
