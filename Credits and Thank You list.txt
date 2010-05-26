@@ -1,5 +1,4 @@
 ﻿╔═══════╦══════════════════════════════════════════════════════╗
-║ Info: ║ "Even Hell itself tremble before our mighty march!"  ║
 ╟───────╨──────────────────────────────────────────────────────╢
 ║ This text document holds the list of names of those people   ║
 ║ who have helped and/or worked on scripts/portions of code    ║
@@ -7,9 +6,8 @@
 ║ core and this whole project to what it is now. Respect them  ║
 ║ and thank them for it is their fault you are reading this.   ║
 ╠═══════════╦══════════════════════════════════════════════════╣
-║ The list: ║    "Pay your respects to these fine people!"     ║
 ╟─────┬─────╨──────────────────────────────────────────────────╢
-║   1.│ Hellscream Network development team.                   ║
+║   1.│ IceCream Network development team.                   ║
 ║   2.│ MaNGOS development team.                               ║
 ║   3.│ YTDB/Yurity/UDB development team.                      ║
 ║   4.│ ScriptDev2/ScriptDevZero development team.             ║
@@ -34,16 +32,9 @@
 ║  21.│ udbuser93                                              ║
 ║  22.│ fandor                                                 ║
 ╟─────┴────────────────────────────────────────────────────────╢
-║ Very special thanks flies out to:                            ║
-║ Darkrulerz for being here with us and guiding us through the ║
-║ rough roads towards the heart of the Force itself. Thank you.║
 ╠══════════════╦═══════════════════════════════════════════════╣
-║ Final notes: ║ You can find us at < www.hellscream-wow.com > ║
+║ Final notes: ║ You can find us at < http://hellscreamnetwork.clanice.com/ > ║
 ╟──────────────╨───────────────────────────────────────────────╢
-║ This document is a work in progress as the list of names gets║
-║ bigger every passing day. If for some reason you are not here║
-║ and your code is included, contact us via E-Mail at:         ║
-║                support@hellscream-wow.com                    ║
 ╟────────────────────┬─────────────────────────────────────────╢
 ║ File last updated: │ on Thursday, May 20, 2010 (05/20/2010)  ║
 ╚════════════════════╧═════════════════════════════════════════╝

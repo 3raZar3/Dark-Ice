@@ -9890,6 +9890,7 @@ uint32 Unit::SpellDamageBonusDone(Unit *pVictim, SpellEntry const *spellProto, u
                   DoneTotalMod *= 4;
             }
             break;
+        }
         case SPELLFAMILY_PRIEST:
         {
             // Glyph of Smite
