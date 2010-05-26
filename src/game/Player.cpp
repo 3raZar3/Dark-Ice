@@ -8009,7 +8009,7 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
     {
         case HIGHGUID_GAMEOBJECT:
         {
-            DEBUG_LOG("IS_GAMEOBJECT_GUID(guid)");
+            DEBUG_LOG(" IS_GAMEOBJECT_GUID(guid)");
             GameObject *go = GetMap()->GetGameObject(guid);
 
             // not check distance for GO in case owned GO (fishing bobber case, for example)
@@ -8036,35 +8036,9 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
 
                 if (lootid)
                 {
-                    DEBUG_LOG("if(lootid)");
+                    DEBUG_LOG(" if(lootid)");
                     loot->clear();
                     loot->FillLoot(lootid, LootTemplates_Gameobject, this, false);
-                    if(go->GetGoType() == GAMEOBJECT_TYPE_CHEST && go->GetGOInfo()->chest.groupLootRules)
-                    {
-                        if(Group* group = GetGroup())
-                        {
-                            group->UpdateLooterGuid(go,true);
-
-                            switch (group->GetLootMethod())
-                            {
-                                case GROUP_LOOT:
-                                    // GroupLoot delete items over threshold (threshold even not implemented), and roll them. Items with quality<threshold, round robin
-                                    group->GroupLoot(creature, loot);
-                                    permission = GROUP_PERMISSION;
-                                    break;
-                                case NEED_BEFORE_GREED:
-                                    group->NeedBeforeGreed(creature, loot);
-                                    permission = GROUP_PERMISSION;
-                                    break;
-                                case MASTER_LOOT:
-                                    group->MasterLoot(creature, loot);
-                                    permission = MASTER_PERMISSION;
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-                    }
                     loot->generateMoneyLoot(go->GetGOInfo()->MinMoneyLoot, go->GetGOInfo()->MaxMoneyLoot);
                 }
 
@@ -8072,31 +8046,6 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
                     go->getFishLoot(loot,this);
 
                 go->SetLootState(GO_ACTIVATED);
-            }
-            if ((go->getLootState() == GO_ACTIVATED) && (go->GetGoType() == GAMEOBJECT_TYPE_CHEST))
-            {
-                if (go->GetGOInfo()->chest.groupLootRules == 1)
-                {
-                    if(Group* group = GetGroup())
-                    {
-                        if (group == this->GetGroup())
-                        {
-                            if (group->GetLootMethod() == FREE_FOR_ALL)
-                                permission = ALL_PERMISSION;
-                            else if (group->GetLooterGuid() == GetGUID())
-                            {
-                                if (group->GetLootMethod() == MASTER_LOOT)
-                                    permission = MASTER_PERMISSION;
-                                else
-                                    permission = ALL_PERMISSION;
-                            }
-                            else
-                                permission = GROUP_PERMISSION;
-                        }
-                        else
-                            permission = NONE_PERMISSION;
-                    }
-                }
             }
             break;
         }
