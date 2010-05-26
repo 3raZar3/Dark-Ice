@@ -8049,15 +8049,15 @@ void Player::SendLoot(ObjectGuid guid, LootType loot_type)
                             {
                                 case GROUP_LOOT:
                                     // GroupLoot delete items over threshold (threshold even not implemented), and roll them. Items with quality<threshold, round robin
-                                    group->GroupLoot(go, loot);
+                                    group->GroupLoot(creature, loot);
                                     permission = GROUP_PERMISSION;
                                     break;
                                 case NEED_BEFORE_GREED:
-                                    group->NeedBeforeGreed(go, loot);
+                                    group->NeedBeforeGreed(creature, loot);
                                     permission = GROUP_PERMISSION;
                                     break;
                                 case MASTER_LOOT:
-                                    group->MasterLoot(go, loot);
+                                    group->MasterLoot(creature, loot);
                                     permission = MASTER_PERMISSION;
                                     break;
                                 default:
