@@ -1788,12 +1788,12 @@ static void RewardGroupAtKill_helper(Player* pGroupGuy, Unit* pVictim, uint32 co
 }
 
 /** Provide rewards to group members at unit kill
- *
- * @param pVictim       Killed unit
- * @param player_tap    Player who tap unit if online, it can be group member or can be not if leaved after tap but before kill target
- *
- * Rewards received by group members and player_tap
- */
+*
+* @param pVictim Killed unit
+* @param player_tap Player who tap unit if online, it can be group member or can be not if leaved after tap but before kill target
+*
+* Rewards received by group members and player_tap
+*/
 void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
 {
     bool PvP = pVictim->isCharmedOwnedByPlayerOrPlayer();
@@ -1829,7 +1829,7 @@ void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
                 continue;
 
             if(!pGroupGuy->IsAtGroupRewardDistance(pVictim))
-                continue;                               // member (alive or dead) or his corpse at req. distance
+                continue; // member (alive or dead) or his corpse at req. distance
 
             RewardGroupAtKill_helper(pGroupGuy, pVictim, count, PvP, group_rate, sum_level, is_dungeon, not_gray_member_with_max_level, member_with_max_level, xp);
         }
