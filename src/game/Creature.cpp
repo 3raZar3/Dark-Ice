@@ -2111,8 +2111,8 @@ void Creature::AllLootRemovedFromCorpse()
 
         CreatureInfo const *cinfo = GetCreatureInfo();
 
-        // corpse was not skinnable -> apply corpse looted timer
-        if (!cinfo->SkinLootId)
+        // corpse was not skinned -> apply corpse looted timer
+        if (!lootForSkin)
             nDeathTimer = (uint32)((m_corpseDelay * IN_MILLISECONDS) * sWorld.getConfig(CONFIG_FLOAT_RATE_CORPSE_DECAY_LOOTED));
         // corpse was skinned, corpse will despawn next update
         else
