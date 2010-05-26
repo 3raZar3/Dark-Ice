@@ -4616,7 +4616,11 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
 void Player::KillPlayer()
 {
     if (sWorld.getConfig(CONFIG_BOOL_PLAYER_AUTO_RESS))
-        player->RepopAtGraveyard(); // resurrect the player on the nearest graveyard, automatically leaves corpse behind
+    {
+        m_deathTimer = 0;
+        BuildPlayerRepop();
+        RepopAtGraveyard(); // resurrect the player on the nearest graveyard, automatically leaves corpse behind
+    }
     else
     {
         SetMovement(MOVE_ROOT);
