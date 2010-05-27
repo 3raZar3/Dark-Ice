@@ -17789,6 +17789,12 @@ void Player::_SaveStats()
     // check if stat saving is enabled and if char level is high enough
     if(!sWorld.getConfig(CONFIG_UINT32_MIN_LEVEL_STAT_SAVE) || getLevel() < sWorld.getConfig(CONFIG_UINT32_MIN_LEVEL_STAT_SAVE))
         return;
+		
+	std::ostringstream data_armory;
+	for(uint16 i = 0; i < m_valuesCount; i++)
+	{
+	    data_armory << GetUInt32Value(i) << " ";
+	}	
 
     CharacterDatabase.PExecute("DELETE FROM character_stats WHERE guid = '%u'", GetGUIDLow());
     std::ostringstream ss;
@@ -17799,7 +17805,7 @@ void Player::_SaveStats()
         "a_melee_hitrating, a_melee_critrating, a_melee_hasterating, a_melee_mainmindmg, a_melee_mainmaxdmg, "
         "a_melee_offmindmg, a_melee_offmaxdmg, a_melee_maintime, a_melee_offtime, a_ranged_critrating, a_ranged_hasterating, "
         "a_ranged_hitrating, a_ranged_mindmg, a_ranged_maxdmg, a_ranged_attacktime, "
-        "a_spell_hitrating, a_spell_critrating, a_spell_hasterating, a_spell_bonusdmg, a_spell_bonusheal, a_spell_critproc) VALUES ("
+        "a_spell_hitrating, a_spell_critrating, a_spell_hasterating, a_spell_bonusdmg, a_spell_bonusheal, a_spell_critproc, data) VALUES ("
         << GetGUIDLow() << ", "
         << GetMaxHealth() << ", ";
     for(int i = 0; i < MAX_POWERS; ++i)
@@ -17846,7 +17852,8 @@ void Player::_SaveStats()
        << GetUInt32Value(ANDEERIA_SPELL_HASTERATING) << ", "
        << GetUInt32Value(ANDEERIA_SPELL_BONUSDMG) << ", "
        << GetUInt32Value(ANDEERIA_SPELL_BONUSHEAL) << ", "
-       << GetFloatValue(ANDEERIA_SPELL_CRITPROC) << ")";
+       << GetFloatValue(ANDEERIA_SPELL_CRITPROC) << ", "
+	   << data_armory.str().c_str() << "')";
     CharacterDatabase.Execute( ss.str().c_str() );
 }
 
