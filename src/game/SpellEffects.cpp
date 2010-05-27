@@ -1283,7 +1283,9 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     creatureTarget->ForcedDespawn();
 
                     //cast spell Raptor Capture Credit
-                    m_caster->CastSpell(m_caster, 42337, true, NULL);
+                    if(Unit * pCaster = m_originalCaster)
+					    pCaster->CastSpell(pCaster, 42337, true);
+						
                     return;
                 }
                 case 44997:                                 // Converting Sentry
