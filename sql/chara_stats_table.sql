@@ -1,5 +1,5 @@
-DROP TABLE IF EXISTS `character_stats_beta`;
-CREATE TABLE IF NOT EXISTS `character_stats_beta` (
+DROP TABLE IF EXISTS `character_stats`;
+CREATE TABLE IF NOT EXISTS `character_stats` (
   `guid` int(11) unsigned NOT NULL DEFAULT '0' COMMENT 'Global Unique Identifier, Low part',
   `maxhealth` int(10) unsigned NOT NULL DEFAULT '0',
   `maxpower1` int(10) unsigned NOT NULL DEFAULT '0',
