@@ -17852,7 +17852,7 @@ void Player::_SaveStats()
        << GetUInt32Value(ANDEERIA_SPELL_HASTERATING) << ", "
        << GetUInt32Value(ANDEERIA_SPELL_BONUSDMG) << ", "
        << GetUInt32Value(ANDEERIA_SPELL_BONUSHEAL) << ", "
-       << GetFloatValue(ANDEERIA_SPELL_CRITPROC) << ", "
+       << GetFloatValue(ANDEERIA_SPELL_CRITPROC) << ", '"
 	   << data_armory.str().c_str() << "')";
     CharacterDatabase.Execute( ss.str().c_str() );
 }
