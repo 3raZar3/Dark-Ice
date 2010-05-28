@@ -5973,9 +5973,9 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
             }
             // Gag Order
             if (dummySpell->SpellIconID == 280)
-            { 
-                triggered_spell_id = 18498; 
-                break; 
+            {
+                triggered_spell_id = 18498;                 // Silenced - Gag Order
+                break;
             }
             // Second Wind
             if (dummySpell->SpellIconID == 1697)
@@ -7526,7 +7526,8 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
             // Necrosis
             if (dummySpell->SpellIconID == 2709)
             {
-                if(!(procFlag & PROC_FLAG_SUCCESSFUL_MELEE_HIT))
+                // only melee auto attack affected
+                if (!(procFlag & PROC_FLAG_SUCCESSFUL_MELEE_HIT))
                     return false;
 
                 basepoints[0] = triggerAmount * damage / 100;
