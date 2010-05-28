@@ -112,6 +112,7 @@ ObjectAccessor::FindPlayerByName(const char *name)
     for(; iter != m.end(); ++iter)
         if(iter->second->IsInWorld() && ( ::strcmp(name, iter->second->GetName()) == 0 ))
             return iter->second;
+
     return NULL;
 }
 
@@ -294,7 +295,7 @@ void ObjectAccessor::RemoveOldCorpses()
 /// Define the static member of HashMapHolder
 
 template <class T> UNORDERED_MAP< uint64, T* > HashMapHolder<T>::m_objectMap;
-template <class T> ACE_Thread_Mutex HashMapHolder<T>::i_lock;
+template <class T> ACE_RW_Thread_Mutex HashMapHolder<T>::i_lock;
 
 /// Global definitions for the hashmap storage
 

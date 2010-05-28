@@ -413,6 +413,12 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
                 }
                 break;
             }
+            case SPELLFAMILY_MAGE:
+                // remove Arcane Blast buffs at any non-Arcane Blast arcane damage spell.
+                // NOTE: it removed at hit instead cast because currently spell done-damage calculated at hit instead cast
+                if ((m_spellInfo->SchoolMask & SPELL_SCHOOL_MASK_ARCANE) && !(m_spellInfo->SpellFamilyFlags & UI64LIT(0x20000000)))
+                    m_caster->RemoveAurasDueToSpell(36032); // Arcane Blast buff
+                break;
             case SPELLFAMILY_WARRIOR:
             {
                 // Bloodthirst
@@ -1984,6 +1990,8 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 uint32 rage_modified = rage_addition;
 
                 // Glyph of Execution bonus
+                uint32 rage_modified = rage;
+
                 if (Aura *aura = m_caster->GetDummyAura(58367))
                     rage_modified +=  aura->GetModifier()->m_amount*10;
 
@@ -3507,6 +3515,7 @@ void Spell::EffectHealMechanical(SpellEffectIndex /*eff_idx*/)
 
         uint32 addhealth = caster->SpellHealingBonusDone(unitTarget, m_spellInfo, damage, HEAL);
         addhealth = unitTarget->SpellHealingBonusTaken(caster, m_spellInfo, addhealth, HEAL);
+
         caster->DealHeal(unitTarget, addhealth, m_spellInfo);
     }
 }
@@ -3537,6 +3546,7 @@ void Spell::EffectHealthLeech(SpellEffectIndex eff_idx)
     if (m_caster->isAlive())
     {
         heal = m_caster->SpellHealingBonusTaken(m_caster, m_spellInfo, heal, HEAL);
+
         m_caster->DealHeal(m_caster, heal, m_spellInfo);
     }
 }
@@ -4400,6 +4410,7 @@ void Spell::EffectLearnSpell(SpellEffectIndex eff_idx)
     Player *player = (Player*)unitTarget;
 
     uint32 spellToLearn = ((m_spellInfo->Id==SPELL_ID_GENERIC_LEARN) || (m_spellInfo->Id==SPELL_ID_GENERIC_LEARN_PET)) ? damage : m_spellInfo->EffectTriggerSpell[eff_idx];
+    player->learnSpell(spellToLearn, false);
 
     if ((sWorld.getConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE)) && (m_spellInfo->Id==55884))
     {
@@ -5727,6 +5738,12 @@ void Spell::EffectWeaponDmg(SpellEffectIndex eff_idx)
     // prevent negative damage
     m_damage+= uint32(bonus > 0 ? bonus : 0);
 
+    // Hemorrhage
+    if (m_spellInfo->SpellFamilyName==SPELLFAMILY_ROGUE && (m_spellInfo->SpellFamilyFlags & UI64LIT(0x2000000)))
+    {
+        if(m_caster->GetTypeId()==TYPEID_PLAYER)
+            ((Player*)m_caster)->AddComboPoints(unitTarget, 1);
+    }
     // Mangle (Cat): CP
     if (m_spellInfo->SpellFamilyName==SPELLFAMILY_DRUID && (m_spellInfo->SpellFamilyFlags==UI64LIT(0x0000040000000000)))
     {
@@ -7109,6 +7126,9 @@ void Spell::EffectSanctuary(SpellEffectIndex /*eff_idx*/)
 void Spell::EffectAddComboPoints(SpellEffectIndex /*eff_idx*/)
 {
     if(!unitTarget)
+        return;
+
+    if(m_caster->GetTypeId() != TYPEID_PLAYER)
         return;
 
     if(damage <= 0)

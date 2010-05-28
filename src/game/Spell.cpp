@@ -1605,6 +1605,8 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
 				case 65121:                                 // XT002's Light Bomb (h)
 				case 63024:                                 // XT002's Gravitiy Bomb
 				case 64234:                                 // XT002's Gravitiy Bomb (h)
+                case 50988:                                 // Glare of the Tribunal (Halls of Stone)
+                case 59870:                                 // Glare of the Tribunal (h) (Halls of Stone)
                     unMaxTargets = 1;
                     break;
                 case 28542:                                 // Life Drain
@@ -7154,8 +7156,10 @@ void Spell::SelectMountByAreaAndSkill(Unit* target, uint32 spellId75, uint32 spe
 
                             // speed higher than 280 replace it
                             if (mountSpeed > 280)
+                            {
                                 target->CastSpell(target, spellIdSpecial, true);
-                            return;
+                                return;
+                            }
                         }
                     }
                 }
