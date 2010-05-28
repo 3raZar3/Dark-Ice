@@ -55,7 +55,6 @@ class HashMapHolder
 
         static void Insert(T* o)
         {
-            Guard guard(i_lock);
             WriteGuard guard(i_lock);
             m_objectMap[o->GetGUID()] = o;
         }
@@ -68,7 +67,6 @@ class HashMapHolder
 
         static T* Find(ObjectGuid guid)
         {
-            Guard guard(i_lock);
             ReadGuard guard(i_lock);
             typename MapType::iterator itr = m_objectMap.find(guid.GetRawValue());
             return (itr != m_objectMap.end()) ? itr->second : NULL;
