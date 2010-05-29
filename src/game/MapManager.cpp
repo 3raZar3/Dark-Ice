@@ -59,20 +59,6 @@ MapManager::Initialize()
     InitMaxInstanceId();
 }
 
-
-    // debugging code, should be deleted some day
-    {
-        for(int i=0;i<MAX_GRID_STATE; i++)
-        {
-            i_GridStates[i] = si_GridStates[i];
-        }
-        i_GridStateErrorCount = 0;
-    }
-    int num_threads(sWorld.getConfig(CONFIG_UINT32_NUMTHREADS));
-    // Start mtmaps if needed.
-    if(num_threads > 0 && m_updater.activate(num_threads) == -1)
-        abort();
-
 void MapManager::InitStateMachine()
 {
     si_GridStates[GRID_STATE_INVALID] = new InvalidState;
@@ -263,20 +249,7 @@ void MapManager::Update(uint32 diff)
 
     for(MapMapType::iterator iter=i_maps.begin(); iter != i_maps.end(); ++iter)
 
-    {
-        if (m_updater.activated())
-            m_updater.schedule_update(*iter->second, i_timer.GetCurrent());
-        else
-            iter->second->Update(i_timer.GetCurrent());
-    }
-
-        iter->second->Update((uint32)i_timer.GetCurrent());
-
-
-    if (m_updater.activated())
-	 m_updater.wait();
-
-    checkAndCorrectGridStatesArray();
+		iter->second->Update((uint32)i_timer.GetCurrent());
 
     for (TransportSet::iterator iter = m_Transports.begin(); iter != m_Transports.end(); ++iter)
         (*iter)->Update(i_timer.GetCurrent());

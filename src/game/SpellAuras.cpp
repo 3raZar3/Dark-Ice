@@ -5043,7 +5043,7 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
             case 46221:                                     // Animal Blood
                 if (m_removeMode == AURA_REMOVE_BY_DEFAULT && m_target->IsInWater())
                 {
-                    LiquidData liquid_status;
+                    GridMapLiquidData liquid_status;
 
                     if (m_target->GetMap()->getLiquidStatus(m_target->GetPositionX(), m_target->GetPositionY(), m_target->GetPositionZ(), MAP_ALL_LIQUIDS, &liquid_status))
                         m_target->CastSpell(m_target->GetPositionX(), m_target->GetPositionY(), liquid_status.level, 63471, true, NULL, this);

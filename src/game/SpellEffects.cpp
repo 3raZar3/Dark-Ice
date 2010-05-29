@@ -1990,8 +1990,6 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 uint32 rage_modified = rage_addition;
 
                 // Glyph of Execution bonus
-                uint32 rage_modified = rage;
-
                 if (Aura *aura = m_caster->GetDummyAura(58367))
                     rage_modified +=  aura->GetModifier()->m_amount*10;
 
