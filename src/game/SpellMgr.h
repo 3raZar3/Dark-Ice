@@ -1050,6 +1050,13 @@ class SpellMgr
         void LoadPetDefaultSpells();
         void LoadSpellAreas();
 
+        // DEVELOPMENT CODE START 
+        void LoadSpellStack(); 
+        void LoadSpellStackGroup(); 
+        // DEVELOPMENT CODE END
+
+        void ApplySpellHacks();
+
     private:
         SpellScriptTarget  mSpellScriptTarget;
         SpellChainMap      mSpellChains;
