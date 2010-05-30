@@ -261,7 +261,7 @@ void MapManager::Update(uint32 diff)
     }
 
     if (m_updater.activated())
-	 m_updater.wait();
+        m_updater.wait();
 
     for (TransportSet::iterator iter = m_Transports.begin(); iter != m_Transports.end(); ++iter)
         (*iter)->Update(i_timer.GetCurrent());

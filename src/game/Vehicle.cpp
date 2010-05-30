@@ -429,9 +429,9 @@ void Vehicle::RelocatePassengers(Map *map)
             Unit *passengers = itr->second.passenger;
             assert(passengers);
 
-            float xx = GetPositionX() + passengers->m_movementInfo.GetTransportPos().x;
-            float yy = GetPositionY() + passengers->m_movementInfo.GetTransportPos().y;
-            float zz = GetPositionZ() + passengers->m_movementInfo.GetTransportPos().z;
+            float xx = GetPositionX() + passengers->m_movementInfo.GetTransportPos()->x;
+            float yy = GetPositionY() + passengers->m_movementInfo.GetTransportPos()->y;
+            float zz = GetPositionZ() + passengers->m_movementInfo.GetTransportPos()->z;
             //float oo = passengers->m_SeatData.Orientation;
             // this is not correct, we should recalculate
             // actual rotation depending on vehicle
@@ -448,9 +448,9 @@ void Vehicle::RelocatePassengers(Map *map)
             Unit *passengers = itr->second.passenger;
             assert(passengers);
 
-            float xx = GetPositionX() + passengers->m_movementInfo.GetTransportPos().x;
-            float yy = GetPositionY() + passengers->m_movementInfo.GetTransportPos().y;
-            float zz = GetPositionZ() + passengers->m_movementInfo.GetTransportPos().z;
+            float xx = GetPositionX() + passengers->m_movementInfo.GetTransportPos()->x;
+            float yy = GetPositionY() + passengers->m_movementInfo.GetTransportPos()->y;
+            float zz = GetPositionZ() + passengers->m_movementInfo.GetTransportPos()->z;
             //float oo = passengers->m_SeatData.Orientation;
             // this is not correct, we should recalculate
             // actual rotation depending on vehicle
