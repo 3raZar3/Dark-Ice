@@ -6915,9 +6915,6 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     if (!beacon)
                         return false;
 
-                    if (procSpell->Id == 20267)
-                        return false;
-
                     // find caster main aura at beacon
                     Aura* dummy = NULL;
                     Unit::AuraList const& baa = beacon->GetAurasByType(SPELL_AURA_PERIODIC_TRIGGER_SPELL);
@@ -7524,7 +7521,7 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
             if (dummySpell->SpellIconID == 2709)
             {
                 // only melee auto attack affected
-                if (!(procFlag & PROC_FLAG_SUCCESSFUL_MELEE_HIT) && procSpell->Id != 56815)
+                if (!(procFlag & PROC_FLAG_SUCCESSFUL_MELEE_HIT))
                     return false;
 
                 basepoints[0] = triggerAmount * damage / 100;
@@ -7664,10 +7661,6 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
             // Blood-Caked Blade
             if (dummySpell->SpellIconID == 138)
             {
-                // only melee auto attack affected
-                if (!(procFlag & PROC_FLAG_SUCCESSFUL_MELEE_HIT) && procSpell->Id != 56815)
-                    return false;
-
                 triggered_spell_id = dummySpell->EffectTriggerSpell[effIndex];
                 break;
             }

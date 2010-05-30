@@ -2684,23 +2684,32 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 }
                 return;
             }
-            // Death Grip
-            else if (m_spellInfo->Id == 49576)
+            switch(m_spellInfo->Id)
             {
-                if (!unitTarget)
-                    return;
+                // Death Grip
+                case 49560:
+                case 49576:
+                {
+                    if (!unitTarget || !m_caster)
+                        return;
 
-                m_caster->CastSpell(unitTarget, 49560, true);
-                return;
-            }
-            else if (m_spellInfo->Id == 49560)
-            {
-                if (!unitTarget)
-                    return;
+                    float x = m_caster->GetPositionX();
+                    float y = m_caster->GetPositionY();
+                    float z = m_caster->GetPositionZ()+1;
+                    float orientation = unitTarget->GetOrientation();
 
-                uint32 spellId = m_spellInfo->CalculateSimpleValue(EFFECT_INDEX_0);
-                unitTarget->CastSpell(m_caster->GetPositionX(), m_caster->GetPositionY(), m_caster->GetPositionZ(), spellId, true);
-                return;
+                    m_caster->CastSpell(unitTarget,51399,true,NULL);
+
+                    if(unitTarget->GetTypeId() != TYPEID_PLAYER)
+                    {
+                        unitTarget->GetMap()->CreatureRelocation((Creature*)unitTarget,x,y,z,orientation);
+                        ((Creature*)unitTarget)->SendMonsterMove(x, y, z, SPLINETYPE_NORMAL, SPLINEFLAG_UNKNOWN11, 1);
+                    }
+                    else
+                        unitTarget->NearTeleportTo(x,y,z,orientation,false);
+
+                    return;
+                }
             }
             break;
         }
@@ -6213,6 +6222,14 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     unitTarget->CastSpell(unitTarget, 46394, true);
                     break;
                 }
+                case 45625:                                 // Arcane Chains: Character Force Cast
+                {
+                    if(!unitTarget)
+                        return;
+
+                    unitTarget->CastSpell(m_caster, 45626, true);
+                    break;
+				}	
                 case 45206:                                 // Copy Off-hand Weapon
                 {
                     if (m_caster->GetTypeId() != TYPEID_UNIT || !unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -6228,15 +6245,8 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                             unitTarget->CastSpell(m_caster, m_spellInfo->CalculateSimpleValue(eff_idx), true);
                         }
                     }
-                    return;
-                }
-                case 45625:                                 // Arcane Chains: Character Force Cast
-                {
-                    if(!unitTarget)
-                        return;
 
-                    unitTarget->CastSpell(m_caster, 45626, true);
-                    break;
+                    return;
                 }
                 case 45668:                                 // Ultra-Advanced Proto-Typical Shortening Blaster
                 {

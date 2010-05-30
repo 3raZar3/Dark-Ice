@@ -1647,6 +1647,16 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     if (spellInfo_1->Id == 47710 || spellInfo_2->Id == 47710)
                         return false;
  
+                    // Dark Essence & Light Essence
+                    if ((spellInfo_1->Id == 65684 && spellInfo_2->Id == 65686) ||
+                        (spellInfo_2->Id == 65684 && spellInfo_1->Id == 65686))
+                        return true;
+
+                    // Potent Fungus and Mini must remove each other (Amanitar encounter, Ahn'kahet)
+                    if ((spellInfo_1->Id == 57055 && spellInfo_2->Id == 56648) ||
+                        (spellInfo_2->Id == 57055 && spellInfo_1->Id == 56648))
+                        return true;
+
                     // Thunderfury
                     if ((spellInfo_1->Id == 21992 && spellInfo_2->Id == 27648) ||
                         (spellInfo_2->Id == 21992 && spellInfo_1->Id == 27648))
@@ -1847,6 +1857,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     (spellInfo_2->SpellFamilyFlags & UI64LIT(0x1)) && (spellInfo_1->SpellFamilyFlags & UI64LIT(0x400000)) )
                     return false;
 
+                // Arcane Intellect and Dalaran Intellect
+                if( (spellInfo_1->SpellFamilyFlags & UI64LIT(0x400)) && (spellInfo_2->SpellFamilyFlags & UI64LIT(0x400)) )
+                    return true;
+
                 //Focus magic 30min buff and 10s proc
                 if( (spellInfo_1->Id == 54648) && (spellInfo_2->Id == 54646) ||
                     (spellInfo_2->Id == 54648) && (spellInfo_1->Id == 54646) )
@@ -1878,7 +1892,11 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
             // Arcane Intellect and Insight
             if( spellInfo_1->SpellIconID == 125 && spellInfo_2->Id == 18820 )
                 return false;
-
+			
+			// Ignite and Molten
+			if (spellInfo_1->Id == 12654 && spellInfo_2->SpellIconID == 937)
+			    return false;
+            break;
         case SPELLFAMILY_WARLOCK:
             if( spellInfo_2->SpellFamilyName == SPELLFAMILY_WARLOCK )
             {
@@ -1921,6 +1939,9 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 if( spellInfo_2->SpellIconID == 1985 && spellInfo_1->SpellIconID == 1985 && spellInfo_1->SpellVisual[0] == 9750 )
                     return false;
             }
+            // Detect Invisibility and Mana Shield (multi-family check)
+            if( spellInfo_1->Id == 132 && spellInfo_2->SpellIconID == 209 && spellInfo_2->SpellVisual[0] == 968 )
+                return false;
             break;
         case SPELLFAMILY_WARRIOR:
             if( spellInfo_2->SpellFamilyName == SPELLFAMILY_WARRIOR )
@@ -2178,42 +2199,45 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 // Seal of Vengeance/Corruption and Righteous Vengeance
                 if (spellInfo_1->SpellIconID == 2292 && spellInfo_2->SpellIconID == 3025 ||
                     spellInfo_2->SpellIconID == 2292 && spellInfo_1->SpellIconID == 3025)
-                    return false;
+                    return false;            }
 
-                // Blessing of Sanctuary (multi-family check, some from 16 spell icon spells)
-                if (spellInfo_2->Id == 67480 && spellInfo_1->Id == 20911)
-                    return false;
+            // Blessing of Sanctuary (multi-family check, some from 16 spell icon spells)
+            if (spellInfo_2->Id == 67480 && spellInfo_1->Id == 20911)
+                return false;
 
-                // Combustion and Fire Protection Aura (multi-family check)
-                if( spellInfo_2->Id == 11129 && spellInfo_1->SpellIconID == 33 && spellInfo_1->SpellVisual[0] == 321 )
-                    return false;
+            // Inner Fire and Consecration
+            if(spellInfo_2->SpellFamilyName == SPELLFAMILY_PRIEST)
+                if(spellInfo_1->SpellIconID == 51 && spellInfo_2->SpellIconID == 51)
+                return false;
 
-                // *Sanctity Aura -> Unstable Currents and other (multi-family check)
-                if( spellInfo_1->SpellIconID==502 && spellInfo_2->SpellFamilyName == SPELLFAMILY_GENERIC && spellInfo_2->SpellIconID==502 && spellInfo_2->SpellVisual[0]==969 )
-                    return false;
+            // Combustion and Fire Protection Aura (multi-family check)
+            if( spellInfo_2->Id == 11129 && spellInfo_1->SpellIconID == 33 && spellInfo_1->SpellVisual[0] == 321 )
+                return false;
 
-                // *Seal of Command and Band of Eternal Champion (multi-family check)
-                if( spellInfo_1->SpellIconID==561 && spellInfo_1->SpellVisual[0]==7992 && spellId_2 == 35081)
-                    return false;
-                
-                // Devotion Aura and Essence of Gossamer
-                if (spellInfo_1->SpellIconID == 291 && spellInfo_2->SpellIconID == 291 && spellInfo_2->SpellFamilyName == SPELLFAMILY_GENERIC)
-                    return false;
-                
-                // Inner Fire and Consecration
-                if (spellInfo_1->SpellIconID == 51 && spellInfo_2->SpellIconID == 51 && spellInfo_2->SpellFamilyName == SPELLFAMILY_PRIEST)
-                    return false;
-                
-                // Repentance and Track Humanoids
-                if (spellInfo_2->SpellFamilyName == SPELLFAMILY_HUNTER && spellInfo_1->SpellIconID == 316 && spellInfo_2->SpellIconID == 316)
-                    return false;			
+            // *Sanctity Aura -> Unstable Currents and other (multi-family check)
+            if( spellInfo_1->SpellIconID==502 && spellInfo_2->SpellFamilyName == SPELLFAMILY_GENERIC && spellInfo_2->SpellIconID==502 && spellInfo_2->SpellVisual[0]==969 )
+                return false;
 
-                // [Greater] Blessing of Kings and Blessing of Forgotten Kings
-                if ((spellId_1 == 20217 || spellId_1 == 25898) && spellId_2 == 69378)
-                  return true;
-                  break; 
-            }
-            break;
+            // *Seal of Command and Band of Eternal Champion (multi-family check)
+            if( spellInfo_1->SpellIconID==561 && spellInfo_1->SpellVisual[0]==7992 && spellId_2 == 35081)
+                return false;
+            
+            // Devotion Aura and Essence of Gossamer
+            if (spellInfo_1->SpellIconID == 291 && spellInfo_2->SpellIconID == 291 && spellInfo_2->SpellFamilyName == SPELLFAMILY_GENERIC)
+                return false;
+            
+            // Inner Fire and Consecration
+            if (spellInfo_1->SpellIconID == 51 && spellInfo_2->SpellIconID == 51 && spellInfo_2->SpellFamilyName == SPELLFAMILY_PRIEST)
+                return false;
+            
+            // Repentance and Track Humanoids
+            if (spellInfo_2->SpellFamilyName == SPELLFAMILY_HUNTER && spellInfo_1->SpellIconID == 316 && spellInfo_2->SpellIconID == 316)
+                return false;			
+
+            // [Greater] Blessing of Kings and Blessing of Forgotten Kings
+            if ((spellId_1 == 20217 || spellId_1 == 25898) && spellId_2 == 69378)
+              return true;
+              break; 
         case SPELLFAMILY_SHAMAN:
             if( spellInfo_2->SpellFamilyName == SPELLFAMILY_SHAMAN )
             {

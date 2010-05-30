@@ -106,9 +106,9 @@ ObjectAccessor::FindPlayer(ObjectGuid guid)
 Player*
 ObjectAccessor::FindPlayerByName(const char *name)
 {
-    HashMapHolder<Player>::ReadGuard g(HashMapHolder<Player>::GetLock());
-    HashMapHolder<Player>::MapType& m = sObjectAccessor.GetPlayers();
-    for(HashMapHolder<Player>::MapType::iterator iter = m.begin(); iter != m.end(); ++iter)
+    HashMapHolder<Player>::MapType& m = HashMapHolder<Player>::GetContainer();
+    HashMapHolder<Player>::MapType::iterator iter = m.begin();
+    for(; iter != m.end(); ++iter)
         if(iter->second->IsInWorld() && ( ::strcmp(name, iter->second->GetName()) == 0 ))
             return iter->second;
 
@@ -118,12 +118,12 @@ ObjectAccessor::FindPlayerByName(const char *name)
 void
 ObjectAccessor::SaveAllPlayers()
 {
-    HashMapHolder<Player>::ReadGuard g(HashMapHolder<Player>::GetLock());
-    HashMapHolder<Player>::MapType& m = sObjectAccessor.GetPlayers();
-    for(HashMapHolder<Player>::MapType::iterator itr = m.begin(); itr != m.end(); ++itr)
+    HashMapHolder<Player>::MapType& m = HashMapHolder<Player>::GetContainer();
+    HashMapHolder<Player>::MapType::iterator itr = m.begin();
+    for(; itr != m.end(); ++itr)
     {
         if (itr->second->m_jail_isjailed) continue; // Prevent jailed players to be saved
-            itr->second->SaveToDB();
+        itr->second->SaveToDB();
     }   
 }
 
