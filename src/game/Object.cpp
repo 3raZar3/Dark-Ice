@@ -1117,7 +1117,7 @@ void WorldObject::Relocate(float x, float y, float z, float orientation)
     {
         ((Unit*)this)->m_movementInfo.ChangePosition(x, y, z, orientation);
         if(((Creature*)this)->isVehicle())
-            ((Vehicle*)this)->RellocatePassengers(GetMap());
+            ((Vehicle*)this)->RelocatePassengers(GetMap());
     }
 }
 
@@ -1131,7 +1131,7 @@ void WorldObject::Relocate(float x, float y, float z)
     {
         ((Unit*)this)->m_movementInfo.ChangePosition(x, y, z, GetOrientation());
         if(((Creature*)this)->isVehicle())
-            ((Vehicle*)this)->RellocatePassengers(GetMap());
+            ((Vehicle*)this)->RelocatePassengers(GetMap());
     }
 }
 
