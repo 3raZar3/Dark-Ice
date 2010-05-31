@@ -59,6 +59,8 @@
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
+#include "Item.h"
+#include "ItemPrototype.h"
 
 pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
 {
@@ -824,6 +826,8 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
 
 void Spell::EffectDummy(SpellEffectIndex eff_idx)
 {
+    uint8 hit = 0;
+
     if (!unitTarget && !gameObjTarget && !itemTarget)
         return;
 
@@ -1860,10 +1864,11 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     // Stop if the target is not a player (it has to be one)
                     if (m_caster->GetTypeId()!=TYPEID_PLAYER)
                         return;
-                    // Define the hit variable
-                    uint8 hit = 0;
-                    // Each time you pass this... do the previous hit + 1
-                    hit = hit+1;
+
+                    Player* pTarget = (Player*)unitTarget;
+					Item* pItem = pTarget->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
+					if (pItem->GetProto()->ItemId == 45179 || pItem->GetProto()->ItemId == 45178 || pItem->GetProto()->ItemId == 45176 || pItem->GetProto()->ItemId == 45061 || pItem->GetProto()->ItemId == 45177)
+						hit = hit+1;
                     // If this spell has been cast 3 times (3 hits) cast defeat on the target
                     if (hit == 3)
                     {
