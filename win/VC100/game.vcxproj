@@ -1,4 +1,5 @@
-﻿<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug_NoPCH|Win32">
       <Configuration>Debug_NoPCH</Configuration>
@@ -443,6 +444,14 @@
     <ClCompile Include="..\..\src\game\ObjectGuid.cpp" />
     <ClCompile Include="..\..\src\game\ObjectPosSelector.cpp" />
     <ClCompile Include="..\..\src\game\Opcodes.cpp" />
+    <ClCompile Include="..\..\src\game\OutdoorPvP.cpp" />
+    <ClCompile Include="..\..\src\game\OutdoorPvPEP.cpp" />
+    <ClCompile Include="..\..\src\game\OutdoorPvPHP.cpp" />
+    <ClCompile Include="..\..\src\game\OutdoorPvPMgr.cpp" />
+    <ClCompile Include="..\..\src\game\OutdoorPvPNA.cpp" />
+    <ClCompile Include="..\..\src\game\OutdoorPvPSI.cpp" />
+    <ClCompile Include="..\..\src\game\OutdoorPvPTF.cpp" />
+    <ClCompile Include="..\..\src\game\OutdoorPvPZM.cpp" />
     <ClCompile Include="..\..\src\game\pchdef.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">pchdef.h</PrecompiledHeaderFile>
@@ -458,6 +467,19 @@
     <ClCompile Include="..\..\src\game\PetHandler.cpp" />
     <ClCompile Include="..\..\src\game\PetitionsHandler.cpp" />
     <ClCompile Include="..\..\src\game\Player.cpp" />
+    <ClCompile Include="..\..\src\game\PlayerbotAI.cpp" />
+    <ClCompile Include="..\..\src\game\PlayerbotClassAI.cpp" />
+    <ClCompile Include="..\..\src\game\PlayerbotDeathKnightAI.cpp" />
+    <ClCompile Include="..\..\src\game\PlayerbotDruidAI.cpp" />
+    <ClCompile Include="..\..\src\game\PlayerbotHunterAI.cpp" />
+    <ClCompile Include="..\..\src\game\PlayerbotMageAI.cpp" />
+    <ClCompile Include="..\..\src\game\PlayerbotMgr.cpp" />
+    <ClCompile Include="..\..\src\game\PlayerbotPaladinAI.cpp" />
+    <ClCompile Include="..\..\src\game\PlayerbotPriestAI.cpp" />
+    <ClCompile Include="..\..\src\game\PlayerbotRogueAI.cpp" />
+    <ClCompile Include="..\..\src\game\PlayerbotShamanAI.cpp" />
+    <ClCompile Include="..\..\src\game\PlayerbotWarlockAI.cpp" />
+    <ClCompile Include="..\..\src\game\PlayerbotWarriorAI.cpp" />
     <ClCompile Include="..\..\src\game\PlayerDump.cpp" />
     <ClCompile Include="..\..\src\game\PointMovementGenerator.cpp" />
     <ClCompile Include="..\..\src\game\PoolManager.cpp" />
@@ -474,6 +496,7 @@
     <ClCompile Include="..\..\src\game\SocialMgr.cpp" />
     <ClCompile Include="..\..\src\game\Spell.cpp" />
     <ClCompile Include="..\..\src\game\SpellAuras.cpp" />
+    <ClCompile Include="..\..\src\game\SpellDBCHacks.cpp" />
     <ClCompile Include="..\..\src\game\SpellEffects.cpp" />
     <ClCompile Include="..\..\src\game\SpellHandler.cpp" />
     <ClCompile Include="..\..\src\game\SpellMgr.cpp" />
@@ -592,11 +615,33 @@
     <ClInclude Include="..\..\src\game\ObjectMgr.h" />
     <ClInclude Include="..\..\src\game\ObjectPosSelector.h" />
     <ClInclude Include="..\..\src\game\Opcodes.h" />
+    <ClInclude Include="..\..\src\game\OutdoorPvP.h" />
+    <ClInclude Include="..\..\src\game\OutdoorPvPEP.h" />
+    <ClInclude Include="..\..\src\game\OutdoorPvPHP.h" />
+    <ClInclude Include="..\..\src\game\OutdoorPvPImpl.h" />
+    <ClInclude Include="..\..\src\game\OutdoorPvPMgr.h" />
+    <ClInclude Include="..\..\src\game\OutdoorPvPNA.h" />
+    <ClInclude Include="..\..\src\game\OutdoorPvPSI.h" />
+    <ClInclude Include="..\..\src\game\OutdoorPvPTF.h" />
+    <ClInclude Include="..\..\src\game\OutdoorPvPZM.h" />
     <ClInclude Include="..\..\src\game\Path.h" />
     <ClInclude Include="..\..\src\game\pchdef.h" />
     <ClInclude Include="..\..\src\game\Pet.h" />
     <ClInclude Include="..\..\src\game\PetAI.h" />
     <ClInclude Include="..\..\src\game\Player.h" />
+    <ClInclude Include="..\..\src\game\PlayerbotAI.h" />
+    <ClInclude Include="..\..\src\game\PlayerbotClassAI.h" />
+    <ClInclude Include="..\..\src\game\PlayerbotDeathKnightAI.h" />
+    <ClInclude Include="..\..\src\game\PlayerbotDruidAI.h" />
+    <ClInclude Include="..\..\src\game\PlayerbotHunterAI.h" />
+    <ClInclude Include="..\..\src\game\PlayerbotMageAI.h" />
+    <ClInclude Include="..\..\src\game\PlayerbotMgr.h" />
+    <ClInclude Include="..\..\src\game\PlayerbotPaladinAI.h" />
+    <ClInclude Include="..\..\src\game\PlayerbotPriestAI.h" />
+    <ClInclude Include="..\..\src\game\PlayerbotRogueAI.h" />
+    <ClInclude Include="..\..\src\game\PlayerbotShamanAI.h" />
+    <ClInclude Include="..\..\src\game\PlayerbotWarlockAI.h" />
+    <ClInclude Include="..\..\src\game\PlayerbotWarriorAI.h" />
     <ClInclude Include="..\..\src\game\PlayerDump.h" />
     <ClInclude Include="..\..\src\game\PointMovementGenerator.h" />
     <ClInclude Include="..\..\src\game\PoolManager.h" />
@@ -633,6 +678,7 @@
     <ClInclude Include="..\..\src\game\WorldSession.h" />
     <ClInclude Include="..\..\src\game\WorldSocket.h" />
     <ClInclude Include="..\..\src\game\WorldSocketMgr.h" />
+    <ClInclude Include="..\..\src\game\ZoneScript.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="shared.vcxproj">

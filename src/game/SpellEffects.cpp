@@ -1852,6 +1852,27 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     m_caster->CastSpell(unitTarget, 62654, true);
                     return;
                 }
+                case 62973:                                 // Foam Sword Attack
+                {
+                    // Stop if there is no target
+					if(!unitTarget)
+                        return;
+                    // Stop if the target is not a player (it has to be one)
+                    if (m_caster->GetTypeId()!=TYPEID_PLAYER)
+                        return;
+                    // Define the hit variable
+                    uint8 hit = 0;
+                    // Each time you pass this... do the previous hit + 1
+                    hit = hit+1;
+                    // If this spell has been cast 3 times (3 hits) cast defeat on the target
+                    if (hit == 3)
+                    {
+                        hit = 0;
+						// Cast Foam Sword Defeat on the target
+                        m_caster->CastSpell(unitTarget, 62994, true);
+                    }
+                    return;
+                }
                 case 67019:                                 // Flask of the North
                 {
                     if (m_caster->GetTypeId() != TYPEID_PLAYER)

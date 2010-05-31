@@ -22,6 +22,9 @@
     <Filter Include="References">
       <UniqueIdentifier>{64bb42b8-e7ba-4247-b337-492f644daeeb}</UniqueIdentifier>
     </Filter>
+    <Filter Include="OutdoorPvP">
+      <UniqueIdentifier>{b4d17f0c-7717-464b-a3dc-c5813abd745e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\game\AccountMgr.cpp">
@@ -445,6 +448,75 @@
     <ClCompile Include="..\..\src\game\MapUpdater.cpp">
       <Filter>World/Handlers</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\game\AuctionHouseBot.cpp" />
+    <ClCompile Include="..\..\src\game\ChatLexicsCutter.cpp" />
+    <ClCompile Include="..\..\src\game\ChatLog.cpp" />
+    <ClCompile Include="..\..\src\game\OutdoorPvP.cpp">
+      <Filter>OutdoorPvP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\OutdoorPvPEP.cpp">
+      <Filter>OutdoorPvP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\OutdoorPvPHP.cpp">
+      <Filter>OutdoorPvP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\OutdoorPvPMgr.cpp">
+      <Filter>OutdoorPvP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\OutdoorPvPNA.cpp">
+      <Filter>OutdoorPvP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\OutdoorPvPSI.cpp">
+      <Filter>OutdoorPvP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\OutdoorPvPTF.cpp">
+      <Filter>OutdoorPvP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\OutdoorPvPZM.cpp">
+      <Filter>OutdoorPvP</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\PlayerbotAI.cpp">
+      <Filter>Object</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\PlayerbotClassAI.cpp">
+      <Filter>Object</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\PlayerbotDeathKnightAI.cpp">
+      <Filter>Object</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\PlayerbotDruidAI.cpp">
+      <Filter>Object</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\PlayerbotHunterAI.cpp">
+      <Filter>Object</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\PlayerbotMageAI.cpp">
+      <Filter>Object</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\PlayerbotMgr.cpp">
+      <Filter>Object</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\PlayerbotPaladinAI.cpp">
+      <Filter>Object</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\PlayerbotPriestAI.cpp">
+      <Filter>Object</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\PlayerbotRogueAI.cpp">
+      <Filter>Object</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\PlayerbotShamanAI.cpp">
+      <Filter>Object</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\PlayerbotWarlockAI.cpp">
+      <Filter>Object</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\PlayerbotWarriorAI.cpp">
+      <Filter>Object</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\game\SpellDBCHacks.cpp">
+      <Filter>Object</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\game\AccountMgr.h">
@@ -837,6 +909,78 @@
     </ClInclude>
     <ClInclude Include="..\..\src\game\MapUpdater.h">
       <Filter>World/Handlers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\AuctionHouseBot.h" />
+    <ClInclude Include="..\..\src\game\ChatLexicsCutter.h" />
+    <ClInclude Include="..\..\src\game\ChatLog.h" />
+    <ClInclude Include="..\..\src\game\OutdoorPvP.h">
+      <Filter>OutdoorPvP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\OutdoorPvPEP.h">
+      <Filter>OutdoorPvP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\OutdoorPvPHP.h">
+      <Filter>OutdoorPvP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\OutdoorPvPImpl.h">
+      <Filter>OutdoorPvP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\OutdoorPvPMgr.h">
+      <Filter>OutdoorPvP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\OutdoorPvPNA.h">
+      <Filter>OutdoorPvP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\OutdoorPvPSI.h">
+      <Filter>OutdoorPvP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\OutdoorPvPTF.h">
+      <Filter>OutdoorPvP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\OutdoorPvPZM.h">
+      <Filter>OutdoorPvP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\ZoneScript.h">
+      <Filter>OutdoorPvP</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\PlayerbotAI.h">
+      <Filter>Object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\PlayerbotClassAI.h">
+      <Filter>Object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\PlayerbotDeathKnightAI.h">
+      <Filter>Object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\PlayerbotDruidAI.h">
+      <Filter>Object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\PlayerbotHunterAI.h">
+      <Filter>Object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\PlayerbotMageAI.h">
+      <Filter>Object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\PlayerbotMgr.h">
+      <Filter>Object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\PlayerbotPaladinAI.h">
+      <Filter>Object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\PlayerbotPriestAI.h">
+      <Filter>Object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\PlayerbotRogueAI.h">
+      <Filter>Object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\PlayerbotShamanAI.h">
+      <Filter>Object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\PlayerbotWarlockAI.h">
+      <Filter>Object</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\game\PlayerbotWarriorAI.h">
+      <Filter>Object</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
