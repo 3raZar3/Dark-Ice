@@ -1367,6 +1367,7 @@ void Unit::DealSpellDamage(SpellNonMeleeDamage *damageInfo, bool durabilityLoss)
         if(GetTypeId() == TYPEID_PLAYER && pVictim->isAlive())
             ((Player*)this)->CastItemCombatSpell(pVictim, attType);
     }
+
 }
 
 //TODO for melee need create structure as in
