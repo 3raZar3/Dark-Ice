@@ -1374,6 +1374,12 @@ void Player::Update( uint32 p_time )
                 UpdatePvP(true);
                 RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_ENTER_PVP_COMBAT);
             }
+			Player* player = ((Player*)this);
+            Item* pItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND);
+            if (pItem->GetProto()->ItemId == 45179 || pItem->GetProto()->ItemId == 45178 || pItem->GetProto()->ItemId == 45176 || pItem->GetProto()->ItemId == 45061 || pItem->GetProto()->ItemId == 45177)
+            {
+                owner->SetUInt32Value(PLAYER_DUEL_TEAM, 0);
+            }
         }
     }
 
