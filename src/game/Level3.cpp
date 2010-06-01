@@ -6708,9 +6708,12 @@ bool ChatHandler::HandleInstanceStartCommand(const char * /*args*/)
 {
     Player* pl = m_session->GetPlayer();
 	BattleGround *bg = pl->GetBattleGround();
+    if(!bg)
+        return false;
     if(bg->GetTypeID(true))
     {
         bg->StartBattleGround();
+        bg->AddPlayer(pl);
 		return true;
     }
     else
