@@ -870,13 +870,15 @@ bool PlayerbotAI::HasAura(uint32 spellId, const Unit& player) const
     {
         if (iter->second->GetId() == spellId)
             return true;
+		else
+			return false;
     }
-    return false;
+	return false;
 }
 
 bool PlayerbotAI::HasAura(const char* spellName) const
 {
-    return HasAura(spellName, *m_bot);
+    return (spellName) ? HasAura(spellName, *m_bot) : false;
 }
 
 bool PlayerbotAI::HasAura(const char* spellName, const Unit& player) const

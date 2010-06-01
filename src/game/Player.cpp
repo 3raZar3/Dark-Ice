@@ -6577,7 +6577,7 @@ void Player::UpdateHonorFields()
     if (GetTeam() == HORDE)
         startid = 15;
 
-    for(int i = startid; i < victim_rank; ++i)
+    for(int i = startid; i < int32(victim_rank); ++i)
     {
         if (i == victim_rank)
             break;
