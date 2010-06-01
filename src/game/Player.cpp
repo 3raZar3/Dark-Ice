@@ -6522,6 +6522,76 @@ void Player::UpdateHonorFields()
     }
 
     m_lastHonorUpdateTime = now;
+
+    
+    uint32 HonorKills = GetUInt32Value(PLAYER_FIELD_LIFETIME_HONORBALE_KILLS);
+    uint32 victim_rank = 0;
+
+    if (HonorKills == 0)
+        return;
+
+    if (HonorKills >= 100 && HonorKills < 200)
+        victim_rank = 1;
+    else if (HonorKills >= 200 && HonorKills < 500)
+        victim_rank = 2;
+    else if (HonorKills >= 500 && HonorKills < 1000)
+        victim_rank = 3;
+    else if (HonorKills >= 1000 && HonorKills < 1500)
+        victim_rank = 4;
+    else if (HonorKills >= 1500 && HonorKills < 2000)
+        victim_rank = 5;
+    else if (HonorKills >= 2000 && HonorKills < 2500)
+        victim_rank = 6;
+    else if (HonorKills >= 2500 && HonorKills < 3000)
+       victim_rank = 7;
+    else if (HonorKills >= 3000 && HonorKills < 3500)
+        victim_rank = 8;
+    else if (HonorKills >= 3500 && HonorKills < 4000)
+        victim_rank = 9;
+    else if (HonorKills >= 4000 && HonorKills < 4500)
+        victim_rank = 10;
+    else if (HonorKills >= 4500 && HonorKills < 5000)
+        victim_rank = 11;
+    else if (HonorKills >= 5000 && HonorKills < 5500)
+        victim_rank = 12;
+    else if (HonorKills >= 5500 && HonorKills < 8000)
+        victim_rank = 13;
+    else if (HonorKills >= 8000)
+        victim_rank = 14;
+
+    if (victim_rank == 0)
+        return;
+
+    if (GetTeam() == HORDE && victim_rank != 0)
+        victim_rank += 14;
+
+    CharTitlesEntry const* titleEntry = sCharTitlesStore.LookupEntry(victim_rank);
+    if (!HasTitle(titleEntry))
+        SetTitle(titleEntry);
+    else
+        return;
+
+    SetUInt32Value(PLAYER_CHOSEN_TITLE,victim_rank);
+
+    uint32 startid = 1;
+    if (GetTeam() == HORDE)
+        startid = 15;
+
+    for(int i = startid; i < victim_rank; ++i)
+    {
+        if (i == victim_rank)
+            break;
+        else
+        {
+            if (!HasTitle(titleEntry))
+                continue;
+            else
+            {
+                CharTitlesEntry const* titleEntry = sCharTitlesStore.LookupEntry(i);
+                SetTitle(titleEntry,true);
+            }
+        }
+    }
 }
 
 ///Calculate the amount of honor gained based on the victim
