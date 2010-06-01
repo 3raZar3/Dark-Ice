@@ -20971,13 +20971,13 @@ bool Player::isHonorOrXPTarget(Unit* pVictim) const
     return true;
 }
 
-bool Player::RewardSinglePlayerAtKill(Unit* pVictim)
+void Player::RewardSinglePlayerAtKill(Unit* pVictim)
 {
     bool PvP = pVictim->isCharmedOwnedByPlayerOrPlayer();
     uint32 xp = PvP ? 0 : MaNGOS::XP::Gain(this, pVictim);
 
     // honor can be in PvP and !PvP (racial leader) cases
-    bool honored_kill = RewardHonor(pVictim,1);
+    RewardHonor(pVictim,1);
 
     // xp and reputation only in !PvP case
     if(!PvP)
@@ -20994,8 +20994,6 @@ bool Player::RewardSinglePlayerAtKill(Unit* pVictim)
     }
     if(GetVehicleGUID() && !(m_movementInfo.GetVehicleFlags() & VF_GIVE_EXP))
         xp = 0;
-
-    return xp || honored_kill;
 }
 
 void Player::RewardPlayerAndGroupAtEvent(uint32 creature_id, WorldObject* pRewardSource)
