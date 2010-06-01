@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <omp.h>
 #include "MapManager.h"
 #include "InstanceSaveMgr.h"
 #include "Policies/SingletonImp.h"
@@ -24,6 +25,7 @@
 #include "Transports.h"
 #include "GridDefines.h"
 #include "MapInstanced.h"
+#include "Config/ConfigEnv.h"
 #include "DestinationHolderImp.h"
 #include "World.h"
 #include "CellImpl.h"
@@ -247,7 +249,16 @@ void MapManager::Update(uint32 diff)
     if (!i_timer.Passed())
         return;
 
-    for(MapMapType::iterator iter=i_maps.begin(); iter != i_maps.end(); ++iter)
+    MapMapType::iterator iter = i_maps.begin();
+    std::vector<Map*> update_queue(i_maps.size());
+
+    int omp_set_num_threads(sWorld.getConfig(CONFIG_UINT32_NUMTHREADS));
+
+    for (uint32 i = 0; iter != i_maps.end(); ++iter, ++i)
+    update_queue[i] = iter->second;
+
+    #pragma omp parallel for schedule(dynamic) private(i) shared(update_queue)
+    for (uint32 i = 0; i < i_maps.size(); ++i)
     {
         if (m_updater.activated())
             m_updater.schedule_update(*iter->second, i_timer.GetCurrent());

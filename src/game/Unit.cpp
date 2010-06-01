@@ -294,12 +294,11 @@ void Unit::Update( uint32 p_time )
     // WARNING! Order of execution here is important, do not change.
     // Spells must be processed with event system BEFORE they go to _UpdateSpells.
     // Or else we may have some SPELL_STATE_FINISHED spells stalled in pointers, that is bad.
+    #pragma omp critical(UpdateThreadSafety)
+    {
     m_Events.Update( p_time );
-
-    if(!IsInWorld())
-        return;
-
     _UpdateSpells( p_time );
+    }
 
     CleanupDeletedAuras();
 
@@ -692,7 +691,7 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
             group_tap = ((Creature*)pVictim)->GetGroupLootRecipient();
 
             if (Player* recipient = ((Creature*)pVictim)->GetOriginalLootRecipient())
-				if (bRewardIsAllowed)
+                if (bRewardIsAllowed)
                     player_tap = recipient;
         }
         // in player kill case group tap selected by player_tap (killer-player itself, or charmer, or owner, etc)

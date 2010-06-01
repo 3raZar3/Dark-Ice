@@ -146,6 +146,9 @@ class MANGOS_DLL_DECL ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, 
         static void LinkMap(Map* map)   { ACE_Guard<ACE_Thread_Mutex> guard(m_Lock); i_mapList.push_back(map); }
         static void DelinkMap(Map* map) { ACE_Guard<ACE_Thread_Mutex> guard(m_Lock); i_mapList.remove(map); }
     private:
+        // TODO: This methods will need lock in MT environment
+        // Theoreticaly multiple threads can enter and search in this method but
+        // in that case linking/delinking other map should be guarded
         static ACE_Thread_Mutex  m_Lock;
         template <class OBJECT> static OBJECT* FindHelper(ObjectGuid guid)
         {

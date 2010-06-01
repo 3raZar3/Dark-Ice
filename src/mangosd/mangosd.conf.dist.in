@@ -202,18 +202,18 @@ AddonChannel = 1
 CleanCharacterDB = 1
 
 ###################################################################################################################
-# ACE mtmaps Config
+# OpenMP Config
 #
-#    ACE mtmaps
+#    OpenMP
 #    MapUpdate.Threads
-#        Number of threads to run if the binary was compiled with mtmaps support.
-#        Default: 2
-#        For stable work 2
+#        Number of threads to run if the binary was compiled with OpenMP support.
+#        Default: 1
+#        For stable work 4 (if online ~2000)
 #        1 (minimum, normal behavior (single-threaded updates)
 #
 ###################################################################################################################
 
-MapUpdate.Threads = 2
+MapUpdate.Threads = 1
 
 ###################################################################################################################
 # SERVER LOGGING

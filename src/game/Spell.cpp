@@ -856,6 +856,7 @@ void Spell::CleanupTargetList()
 
     for(tbb::concurrent_vector<GOTargetInfo>::iterator itr = m_UniqueGOTargetInfo.begin(); itr != m_UniqueGOTargetInfo.end(); ++itr)
         itr->deleted = true;
+
     m_UniqueItemInfo.clear();
     m_delayMoment = 0;
 }
@@ -879,6 +880,7 @@ void Spell::AddUnitTarget(Unit* pVictim, SpellEffectIndex effIndex)
     {
         if (ihit->deleted == true)
             continue;
+
         if (targetGUID == ihit->targetGUID)                 // Found in list
         {
             if (!immuned)
@@ -955,6 +957,7 @@ void Spell::AddGOTarget(GameObject* pVictim, SpellEffectIndex effIndex)
     {
         if (ihit->deleted == true)
             continue;
+
         if (targetGUID == ihit->targetGUID)                 // Found in list
         {
             ihit->effectMask |= (1 << effIndex);            // Add only effect mask
@@ -1500,6 +1503,7 @@ bool Spell::IsAliveUnitPresentInTargetList()
     {
         if (ihit->deleted == true)
             continue;
+
         if( ihit->missCondition == SPELL_MISS_NONE && (needAliveTargetMask & ihit->effectMask) )
         {
             Unit *unit = m_caster->GetObjectGuid() == ihit->targetGUID ? m_caster : ObjectAccessor::GetUnit(*m_caster, ihit->targetGUID);
@@ -2907,6 +2911,7 @@ void Spell::cancel()
             {
                 if (ihit->deleted == true)
                     continue;
+
                 if( ihit->missCondition == SPELL_MISS_NONE )
                 {
                     Unit* unit = m_caster->GetObjectGuid() == (*ihit).targetGUID ? m_caster : ObjectAccessor::GetUnit(*m_caster, ihit->targetGUID);
@@ -3255,6 +3260,7 @@ void Spell::handle_immediate()
     SpellEntry const* spellInfo = sSpellStore.LookupEntry(m_spellInfo->Id);
     if (!spellInfo)
         return;
+
     // start channeling if applicable
     if(IsChanneledSpell(m_spellInfo))
     {
@@ -3276,6 +3282,10 @@ void Spell::handle_immediate()
     {
         if (m_destroyed == true || ihit == m_UniqueTargetInfo.end() || m_UniqueTargetInfo.size() == 0)
             break;
+
+        if (ihit->deleted == true)
+            continue;
+
         DoAllEffectOnTarget(&(*ihit));
     }
 
@@ -3283,6 +3293,9 @@ void Spell::handle_immediate()
     {
         if (m_destroyed == true || ihit == m_UniqueGOTargetInfo.end() || m_UniqueGOTargetInfo.size() == 0)
             break;
+
+        if (ihit->deleted == true)
+            continue;
 
         DoAllEffectOnTarget(&(*ihit));
     }
@@ -3506,6 +3519,7 @@ void Spell::update(uint32 difftime)
                         {
                             if (ihit->deleted == true)
                                 continue;
+
                             TargetInfo* target = &*ihit;
                             if(!target->targetGUID.IsCreature())
                                 continue;
@@ -3521,6 +3535,7 @@ void Spell::update(uint32 difftime)
                         {
                             if (ihit->deleted == true)
                                 continue;
+
                             GOTargetInfo* target = &*ihit;
 
                             GameObject* go = m_caster->GetMap()->GetGameObject(target->targetGUID);
@@ -3569,6 +3584,7 @@ void Spell::finish(bool ok)
         {
             if (ihit->deleted == true)
                 continue;
+
             if( ihit->missCondition == SPELL_MISS_NONE )
             {
                 // check m_caster->GetGUID() let load auras at login and speedup most often case
@@ -3612,6 +3628,7 @@ void Spell::finish(bool ok)
             {
                 if (ihit->deleted == true)
                     continue;
+
                 if (ihit->missCondition != SPELL_MISS_NONE && ihit->targetGUID != m_caster->GetObjectGuid())
                 {
                     needDrop = false;
@@ -4162,6 +4179,7 @@ void Spell::SendChannelStart(uint32 duration)
         {
             if (itr->deleted == true)
                 continue;
+
             if( (itr->effectMask & (1 << 0)) && itr->reflectResult == SPELL_MISS_NONE && itr->targetGUID != m_caster->GetObjectGuid())
             {
                 target = ObjectAccessor::GetUnit(*m_caster, itr->targetGUID);
@@ -4175,6 +4193,7 @@ void Spell::SendChannelStart(uint32 duration)
         {
             if (itr->deleted)
                 continue;
+
             if(itr->effectMask & (1 << 0) )
             {
                 target = m_caster->GetMap()->GetGameObject(itr->targetGUID);
@@ -6600,6 +6619,7 @@ void Spell::DelayedChannel()
     {
         if (ihit->deleted == true)
             continue;
+
         if ((*ihit).missCondition == SPELL_MISS_NONE)
         {
             if (Unit* unit = m_caster->GetObjectGuid() == ihit->targetGUID ? m_caster : ObjectAccessor::GetUnit(*m_caster, ihit->targetGUID))
@@ -6791,6 +6811,7 @@ bool Spell::HaveTargetsForEffect(SpellEffectIndex effect) const
     {
         if(itr->deleted == true)
             continue;
+
         if(itr->effectMask & (1 << effect))
             return true;
     }
