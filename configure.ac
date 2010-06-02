@@ -309,9 +309,9 @@ AC_CONFIG_FILES([
    src/bindings/Makefile
    src/bindings/ScriptDev2/Makefile
    src/bindings/ScriptDev2/scriptdev2.conf.dist
-   src/bindings/ScriptDev2/hellscream.conf.dist
+   src/bindings/ScriptDev2/darkice.conf.dist
    src/bindings/ScriptDev2/config.h
-   src/bindings/ScriptDev2/hn_config.h
+   src/bindings/ScriptDev2/darkice_config.h
 ])
 
 ## Configure ACE, if needed
