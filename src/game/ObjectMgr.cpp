@@ -2370,7 +2370,7 @@ void ObjectMgr::LoadItemPrototypes()
     for(std::set<uint32>::const_iterator itr = notFoundOutfit.begin(); itr != notFoundOutfit.end(); ++itr)
         sLog.outErrorDb("Item (Entry: %u) not exist in `item_template` but referenced in `CharStartOutfit.dbc`", *itr);
 }
-
+/* commented out by 3raZar3 from a tasssadar cherry-pick.. this code MAY be useful in the future but not at this time.
 void ObjectMgr::LoadItemExtendedCost()
 {
     uint32 count = 0;
@@ -2427,7 +2427,7 @@ void ObjectMgr::LoadItemExtendedCost()
     sLog.outString();
     sLog.outString(">> %u Extended Cost changed.", count);
 }
-
+*/
 void ObjectMgr::LoadItemRequiredTarget()
 {
     m_ItemRequiredTarget.clear();                           // needed for reload case
