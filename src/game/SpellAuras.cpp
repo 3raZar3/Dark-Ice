@@ -6946,6 +6946,9 @@ void Aura::HandleSpellSpecificBoosts(bool apply)
             // Item - Druid T10 Feral 4P Bonus
             if (GetId() == 5229 && m_target->HasAura(70726))// Enrage
                 spellId1 = 70725;
+            // Barkskin
+            if (GetId()==22812 && m_target->HasAura(63057)) // Glyph of Barkskin
+                spellId1 = 63058;                           // Glyph - Barkskin 01
             else
                 return;
             break;
