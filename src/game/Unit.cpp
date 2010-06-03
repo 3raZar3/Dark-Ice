@@ -2970,13 +2970,41 @@ SpellMissInfo Unit::MeleeSpellHitResult(Unit *pVictim, SpellEntry const *spell, 
 {
     WeaponAttackType attType = BASE_ATTACK;
 
-    if (spell->DmgClass == SPELL_DAMAGE_CLASS_RANGED)
+    // Only for hunters, other classes do not have ranged attack that would benefit from ranged hit
+    if (spell->DmgClass == SPELL_DAMAGE_CLASS_RANGED && (spell->SpellFamilyName == SPELLFAMILY_HUNTER || spell->SpellFamilyName == SPELLFAMILY_GENERIC))
         attType = RANGED_ATTACK;
 
     // bonus from skills is 0.04% per skill Diff
-    int32 attackerWeaponSkill = !(spell->DmgClass == SPELL_DAMAGE_CLASS_RANGED && !(spell->Attributes & SPELL_ATTR_RANGED) )
-        ? int32(GetWeaponSkillValue(attType,pVictim))
-        : int32(GetMaxSkillValueForLevel());
+    int32 attackerWeaponSkill = int32(GetWeaponSkillValue(attType,pVictim));
+
+    // Probably not needed after [pr456]
+    /*if ( spell->SpellFamilyName == SPELLFAMILY_PALADIN )
+    {
+        // Hammer of Wrath
+        if ( spell->SpellFamilyFlags & UI64LIT(0x0000008000000000) )
+            attackerWeaponSkill = this->GetMaxSkillValueForLevel();
+        // Shield of Righteousness
+        else if ( spell->SpellFamilyFlags & UI64LIT(0x0010000000000000) )
+            attackerWeaponSkill = this->GetMaxSkillValueForLevel();
+        // Avenger's Shield
+        else if ( spell->SpellFamilyFlags & UI64LIT(0x0000000000004000) )
+            attackerWeaponSkill = this->GetMaxSkillValueForLevel();
+        // Judgement ( seal trigger )
+        else if ( spell->Category == SPELLCATEGORY_JUDGEMENT )
+            attackerWeaponSkill = this->GetMaxSkillValueForLevel();
+        // Judgement debuff and damage
+        else if ( GetSpellSpecific( spell->Id ) == SPELL_JUDGEMENT )
+            return SPELL_MISS_NONE;
+        // some Judgement other damage
+        else
+            switch ( spell->Id )
+            {
+                case 20425: // Judgement of Command
+                case 54158: // Judgement
+                    return SPELL_MISS_NONE;
+            }
+    }*/
+
     int32 skillDiff = attackerWeaponSkill - int32(pVictim->GetMaxSkillValueForLevel(this));
     int32 fullSkillDiff = attackerWeaponSkill - int32(pVictim->GetDefenseSkillValue(this));
 
