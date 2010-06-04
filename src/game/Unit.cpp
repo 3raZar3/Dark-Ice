@@ -575,7 +575,16 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
     // root type spells do not dispel the root effect
     if (!spellProto || !(spellProto->Mechanic == MECHANIC_ROOT || IsSpellHaveAura(spellProto,SPELL_AURA_MOD_ROOT)))
         pVictim->RemoveSpellbyDamageTaken(SPELL_AURA_MOD_ROOT, damage);
+		
+	WeaponAttackType attType = GetWeaponAttackType(spellProto);
 
+	// on weapon hit casts, proc from melee damage implemented in DealMeleeDamage() (sent with spellProto == NULL, which determines possible double proc) 
+    if(GetTypeId() == TYPEID_PLAYER &&
+	   spellProto &&
+	   (spellProto->DmgClass == SPELL_DAMAGE_CLASS_MELEE ||
+	   spellProto->DmgClass == SPELL_DAMAGE_CLASS_RANGED))
+	    ((Player*)this)->CastItemCombatSpell(pVictim, attType);
+		
     // no xp,health if type 8 /critters/
     if(pVictim->GetTypeId() != TYPEID_PLAYER && pVictim->GetCreatureType() == CREATURE_TYPE_CRITTER)
     {
@@ -1362,7 +1371,7 @@ void Unit::DealSpellDamage(SpellNonMeleeDamage *damageInfo, bool durabilityLoss)
     if (!(damageInfo->HitInfo & HITINFO_MISS) && hasWeaponDmgEffect) 
     {
         WeaponAttackType attType = GetWeaponAttackType(spellProto);
-        // on weapon hit casts
+        // on weapon hit casts, proc from melee and ranged spells implemented in DealDamage()
         if(GetTypeId() == TYPEID_PLAYER && pVictim->isAlive())
             ((Player*)this)->CastItemCombatSpell(pVictim, attType);
     }
