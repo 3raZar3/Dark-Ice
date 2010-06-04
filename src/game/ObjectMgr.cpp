@@ -2370,64 +2370,7 @@ void ObjectMgr::LoadItemPrototypes()
     for(std::set<uint32>::const_iterator itr = notFoundOutfit.begin(); itr != notFoundOutfit.end(); ++itr)
         sLog.outErrorDb("Item (Entry: %u) not exist in `item_template` but referenced in `CharStartOutfit.dbc`", *itr);
 }
-/* commented out by 3raZar3 from a tasssadar cherry-pick.. this code MAY be useful in the future but not at this time.
-void ObjectMgr::LoadItemExtendedCost()
-{
-    uint32 count = 0;
 
-    QueryResult *result = WorldDatabase.Query("SELECT entry, honor, arena_points, bracket, rating FROM item_extended_cost");
-
-    if (!result)
-    {
-        barGoLink bar(1);
-
-        bar.step();
-
-        sLog.outString();
-        sLog.outErrorDb(">> Loaded 0 ItemExtendedCost. No Extended Cost from dbc will be rewritten.");
-        return;
-    }
-
-    barGoLink bar((int)result->GetRowCount());
-
-    do
-    {
-        Field *fields = result->Fetch();
-        bar.step();
-
-        uint32 Entry          = fields[0].GetUInt32();
-        int32  newHonor       = fields[1].GetUInt32();
-        int32  newArenaPoints = fields[2].GetUInt32();
-        int32  newBracket     = fields[3].GetUInt32();
-        int32  newRating      = fields[4].GetUInt32();
-
-        ItemExtendedCostEntry *pExtCost = const_cast<ItemExtendedCostEntry*>(sItemExtendedCostStore.LookupEntry(Entry));
-
-        if (!pExtCost)
-        {
-            sLog.outErrorDb("Table `item_extended_cos`: Entry %u doesn't exist`.",Entry);
-            continue;
-        }
-
-        if(newHonor >= 0)
-            pExtCost->reqhonorpoints = newHonor;
-        if(newArenaPoints >= 0)
-            pExtCost->reqarenapoints = newArenaPoints;
-        if(newBracket >= 0)
-            pExtCost->reqarenaslot = newBracket;
-        if(newRating >= 0)
-            pExtCost->reqpersonalarenarating = newRating;
- 
-
-        ++count;
-    } while (result->NextRow());
-
-    delete result;
-
-    sLog.outString();
-    sLog.outString(">> %u Extended Cost changed.", count);
-}
-*/
 void ObjectMgr::LoadItemRequiredTarget()
 {
     m_ItemRequiredTarget.clear();                           // needed for reload case
@@ -3317,8 +3260,8 @@ void ObjectMgr::LoadGuilds()
 
     //                                                    0             1          2          3           4           5           6
     QueryResult *result = CharacterDatabase.Query("SELECT guild.guildid,guild.name,leaderguid,EmblemStyle,EmblemColor,BorderStyle,BorderColor,"
-    //   7               8    9    10         11        12                                     13
-        "BackgroundColor,info,motd,createdate,BankMoney,(SELECT COUNT(guild_bank_tab.guildid), guild.friendlyGuildId FROM guild_bank_tab WHERE guild_bank_tab.guildid = guild.guildid) "
+    //   7               8    9    10         11        12
+        "BackgroundColor,info,motd,createdate,BankMoney,(SELECT COUNT(guild_bank_tab.guildid) FROM guild_bank_tab WHERE guild_bank_tab.guildid = guild.guildid) "
         "FROM guild ORDER BY guildid ASC");
 
     if( !result )
