@@ -2357,12 +2357,14 @@ void Unit::CalculateAbsorbAndResist(Unit *pCaster, SpellSchoolMask schoolMask, D
 
                 int32 amount = int32(incanterAbsorption * (*itr)->GetModifier()->m_amount / 100);
 
+                uint32 triggered_id = itr_spellProto->EffectTriggerSpell[(*itr)->GetEffIndex()];
+
                 // apply normalized part of already accumulated amount in aura
-                if (Aura* spdAura = GetAura(44413, EFFECT_INDEX_0))
+                if (Aura* spdAura = GetAura(triggered_id, EFFECT_INDEX_0))
                     amount += spdAura->GetModifier()->m_amount * spdAura->GetAuraDuration() / spdAura->GetAuraMaxDuration();
 
                 // Incanter's Absorption (triggered absorb based spell power, will replace existed if any)
-                CastCustomSpell(this, 44413, &amount, NULL, NULL, true);
+                CastCustomSpell(this, triggered_id, &amount, NULL, NULL, true, NULL, *itr);
                 break;
             }
         }
@@ -5364,7 +5366,8 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
     Item* castItem = triggeredByAura->GetCastItemGUID() && GetTypeId()==TYPEID_PLAYER
         ? ((Player*)this)->GetItemByGuid(triggeredByAura->GetCastItemGUID()) : NULL;
 
-    uint32 triggered_spell_id = 0;
+    // some dummy spells have trigger spell in spell data already (from 3.0.3)
+    uint32 triggered_spell_id = dummySpell->EffectApplyAuraName[effIndex] == SPELL_AURA_DUMMY ? dummySpell->EffectTriggerSpell[effIndex] : 0;
     Unit* target = pVictim;
     int32  basepoints[MAX_EFFECT_INDEX] = {0, 0, 0};
 
@@ -6007,12 +6010,6 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 triggered_spell_id = 22858;
                 break;
             }
-            // Gag Order
-            if (dummySpell->SpellIconID == 280)
-            {
-                triggered_spell_id = 18498;                 // Silenced - Gag Order
-                break;
-            }
             // Second Wind
             if (dummySpell->SpellIconID == 1697)
             {
@@ -6335,7 +6332,7 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                         return false;
 
                     basepoints[0] = int32(target->GetMaxHealth() * triggerAmount / 100);
-                    triggered_spell_id = 56131;
+                    // triggered_spell_id in spell data
                     break;
                 }
                 // Item - Priest T10 Healer 4P Bonus
@@ -7042,7 +7039,7 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 // Sacred Shield (talent rank)
                 case 53601:
                 {
-                    triggered_spell_id = 58597;
+                    // triggered_spell_id in spell data
                     target = this;
                     break;
                 }
@@ -7703,7 +7700,7 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
             // Blood-Caked Blade
             if (dummySpell->SpellIconID == 138)
             {
-                triggered_spell_id = dummySpell->EffectTriggerSpell[effIndex];
+                // triggered_spell_id in spell data
                 break;
             }
             // Unholy Blight
