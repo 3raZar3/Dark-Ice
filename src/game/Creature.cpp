@@ -44,8 +44,6 @@
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
 #include "Vehicle.h"
-#include "Object.h"
-#include "ZoneScript.h"
 
 // apply implementation of the singletons
 #include "Policies/SingletonImp.h"
@@ -133,8 +131,6 @@ m_creatureInfo(NULL), m_isActiveObject(false), m_splineFlags(SPLINEFLAG_WALKMODE
     m_GlobalCooldown = 0;
 
     m_splineFlags = SPLINEFLAG_WALKMODE;
-
-    ResetObtainedDamage();
 }
 
 Creature::~Creature()
@@ -151,12 +147,7 @@ void Creature::AddToWorld()
 {
     ///- Register the creature for guid lookup
     if(!IsInWorld() && GetObjectGuid().GetHigh() == HIGHGUID_UNIT)
-    {
-        if(m_zoneScript)
-            m_zoneScript->OnCreatureCreate(this, true);
-
         GetMap()->GetObjectsStore().insert<Creature>(GetGUID(), (Creature*)this);
-    }
 
     Unit::AddToWorld();
 }
@@ -165,19 +156,14 @@ void Creature::RemoveFromWorld()
 {
     ///- Remove the creature from the accessor
     if(IsInWorld() && GetObjectGuid().GetHigh() == HIGHGUID_UNIT)
-    {
-        if(m_zoneScript)
-            m_zoneScript->OnCreatureCreate(this, false);
-
         GetMap()->GetObjectsStore().erase<Creature>(GetGUID(), (Creature*)NULL);
-    }
 
     Unit::RemoveFromWorld();
 }
 
 void Creature::RemoveCorpse()
 {
-    if (((getDeathState() != CORPSE && getDeathState() != GHOULED) && !m_isDeadByDefault) || (getDeathState() != ALIVE && m_isDeadByDefault))
+    if ((getDeathState() != CORPSE && !m_isDeadByDefault) || (getDeathState() != ALIVE && m_isDeadByDefault))
         return;
 
     m_deathTimer = 0;
@@ -279,10 +265,10 @@ bool Creature::InitEntry(uint32 Entry, uint32 team, const CreatureData *data )
 
     SetFloatValue(UNIT_MOD_CAST_SPEED, 1.0f);
 
-    SetSpeedRate(MOVE_WALK, cinfo->speed_walk);
-    SetSpeedRate(MOVE_RUN,  cinfo->speed_run);
-    SetSpeedRate(MOVE_SWIM, 1.0f);                          // using 1.0 rate
-    SetSpeedRate(MOVE_FLIGHT, 1.0f);                        // using 1.0 rate
+    SetSpeedRate(MOVE_WALK, cinfo->speed_walk );
+    SetSpeedRate(MOVE_RUN,  cinfo->speed_run );
+    SetSpeedRate(MOVE_SWIM, 1.0f );
+    SetSpeedRate(MOVE_FLIGHT, 1.0f );
 
     SetFloatValue(OBJECT_FIELD_SCALE_X, cinfo->scale);
 
@@ -846,7 +832,7 @@ void Creature::PrepareBodyLootState()
     // if not have normal loot allow skinning if need
     if (!isAlive() && !lootForSkin && GetCreatureInfo()->SkinLootId)
     {
-        lootForBody = true; // pass this loot mode
+        lootForBody = true;                                 // pass this loot mode
 
         RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
         SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE);
@@ -856,6 +842,7 @@ void Creature::PrepareBodyLootState()
     RemoveFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE);
     RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE);
 }
+
 
 /**
  * Return original player who tap creature, it can be different from player/group allowed to loot so not use it for loot code
@@ -1157,14 +1144,6 @@ float Creature::GetSpellDamageMod(int32 Rank)
 
 bool Creature::CreateFromProto(uint32 guidlow, uint32 Entry, uint32 team, const CreatureData *data)
 {
-    SetZoneScript();
-    if(m_zoneScript && data)
-    {
-        Entry = m_zoneScript->GetCreatureEntry(guidlow, data);
-        if(!Entry)
-            return false;
-    }
-
     CreatureInfo const *cinfo = ObjectMgr::GetCreatureTemplate(Entry);
     if(!cinfo)
     {
@@ -1402,7 +1381,6 @@ void Creature::setDeathState(DeathState s)
     {
         SetHealth(GetMaxHealth());
         SetLootRecipient(NULL);
-        ResetObtainedDamage();
         CreatureInfo const *cinfo = GetCreatureInfo();
         SetUInt32Value(UNIT_DYNAMIC_FLAGS, 0);
         RemoveFlag (UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE);
@@ -2052,7 +2030,7 @@ float Creature::GetBaseSpeed() const
             }
         }
     }
-    return m_creatureInfo->speed_run;
+    return m_creatureInfo->speed_walk;
 }
 
 bool Creature::HasSpell(uint32 spellID) const

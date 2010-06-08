@@ -390,7 +390,7 @@ class ByteBuffer
             size_t size = 1;
             for (uint8 i = 0; guid != 0; ++i)
             {
-                if (guid & 0xFF)
+                if(guid & 0xFF)
                 {
                     packGUID[0] |= uint8(1 << i);
                     packGUID[size] =  uint8(guid & 0xFF);

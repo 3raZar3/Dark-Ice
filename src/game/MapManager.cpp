@@ -25,11 +25,11 @@
 #include "Transports.h"
 #include "GridDefines.h"
 #include "MapInstanced.h"
-#include "Config/ConfigEnv.h"
 #include "DestinationHolderImp.h"
 #include "World.h"
 #include "CellImpl.h"
 #include "Corpse.h"
+#include "Config/ConfigEnv.h"
 #include "ObjectMgr.h"
 
 #define CLASS_LOCK MaNGOS::ClassLevelLockable<MapManager, ACE_Thread_Mutex>
@@ -53,8 +53,14 @@ MapManager::~MapManager()
     DeleteStateMachine();
 }
 
-void MapManager::Initialize()
+void
+MapManager::Initialize()
 {
+    int num_threads(sWorld.getConfig(CONFIG_UINT32_NUMTHREADS));
+    // Start mtmaps if needed.
+    if(num_threads > 0 && m_updater.activate(num_threads) == -1)
+        abort();
+
     InitStateMachine();
     InitMaxInstanceId();
 }
@@ -75,6 +81,7 @@ void MapManager::DeleteStateMachine()
     delete si_GridStates[GRID_STATE_REMOVAL];
 }
 
+
 void MapManager::UpdateGridState(grid_state_t state, Map& map, NGridType& ngrid, GridInfo& ginfo, const uint32 &x, const uint32 &y, const uint32 &t_diff)
 {
     // TODO: The grid state array itself is static and therefore 100% safe, however, the data
@@ -90,7 +97,8 @@ void MapManager::InitializeVisibilityDistanceInfo()
         (*iter).second->InitVisibilityDistance();
 }
 
-Map* MapManager::_createBaseMap(uint32 id)
+Map*
+MapManager::_createBaseMap(uint32 id)
 {
     Map *m = _findMap(id);
 
@@ -234,7 +242,7 @@ bool MapManager::CanPlayerEnter(uint32 mapid, Player* player)
 void MapManager::DeleteInstance(uint32 mapid, uint32 instanceId)
 {
     Guard guard(*this);
-    
+
     Map *m = _createBaseMap(mapid);
     if (m && m->Instanceable())
         ((MapInstanced*)m)->DestroyInstance(instanceId);
@@ -297,6 +305,9 @@ void MapManager::UnloadAll()
         delete i_maps.begin()->second;
         i_maps.erase(i_maps.begin());
     }
+
+    if (m_updater.activated())
+        m_updater.deactivate();
 }
 
 void MapManager::InitMaxInstanceId()
@@ -314,7 +325,7 @@ void MapManager::InitMaxInstanceId()
 uint32 MapManager::GetNumInstances()
 {
     Guard guard(*this);
-    
+
     uint32 ret = 0;
     for(MapMapType::iterator itr = i_maps.begin(); itr != i_maps.end(); ++itr)
     {
@@ -330,7 +341,7 @@ uint32 MapManager::GetNumInstances()
 uint32 MapManager::GetNumPlayersInInstances()
 {
     Guard guard(*this);
-    
+
     uint32 ret = 0;
     for(MapMapType::iterator itr = i_maps.begin(); itr != i_maps.end(); ++itr)
     {

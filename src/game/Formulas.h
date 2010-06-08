@@ -31,8 +31,8 @@ namespace MaNGOS
             //return (float)ceil(count*(-0.53177f + 0.59357f * exp((level +23.54042f) / 26.07859f )));
             //Not correct for lower levels....
             float honor_points = sWorld.getConfig(CONFIG_UINT32_HONORABLE_KILL);  // For one kill at max level (from 3.3.3, lvl 80)
-            honor_points *= float(level) / float(sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL));
             honor_points *= count;
+            honor_points *= float(level) / float(sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL));
             return honor_points;
         }
     }
@@ -127,6 +127,9 @@ namespace MaNGOS
 
             if(u->GetTypeId()==TYPEID_UNIT && ((Creature*)u)->isElite())
                 xp_gain *= 2;
+
+            if(u->GetTypeId()==TYPEID_UNIT && ((Creature*)u)->GetCreatureInfo()->flags_extra & CREATURE_FLAG_PARTIAL_XP_REWARDED)
+                xp_gain /= 8;
 
             return (uint32)(xp_gain*sWorld.getConfig(CONFIG_FLOAT_RATE_XP_KILL));
         }

@@ -69,8 +69,7 @@ void BattleGroundNA::AddPlayer(Player *plr)
 
     m_PlayerScores[plr->GetGUID()] = sc;
 
-    UpdateWorldState(0xa0f, GetAlivePlayersCountByTeam(ALLIANCE));
-    UpdateWorldState(0xa10, GetAlivePlayersCountByTeam(HORDE));
+    UpdateArenaWorldState();
 }
 
 void BattleGroundNA::RemovePlayer(Player* /*plr*/, uint64 /*guid*/)
@@ -78,8 +77,7 @@ void BattleGroundNA::RemovePlayer(Player* /*plr*/, uint64 /*guid*/)
     if (GetStatus() == STATUS_WAIT_LEAVE)
         return;
 
-    UpdateWorldState(0xa0f, GetAlivePlayersCountByTeam(ALLIANCE));
-    UpdateWorldState(0xa10, GetAlivePlayersCountByTeam(HORDE));
+    UpdateArenaWorldState();
 
     CheckArenaWinConditions();
 }
@@ -97,8 +95,7 @@ void BattleGroundNA::HandleKillPlayer(Player *player, Player *killer)
 
     BattleGround::HandleKillPlayer(player,killer);
 
-    UpdateWorldState(0xa0f, GetAlivePlayersCountByTeam(ALLIANCE));
-    UpdateWorldState(0xa10, GetAlivePlayersCountByTeam(HORDE));
+    UpdateArenaWorldState();
 
     CheckArenaWinConditions();
 }

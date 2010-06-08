@@ -550,7 +550,7 @@ void Group::SendLootAllPassed(Roll const& r)
     }
 }
 
-void Group::GroupLoot(Creature *creature, Loot *loot)
+void Group::GroupLoot(WorldObject* object, Loot *loot)
 {
     for(uint8 itemSlot = 0; itemSlot < loot->items.size(); ++itemSlot)
     {
@@ -564,13 +564,13 @@ void Group::GroupLoot(Creature *creature, Loot *loot)
 
         //roll for over-threshold item if it's one-player loot
         if (itemProto->Quality >= uint32(m_lootThreshold) && !lootItem.freeforall)
-            StartLootRool(creature,loot,itemSlot,false);
+            StartLootRool(object,loot,itemSlot,false);
         else
             lootItem.is_underthreshold = 1;
     }
 }
 
-void Group::NeedBeforeGreed(Creature *creature, Loot *loot)
+void Group::NeedBeforeGreed(WorldObject* object, Loot *loot)
 {
     for(uint8 itemSlot = 0; itemSlot < loot->items.size(); ++itemSlot)
     {
@@ -584,13 +584,13 @@ void Group::NeedBeforeGreed(Creature *creature, Loot *loot)
 
         //only roll for one-player items, not for ones everyone can get
         if (itemProto->Quality >= uint32(m_lootThreshold) && !lootItem.freeforall)
-            StartLootRool(creature, loot, itemSlot, true);
+            StartLootRool(object, loot, itemSlot, true);
         else
             lootItem.is_underthreshold = 1;
     }
 }
 
-void Group::MasterLoot(Creature *creature, Loot* loot)
+void Group::MasterLoot(WorldObject* object, Loot* loot)
 {
     for (LootItemList::iterator i=loot->items.begin(); i != loot->items.end(); ++i)
     {
@@ -612,7 +612,7 @@ void Group::MasterLoot(Creature *creature, Loot* loot)
         if (!looter->IsInWorld())
             continue;
 
-        if (looter->IsWithinDist(creature, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
+        if (looter->IsWithinDist(object, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
         {
             data << uint64(looter->GetGUID());
             ++real_count;
@@ -624,7 +624,7 @@ void Group::MasterLoot(Creature *creature, Loot* loot)
     for(GroupReference *itr = GetFirstMember(); itr != NULL; itr = itr->next())
     {
         Player *looter = itr->getSource();
-        if (looter->IsWithinDist(creature, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
+        if (looter->IsWithinDist(object, sWorld.getConfig(CONFIG_FLOAT_GROUP_XP_DISTANCE), false))
             looter->GetSession()->SendPacket(&data);
     }
 }
@@ -698,7 +698,7 @@ bool Group::CountRollVote(ObjectGuid const& playerGUID, Rolls::iterator& rollI, 
     return false;
 }
 
-void Group::StartLootRool(Creature* lootTarget, Loot* loot, uint8 itemSlot, bool skipIfCanNotUse)
+void Group::StartLootRool(WorldObject* lootTarget, Loot* loot, uint8 itemSlot, bool skipIfCanNotUse)
 {
     if (itemSlot >= loot->items.size())
         return;
@@ -737,7 +737,13 @@ void Group::StartLootRool(Creature* lootTarget, Loot* loot, uint8 itemSlot, bool
         {
             SendLootStartRoll(LOOT_ROLL_TIMEOUT, lootTarget->GetMapId(), *r);
             loot->items[itemSlot].is_blocked = true;
-            lootTarget->StartGroupLoot(this,LOOT_ROLL_TIMEOUT);
+            if(lootTarget->GetTypeId() == TYPEID_UNIT)
+                ((Creature*)lootTarget)->StartGroupLoot(this,LOOT_ROLL_TIMEOUT);
+            else if(lootTarget->GetTypeId() == TYPEID_GAMEOBJECT)
+            {
+                ((GameObject*)lootTarget)->m_groupLootTimer = 60000;
+                ((GameObject*)lootTarget)->m_groupLootId = GetId();  
+            }
         }
 
         RollId.push_back(r);
@@ -981,8 +987,8 @@ void Group::SendUpdate()
         WorldPacket data(SMSG_GROUP_LIST, (1+1+1+1+8+4+GetMembersCount()*20));
         data << uint8(m_groupType);                         // group type (flags in 3.3)
         data << uint8(citr->group);                         // groupid
-        data << uint8(GetFlags(*citr));                     // group flags
         data << uint8(isBGGroup() ? 1 : 0);                 // 2.0.x, isBattleGroundGroup?
+        data << uint8(GetFlags(*citr));                     // group flags
         if(m_groupType & GROUPTYPE_LFD)
         {
             data << uint8(0);
@@ -1551,6 +1557,7 @@ GroupJoinBattlegroundResult Group::CanJoinBattleGroundQueue(BattleGround const* 
         // check if member can join any more battleground queues
         if(!member->HasFreeBattleGroundQueueId())
             return ERR_BATTLEGROUND_TOO_MANY_QUEUES;        // not blizz-like
+
         ++allowedPlayerCount;
     }
 
@@ -1815,12 +1822,12 @@ static void RewardGroupAtKill_helper(Player* pGroupGuy, Unit* pVictim, uint32 co
 }
 
 /** Provide rewards to group members at unit kill
-*
-* @param pVictim Killed unit
-* @param player_tap Player who tap unit if online, it can be group member or can be not if leaved after tap but before kill target
-*
-* Rewards received by group members and player_tap
-*/
+ *
+ * @param pVictim       Killed unit
+ * @param player_tap    Player who tap unit if online, it can be group member or can be not if leaved after tap but before kill target
+ *
+ * Rewards received by group members and player_tap
+ */
 void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
 {
     bool PvP = pVictim->isCharmedOwnedByPlayerOrPlayer();
@@ -1856,7 +1863,7 @@ void Group::RewardGroupAtKill(Unit* pVictim, Player* player_tap)
                 continue;
 
             if(!pGroupGuy->IsAtGroupRewardDistance(pVictim))
-                continue; // member (alive or dead) or his corpse at req. distance
+                continue;                               // member (alive or dead) or his corpse at req. distance
 
             RewardGroupAtKill_helper(pGroupGuy, pVictim, count, PvP, group_rate, sum_level, is_dungeon, not_gray_member_with_max_level, member_with_max_level, xp);
         }

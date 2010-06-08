@@ -667,11 +667,11 @@ void WorldSession::HandlePetCastSpellOpcode( WorldPacket& recvPacket )
     //recvPacket >> pos1 >> pos2;
 
     pet->clearUnitState(UNIT_STAT_MOVING);
-    
+
     //mask: 96, elevation: 0.167906, speed: 120.002441, pos1: 1, pos: 183
- 
+
     //sLog.outDebug("mask: %u, elevation: %f, speed: %f, pos1: %u, pos: %u", targets.m_targetMask, elevation, speed, pos1, pos2);
- 
+
     sLog.outDebug("guid: %u, sX: %f, sY:%f, sZ: %f", targets.getUnitTargetGUID(),targets.m_srcX,targets.m_srcY,targets.m_srcZ);
     sLog.outDebug("guid: %u, sX: %f, sY:%f, sZ: %f", targets.getUnitTargetGUID(),targets.m_destX,targets.m_destY,targets.m_destZ);
 

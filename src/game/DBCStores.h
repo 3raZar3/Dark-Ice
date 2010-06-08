@@ -73,7 +73,6 @@ extern DBCStorage <AchievementEntry>             sAchievementStore;
 extern DBCStorage <AchievementCriteriaEntry>     sAchievementCriteriaStore;
 extern DBCStorage <AreaTableEntry>               sAreaStore;// recommend access using functions
 extern DBCStorage <AreaGroupEntry>               sAreaGroupStore;
-extern DBCStorage <AreaPOIEntry>                 sAreaPOIStore;
 extern DBCStorage <AreaTriggerEntry>             sAreaTriggerStore;
 extern DBCStorage <AuctionHouseEntry>            sAuctionHouseStore;
 extern DBCStorage <BankBagSlotPricesEntry>       sBankBagSlotPricesStore;
@@ -176,7 +175,7 @@ MANGOS_DLL_SPEC DBCStorage <FactionEntry>               const* GetFactionStore()
 MANGOS_DLL_SPEC DBCStorage <ItemEntry>                  const* GetItemDisplayStore();
 MANGOS_DLL_SPEC DBCStorage <CreatureDisplayInfoEntry>   const* GetCreatureDisplayStore();
 MANGOS_DLL_SPEC DBCStorage <EmotesEntry>                const* GetEmotesStore();
-MANGOS_DLL_SPEC DBCStorage <AchievementEntry>           const* GetAchievementStore();
 MANGOS_DLL_SPEC DBCStorage <EmotesTextEntry>            const* GetEmotesTextStore();
+MANGOS_DLL_SPEC DBCStorage <AchievementEntry>           const* GetAchievementStore();
 MANGOS_DLL_SPEC DBCStorage <CharTitlesEntry> 			const* GetCharTitlesStore();
 #endif

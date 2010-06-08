@@ -279,6 +279,8 @@ BattleGround::BattleGround()
     m_StartMessageIds[BG_STARTING_EVENT_SECOND] = LANG_BG_WS_START_ONE_MINUTE;
     m_StartMessageIds[BG_STARTING_EVENT_THIRD]  = LANG_BG_WS_START_HALF_MINUTE;
     m_StartMessageIds[BG_STARTING_EVENT_FOURTH] = LANG_BG_WS_HAS_BEGUN;
+
+    m_uiPlayersJoined  = 0;
 }
 
 BattleGround::~BattleGround()
@@ -637,13 +639,8 @@ void BattleGround::RewardHonorToTeam(uint32 Honor, uint32 TeamID)
     }
 }
 
-void BattleGround::RewardReputationToTeam(uint32 faction_id, uint32 Reputation, uint32 TeamID)
+void BattleGround::RewardReputationToTeam(BattleGroundTypeId bgtype, uint32 Reputation, uint32 TeamID)
 {
-    FactionEntry const* factionEntry = sFactionStore.LookupEntry(faction_id);
-
-    if (!factionEntry)
-        return;
-
     for(BattleGroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
     {
         if (itr->second.OfflineRemoveTime)
@@ -659,8 +656,47 @@ void BattleGround::RewardReputationToTeam(uint32 faction_id, uint32 Reputation, 
         uint32 team = itr->second.Team;
         if(!team) team = plr->GetTeam();
 
+        uint32 faction_id;
+        switch(bgtype)
+        {
+            case BATTLEGROUND_AB: faction_id = TeamID == ALLIANCE ? 509 : 510;
+            case BATTLEGROUND_AV: faction_id = TeamID == ALLIANCE ? 730 : 729;
+            case BATTLEGROUND_WS: faction_id = TeamID == ALLIANCE ? 890 : 889;
+            default: faction_id = 0;
+        }
+
+        if (team == TeamID)		
+            if(FactionEntry const* factionEntry = sFactionStore.LookupEntry(faction_id))
+                plr->GetReputationMgr().ModifyReputation(factionEntry, Reputation);
+    }
+}
+void BattleGround::RewardXpToTeam(uint32 Xp, float percentOfLevel, uint32 TeamID)
+{
+    for(BattleGroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
+    {
+        if (itr->second.OfflineRemoveTime)
+            continue;
+        Player *plr = sObjectMgr.GetPlayer(itr->first);
+
+        if (!plr)
+        {
+            sLog.outError("BattleGround:RewardXpToTeam: Player (GUID: %u) not found!", GUID_LOPART(itr->first));
+            continue;
+        }
+
+        uint32 team = itr->second.Team;
+        if(!team) team = plr->GetTeam();
+
         if (team == TeamID)
-            plr->GetReputationMgr().ModifyReputation(factionEntry, Reputation);
+        {
+            uint32 gain = Xp;
+            if(gain == 0 && percentOfLevel != 0)
+            {
+                percentOfLevel = percentOfLevel / 100;
+                gain = uint32(float(plr->GetUInt32Value(PLAYER_NEXT_LEVEL_XP))*percentOfLevel);
+            }
+            plr->GiveXP(gain, NULL);
+        }
     }
 }
 
@@ -719,7 +755,7 @@ void BattleGround::EndBattleGround(uint32 winner)
     {
         winner_arena_team = sObjectMgr.GetArenaTeamById(GetArenaTeamIdForTeam(winner));
         loser_arena_team = sObjectMgr.GetArenaTeamById(GetArenaTeamIdForTeam(GetOtherTeam(winner)));
-        if (winner_arena_team && loser_arena_team)
+        if (winner_arena_team && loser_arena_team && ArenaPlayersCount())
         {
             loser_rating = loser_arena_team->GetStats().rating;
             winner_rating = winner_arena_team->GetStats().rating;
@@ -731,6 +767,37 @@ void BattleGround::EndBattleGround(uint32 winner)
             DEBUG_LOG("--- Winner rating: %u, Loser rating: %u, Winner change: %i, Losser change: %i ---", winner_rating, loser_rating, winner_change, loser_change);
             SetArenaTeamRatingChangeForTeam(winner, winner_change);
             SetArenaTeamRatingChangeForTeam(GetOtherTeam(winner), loser_change);
+
+            std::ostringstream winner_string;		
+            std::ostringstream loser_string;
+            winner_string << winner_arena_team->GetName().c_str() << " (";
+            loser_string << loser_arena_team->GetName().c_str() << " (";
+            for(BattleGroundPlayerMap::iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
+            {
+                uint32 team = itr->second.Team;
+                if(Player *plr = sObjectMgr.GetPlayer(itr->first))
+                {
+                    if(!team) team = plr->GetTeam();
+                    QueryResult *result = loginDatabase.PQuery("SELECT last_ip FROM realmd.account WHERE id in (SELECT account FROM characters.characters WHERE guid = %u)", plr->GetGUIDLow());
+                    if(team == winner)
+                    {
+                        winner_string << plr->GetName();
+                        if(result)
+                            winner_string << "[" << result->Fetch()[0].GetString() << "]";
+                        winner_string << ", ";
+                    }
+                    else
+                    {
+                        loser_string << plr->GetName();
+                        if(result)
+                            loser_string << "[" << result->Fetch()[0].GetString() << "]";
+                        loser_string << ", ";
+                    }
+                }
+            }
+            winner_string << ")";
+            loser_string << ")";
+            sLog.outArenaLog("Bracket: %u, Rating difference: %i/%i Winner: %s , Loser: %s", winner_arena_team->GetType(), winner_change, loser_change, winner_string.str().c_str(), loser_string.str().c_str());
         }
         else
         {
@@ -1039,6 +1106,17 @@ void BattleGround::RemovePlayerAtLeave(uint64 guid, bool Transport, bool SendPac
 
     Player *plr = sObjectMgr.GetPlayer(guid);
 
+    // TEAMBG
+    if(plr && plr->isInTeamBG())
+    {
+        //restore faction
+        plr->SetTeamBG(false, 0);
+        plr->setFactionForRace(plr->getRace());
+        //Remove mark buffs
+        plr->RemoveAurasDueToSpell(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_BUFF_RED));
+        plr->RemoveAurasDueToSpell(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_BUFF_BLUE));
+    }
+
     // should remove spirit of redemption
     if (plr && plr->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))
         plr->RemoveSpellsCausingAura(SPELL_AURA_MOD_SHAPESHIFT);
@@ -1174,6 +1252,8 @@ void BattleGround::Reset()
     for(BattleGroundScoreMap::const_iterator itr = m_PlayerScores.begin(); itr != m_PlayerScores.end(); ++itr)
         delete itr->second;
     m_PlayerScores.clear();
+
+    m_uiPlayersJoined  = 0;
 }
 
 void BattleGround::StartBattleGround()
@@ -1199,6 +1279,46 @@ void BattleGround::AddPlayer(Player *plr)
 
     uint64 guid = plr->GetGUID();
     uint32 team = plr->GetBGTeam();
+    // --- TEAM BG ---
+    if(!isArena())
+    {
+        bool isAllowed = false;
+        switch(m_TypeID)
+        {
+            case BATTLEGROUND_AB:
+                if(sWorld.getConfig(CONFIG_BOOL_TEAM_BG_ALLOW_AB))
+                    isAllowed = true;
+                break;
+            case BATTLEGROUND_AV:
+                if(sWorld.getConfig(CONFIG_BOOL_TEAM_BG_ALLOW_AV))
+                    isAllowed = true;
+                break;
+            case BATTLEGROUND_EY:
+                if(sWorld.getConfig(CONFIG_BOOL_TEAM_BG_ALLOW_EOS))
+                    isAllowed = true;
+                break;
+            case BATTLEGROUND_WS:
+                if(sWorld.getConfig(CONFIG_BOOL_TEAM_BG_ALLOW_WSG))
+                    isAllowed = true;
+                break;
+        }
+        //Set faction and apply mark buffs
+        if(isAllowed)
+        {
+            if(team == HORDE)
+            {
+                plr->setFaction(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_FACTION_RED));
+                plr->SetTeamBG(true, 2);
+                if(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_BUFF_RED) != 0)
+                    plr->CastSpell(plr, sWorld.getConfig(CONFIG_UINT32_TEAM_BG_BUFF_RED), true);
+            }else{
+                plr->setFaction(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_FACTION_BLUE));
+                plr->SetTeamBG(true, 1);
+                if(sWorld.getConfig(CONFIG_UINT32_TEAM_BG_BUFF_BLUE) != 0)
+                    plr->CastSpell(plr, sWorld.getConfig(CONFIG_UINT32_TEAM_BG_BUFF_RED), true);
+            }
+        }
+    }
 
     BattleGroundPlayer bp;
     bp.OfflineRemoveTime = 0;
@@ -1247,6 +1367,7 @@ void BattleGround::AddPlayer(Player *plr)
             plr->SetHealth(plr->GetMaxHealth());
             plr->SetPower(POWER_MANA, plr->GetMaxPower(POWER_MANA));
         }
+        m_uiPlayersJoined++;
     }
     else
     {
@@ -1862,7 +1983,11 @@ void BattleGround::CheckArenaWinConditions()
     else if (GetPlayersCountByTeam(ALLIANCE) && !GetAlivePlayersCountByTeam(HORDE))
         EndBattleGround(ALLIANCE);
 }
-
+void BattleGround::UpdateArenaWorldState()
+{
+    UpdateWorldState(0xe10, GetAlivePlayersCountByTeam(HORDE));
+    UpdateWorldState(0xe11, GetAlivePlayersCountByTeam(ALLIANCE));
+}
 void BattleGround::SetBgRaid( uint32 TeamID, Group *bg_raid )
 {
     Group* &old_raid = TeamID == ALLIANCE ? m_BgRaids[BG_TEAM_ALLIANCE] : m_BgRaids[BG_TEAM_HORDE];
@@ -1887,4 +2012,18 @@ void BattleGround::SetBracket( PvPDifficultyEntry const* bracketEntry )
 {
     m_BracketId  = bracketEntry->GetBracketId();
     SetLevelRange(bracketEntry->minLevel,bracketEntry->maxLevel);
+}
+
+bool BattleGround::ArenaPlayersCount()
+{
+    if(!isArena() || !sWorld.getConfig(CONFIG_BOOL_END_ARENA_IF_NOT_ENOUGH_PLAYERS))
+        return true;
+
+    //uint32 m_uiAliTeamCount = GetPlayersCountByTeam(BG_TEAM_ALLIANCE);
+    //uint32 m_uiHordeTeamCount = GetPlayersCountByTeam(BG_TEAM_HORDE);
+    //if(m_uiAliTeamCount < GetArenaType() || m_uiHordeTeamCount < GetArenaType())
+    if(GetBgMap()->GetPlayers().getSize() < uint32(GetArenaType())*2 && m_uiPlayersJoined < uint32(GetArenaType())*2)
+        return false;
+ 
+    return true;
 }

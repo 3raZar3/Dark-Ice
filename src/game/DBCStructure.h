@@ -206,16 +206,16 @@ struct AchievementCriteriaEntry
             uint32  spellID;                                // 3
             uint32  castCount;                              // 4
         } cast_spell;
-        
-        // ACHIEVEMENT_CRITERIA_TYPE_BG_OBJECTIVE_CAPTURE       = 30
+
+        // ACHIEVEMENT_CRITERIA_TYPE_BG_OBJECTIVE_CAPTURE   = 30
         struct
         {
-            uint32  captureID;                                // 3
-            uint32  captureCount;                             // 4
-            //uint32  additionalRequirement1_type;            // 5 
-            //uint32  additionalRequirement1_value;           // 6 
-            //uint32  additionalRequirement2_type;            // 7 
-            //uint32  additionalRequirement2_value;           // 8 
+            uint32  captureID;                              // 3
+            uint32  captureCount;                           // 4
+            //uint32  additionalRequirement1_type;          // 5 
+            //uint32  additionalRequirement1_value;         // 6 
+            //uint32  additionalRequirement2_type;          // 7 
+            //uint32  additionalRequirement2_value;         // 8 
         } objective_capture;
 
         // ACHIEVEMENT_CRITERIA_TYPE_HONORABLE_KILL_AT_AREA = 31
@@ -532,24 +532,6 @@ struct AreaGroupEntry
     uint32  AreaGroupId;                                    // 0
     uint32  AreaId[6];                                      // 1-6
     uint32  nextGroup;                                      // 7 index of next group
-};
-
-struct AreaPOIEntry
-{
-    uint32 id;              //0
-    uint32 icon[11];        //1-11
-    float x;                //12
-    float y;                //13
-    float z;                //14
-    uint32 mapId;           //15
-    //uint32 val1;          //16
-    uint32 zoneId;          //17
-    //char* name[16];       //18-33
-    //uint32 name_flag;     //34
-    //char* name2[16];      //35-50
-    //uint32 name_flag2;    //51
-    uint32 worldState;      //52
-    //uint32 val2;          //53
 };
 
 struct AreaTriggerEntry

@@ -30,7 +30,6 @@
 #include "revision_nr.h"
 #include "Util.h"
 #include "GameEventMgr.h"
-#include "math.h"
 
 bool ChatHandler::HandleHelpCommand(const char* args)
 {
@@ -63,14 +62,7 @@ bool ChatHandler::HandleAccountCommand(const char* /*args*/)
 }
 
 bool ChatHandler::HandleStartCommand(const char* /*args*/)
-{   
-    // Jail by WarHead
-    if (m_session->GetPlayer()->m_jail_isjailed)
-    {
-        SendSysMessage(LANG_JAIL_DENIED);
-        return true;
-    }
-    
+{
     Player *chr = m_session->GetPlayer();
 
     if(chr->isInFlight())
@@ -95,9 +87,9 @@ bool ChatHandler::HandleStartCommand(const char* /*args*/)
 bool ChatHandler::HandleServerInfoCommand(const char* /*args*/)
 {
     uint32 activeClientsNum = sWorld.GetActiveSessionCount();
-    uint32 queuedClientsNum = sWorld.GetQueuedSessionCount();
+    //uint32 queuedClientsNum = sWorld.GetQueuedSessionCount();
     uint32 maxActiveClientsNum = sWorld.GetMaxActiveSessionCount();
-    uint32 maxQueuedClientsNum = sWorld.GetMaxQueuedSessionCount();
+    //uint32 maxQueuedClientsNum = sWorld.GetMaxQueuedSessionCount();
     std::string str = secsToTimeString(sWorld.GetUptime());
 
     char const* full;
@@ -107,15 +99,38 @@ bool ChatHandler::HandleServerInfoCommand(const char* /*args*/)
         full = _FULLVERSION(REVISION_DATE,REVISION_TIME,REVISION_NR,REVISION_ID);
 
     SendSysMessage(full);
-    PSendSysMessage(LANG_USING_SCRIPT_LIB,sWorld.GetScriptsVersion());
-    PSendSysMessage(LANG_USING_WORLD_DB,sWorld.GetDBVersion());
-    PSendSysMessage(LANG_USING_EVENT_AI,sWorld.GetCreatureEventAIVersion());
-    PSendSysMessage(LANG_CONNECTED_USERS, activeClientsNum, maxActiveClientsNum, queuedClientsNum, maxQueuedClientsNum);
+    if(GetAccessLevel() > SEC_PLAYER)
+    {
+        PSendSysMessage(LANG_USING_SCRIPT_LIB,sWorld.GetScriptsVersion());
+        PSendSysMessage(LANG_USING_WORLD_DB,sWorld.GetDBVersion());
+        PSendSysMessage(LANG_USING_EVENT_AI,sWorld.GetCreatureEventAIVersion());
+    }
+    PSendSysMessage("Dark-iCE a modified MaNGOS Project");
+    SendSysMessage("Changelog: http://github.com/Darkrulerz/Core");
+    PSendSysMessage(LANG_CONNECTED_USERS, activeClientsNum, maxActiveClientsNum);
     PSendSysMessage(LANG_UPTIME, str.c_str());
-    PSendSysMessage("Diff time: %u", sWorld.GetDiffTime());
-    SendSysMessage("Hellscreamcore, The core brought to you straight from hell");
-    SendSysMessage("GIT: http://github.com/Hellscream/Core/commits");
-    SendSysMessage("A heavily modified MaNGOS core");
+    PSendSysMessage("World diff time: %u", sWorld.GetDiffTime());
+    if(sWorld.IsShutdowning())
+    {
+        const char *type = (sWorld.GetShutdownMask() & SHUTDOWN_MASK_RESTART) ? "Restart" : "Shutdown";
+        uint32 shutdownTimer = sWorld.GetShutdownTimer();
+        if(shutdownTimer > 60*60) //Hours
+        {
+            uint8 hours = shutdownTimer / (60*60);
+            uint8 mins = (shutdownTimer - hours*60*60) / 60;
+            uint8 secs = (shutdownTimer - hours*60*60 - mins*60);
+            PSendSysMessage("[SERVER] %s in %u hours, %u minutes and %u seconds", type, hours, mins, secs);
+        }
+        else if(shutdownTimer > 60) // Minutes
+        {
+            uint8 mins = shutdownTimer / 60;
+            uint8 secs = (shutdownTimer - mins*60);
+            PSendSysMessage("[SERVER] %s in %u minutes and %u seconds", type,  mins, secs);
+        }
+        else //Only seconds
+            PSendSysMessage("[SERVER] %s in %u seconds", type, shutdownTimer);
+    }
+
     return true;
 }
 
@@ -144,13 +159,6 @@ bool ChatHandler::HandleDismountCommand(const char* /*args*/)
 bool ChatHandler::HandleSaveCommand(const char* /*args*/)
 {
     Player *player=m_session->GetPlayer();
-    
-    // Jail by WarHead
-    if (player->m_jail_isjailed)
-    {
-        SendSysMessage(LANG_JAIL_DENIED);
-        return true;
-    }
 
     // save GM account without delay and output message (testing, etc)
     if(GetAccessLevel() > SEC_PLAYER)
@@ -164,7 +172,7 @@ bool ChatHandler::HandleSaveCommand(const char* /*args*/)
     uint32 save_interval = sWorld.getConfig(CONFIG_UINT32_INTERVAL_SAVE);
     if (save_interval==0 || (save_interval > 20*IN_MILLISECONDS && player->GetSaveTimer() <= save_interval - 20*IN_MILLISECONDS))
         player->SaveToDB();
-
+    
     return true;
 }
 
@@ -194,7 +202,6 @@ bool ChatHandler::HandleGMListIngameCommand(const char* /*args*/)
 
     if(first)
         SendSysMessage(LANG_GMS_NOT_LOGGED);
-
     return true;
 }
 
@@ -249,42 +256,8 @@ bool ChatHandler::HandleAccountPasswordCommand(const char* args)
             SetSentErrorMessage(true);
             return false;
     }
-
+    
     return true;
-}
-
-bool ChatHandler::HandleJailInfoCommand(const char* args)
-{
-    time_t localtime;
-    localtime = time(NULL);
-    Player *chr = m_session->GetPlayer();
-
-    if (chr->m_jail_release > 0)
-    {
-        uint32 min_left = (uint32)floor(float(chr->m_jail_release - localtime) / 60);
-
-        if (min_left <= 0)
-        {
-            chr->m_jail_release = 0;
-            chr->_SaveJail();
-            SendSysMessage(LANG_JAIL_NOTJAILED_INFO);
-            return true;
-        }
-        else
-        {
-            if (min_left >= 60) PSendSysMessage(LANG_JAIL_JAILED_H_INFO, (uint32)floor(float(chr->m_jail_release - localtime) / 60 / 60));
-            else PSendSysMessage(LANG_JAIL_JAILED_M_INFO, min_left);
-            PSendSysMessage(LANG_JAIL_REASON, chr->m_jail_gmchar.c_str(), chr->m_jail_reason.c_str());
-
-            return true;
-        }
-    }
-    else
-    {
-        SendSysMessage(LANG_JAIL_NOTJAILED_INFO);
-        return true;
-    }
-    return false;
 }
 
 bool ChatHandler::HandleAccountLockCommand(const char* args)

@@ -132,6 +132,8 @@ class MANGOS_DLL_DECL MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::
         uint32 GetNumInstances();
         uint32 GetNumPlayersInInstances();
 
+        void SetFactionedMaps(const char *maps) { factionedMaps = maps; }
+        bool isFactioned(uint32 mapId) { return (strchr(factionedMaps, mapId) == NULL) ? false : true; }
     private:
 
         // debugging code, should be deleted some day
@@ -162,7 +164,8 @@ class MANGOS_DLL_DECL MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::
         IntervalTimer i_timer;
 
         uint32 i_MaxInstanceId;
-        MapUpdater m_updater;
+        const char *factionedMaps;
+		MapUpdater m_updater;
 };
 
 #define sMapMgr MapManager::Instance()

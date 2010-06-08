@@ -1517,13 +1517,13 @@ void CachedObjectsList::releaseLastIfOld(uintptr_t currAge, size_t size)
  
     /* oldest may be more recent then age, that's why cast to signed type
        was used. age overflow is also processed correctly. */
-    if (last && (intptr_t)(currAge - oldest) > int(ageThreshold)) {
+    if (last && (intptr_t)(currAge - oldest) > ageThreshold) {
         MallocMutex::scoped_lock scoped_cs(lock);
         // double check
-        if (last && (intptr_t)(currAge - last->age) > int(ageThreshold)) {
+        if (last && (intptr_t)(currAge - last->age) > ageThreshold) {
             do {
                 last = last->prev;
-            } while (last && (intptr_t)(currAge - last->age) > int(ageThreshold));
+            } while (last && (intptr_t)(currAge - last->age) > ageThreshold);
             if (last) {
                 toRelease = last->next;
                 oldest = last->age;

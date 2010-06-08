@@ -38,7 +38,6 @@
 #include "ObjectAccessor.h"
 #include "Object.h"
 #include "BattleGround.h"
-#include "OutdoorPvP.h"
 #include "Pet.h"
 #include "SocialMgr.h"
 #include "DBCEnums.h"
@@ -737,12 +736,6 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket & recv_data)
         if (BattleGround* bg = pl->GetBattleGround())
             bg->HandleAreaTrigger(pl, Trigger_ID);
         return;
-    }
-
-    if(OutdoorPvP * pvp = GetPlayer()->GetOutdoorPvP())
-    {
-        if(pvp->HandleAreaTrigger(_player, Trigger_ID))
-            return;
     }
 
     // NULL if all values default (non teleport trigger)
@@ -1489,14 +1482,8 @@ void WorldSession::HandleCancelMountAuraOpcode( WorldPacket & /*recv_data*/ )
         return;
     }
 
-    if ((sWorld.getConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE))
-        && _player->HasAuraTypeFlyingSpell())
-        _player->SetFlyingMountTimer();
-    else
-    {
-        _player->Unmount();
-        _player->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
-    }
+    _player->Unmount();
+    _player->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
 }
 
 void WorldSession::HandleMoveSetCanFlyAckOpcode( WorldPacket & recv_data )

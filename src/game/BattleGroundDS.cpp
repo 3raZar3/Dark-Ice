@@ -16,16 +16,17 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "Object.h"
 #include "Player.h"
 #include "BattleGround.h"
 #include "BattleGroundDS.h"
+#include "Language.h"
+#include "Object.h"
 #include "ObjectMgr.h"
 #include "WorldPacket.h"
-#include "Language.h"
 
 BattleGroundDS::BattleGroundDS()
 {
+
     m_StartDelayTimes[BG_STARTING_EVENT_FIRST]  = BG_START_DELAY_1M;
     m_StartDelayTimes[BG_STARTING_EVENT_SECOND] = BG_START_DELAY_30S;
     m_StartDelayTimes[BG_STARTING_EVENT_THIRD]  = BG_START_DELAY_15S;
@@ -45,23 +46,40 @@ BattleGroundDS::~BattleGroundDS()
 void BattleGroundDS::Update(uint32 diff)
 {
     BattleGround::Update(diff);
-    if (GetStatus() == STATUS_IN_PROGRESS)
+	if (GetStatus() == STATUS_IN_PROGRESS)
     {
-        // knockback
-        if(m_uiKnockback < diff)
+        // first knockback
+        if(m_uiKnockback < diff && KnockbackCheck)
         {
+            //dalaran sewers = 617;
             for(BattleGroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
             {
                 Player * plr = sObjectMgr.GetPlayer(itr->first);
-                if (plr && plr->IsWithinLOS(1214,765,14) && plr->GetDistance2d(1214,765) <= 50)
-                    plr->KnockBackPlayerWithAngle(6.40f,55,7);
-                if (plr && plr->IsWithinLOS(1369,817,14) && plr->GetDistance2d(1369,817) <= 50)
-                    plr->KnockBackPlayerWithAngle(3.03f,55,7);
+                if (plr->GetTeam() == ALLIANCE && plr->GetDistance2d(1214, 765) <= 50 && plr->GetPositionZ() > 10)
+                    plr->KnockBackPlayerWithAngle(6.05f, 55.0f, 7.0f);
+                if (plr->GetTeam() == HORDE && plr->GetDistance2d(1369, 817) <= 50 && plr->GetPositionZ() > 10)
+                    plr->KnockBackPlayerWithAngle(3.03f, 55.0f, 7.0f);
             }
-            m_uiKnockback = 1000;
-        }
-        else
-            m_uiKnockback -= diff;
+            KnockbackCheck = false;
+                       
+        }else m_uiKnockback -= diff;
+
+        // just for sure if knockback wont work from any reason teleport down
+        if(m_uiTeleport < diff && TeleportCheck)
+        {
+            //dalaran sewers = 617;
+            for(BattleGroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
+            {
+                Player * plr = sObjectMgr.GetPlayer(itr->first);
+                if (plr->GetTeam() == ALLIANCE && plr->GetDistance2d(1214, 765) <= 50 && plr->GetPositionZ() > 10)
+                    plr->TeleportTo(617, float(1257+urand(0,2)), float(761+urand(0,2)), 3.2f, 0.5);
+                if (plr->GetTeam() == HORDE && plr->GetDistance2d(1369, 817) <= 50 && plr->GetPositionZ() > 10)
+                    plr->TeleportTo(617, float(1328+urand(0,2)), float(815+urand(0,2)), 3.2f, 3.5);
+            }
+            TeleportCheck = false;
+            // close the gate
+            OpenDoorEvent(BG_EVENT_DOOR);
+        }else m_uiTeleport -= diff;
     }
 }
 
@@ -82,22 +100,19 @@ void BattleGroundDS::AddPlayer(Player *plr)
 
     m_PlayerScores[plr->GetGUID()] = sc;
 
-    UpdateWorldState(0xe11, GetAlivePlayersCountByTeam(ALLIANCE));
-    UpdateWorldState(0xe10, GetAlivePlayersCountByTeam(HORDE));
+    UpdateArenaWorldState();
 }
 
-void BattleGroundDS::RemovePlayer(Player* /*plr*/, uint64 /*guid*/)
+void BattleGroundDS::RemovePlayer(Player * /*plr*/, uint64 /*guid*/)
 {
     if (GetStatus() == STATUS_WAIT_LEAVE)
         return;
 
-    UpdateWorldState(0xe11, GetAlivePlayersCountByTeam(ALLIANCE));
-    UpdateWorldState(0xe10, GetAlivePlayersCountByTeam(HORDE));
-
+    UpdateArenaWorldState();
     CheckArenaWinConditions();
 }
 
-void BattleGroundDS::HandleKillPlayer(Player *player, Player *killer)
+void BattleGroundDS::HandleKillPlayer(Player* player, Player* killer)
 {
     if (GetStatus() != STATUS_IN_PROGRESS)
         return;
@@ -110,16 +125,8 @@ void BattleGroundDS::HandleKillPlayer(Player *player, Player *killer)
 
     BattleGround::HandleKillPlayer(player,killer);
 
-    UpdateWorldState(0xe11, GetAlivePlayersCountByTeam(ALLIANCE));
-    UpdateWorldState(0xe10, GetAlivePlayersCountByTeam(HORDE));
-
+    UpdateArenaWorldState();
     CheckArenaWinConditions();
-}
-
-bool BattleGroundDS::HandlePlayerUnderMap(Player *player)
-{
-    player->TeleportTo(GetMapId(),1299.046f,784.825f,9.338f,player->GetOrientation(),false);
-    return true;
 }
 
 void BattleGroundDS::HandleAreaTrigger(Player *Source, uint32 Trigger)
@@ -138,19 +145,25 @@ void BattleGroundDS::HandleAreaTrigger(Player *Source, uint32 Trigger)
             break;
     }
 }
-
-void BattleGroundDS::FillInitialWorldStates(WorldPacket &data, uint32& count)
+bool BattleGroundDS::HandlePlayerUnderMap(Player *player)
 {
-    FillInitialWorldState(data, count, 0xe11, GetAlivePlayersCountByTeam(ALLIANCE));
-    FillInitialWorldState(data, count, 0xe10, GetAlivePlayersCountByTeam(HORDE));
-    FillInitialWorldState(data, count, 0xe1a, 1);
+    player->TeleportTo(GetMapId(), 1299.046f, 784.825f, 9.338f, 2.422f, false);
+    return true;
 }
 
+void BattleGroundDS::FillInitialWorldStates(WorldPacket &data)
+{
+    data << uint32(3610) << uint32(1);           // 9
+    UpdateArenaWorldState();
+}
 void BattleGroundDS::Reset()
 {
     //call parent's class reset
     BattleGround::Reset();
-    m_uiKnockback = 5000;
+    m_uiTeleport = 20000;
+    TeleportCheck = true;
+    m_uiKnockback = 15000;
+    KnockbackCheck = true;
 }
 
 bool BattleGroundDS::SetupBattleGround()

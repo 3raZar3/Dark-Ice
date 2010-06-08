@@ -33,23 +33,6 @@ Commands:
 /t BOTNAME find <GAMEOBJECT LINK> (bot will travel to the gameobject location and then wait)
 /t BOTNAME get <GAMEOBJECT LINK> (bot will fetch the selected gameobject and then return to the player)
 
-________________________________________
-Special additions courtesy of Blueboy:
-
-new command 'survey'
-/w botname survey // Single bot will list all non-event triggered game objects local to the bot.
-/p survey // All bots will list local game objects.
-Object information is listed as a data link, similar to item and quest links. <Shift> click on link to select.
- 
-new command 'find'
-/w botname find <object link>  // Single got will travel to object's location and then wait. Bot will be visible on minimap, allowing you the player to find illusive objects.
-/p find <object link> // Sends all grouped bots to object location.
-
-new command 'get'
-/w botname get <object link>  // Single bot will travel to object's location, retrieve the object and then return to the player. This currently will only allow bots to retrieve needed quest items.
-/p get <object link> // All bots will travel to location, but only one bot at a time can retrieve quest item.
-_________________________________________
-
 Shortcuts:
 c = cast
 e = equip

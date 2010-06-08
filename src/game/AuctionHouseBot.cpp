@@ -756,7 +756,7 @@ void AuctionHouseBot::Update()
     if ((!sWorld.getConfig(CONFIG_BOOL_AHBOT_SELLER_ENABLED)) && (!sWorld.getConfig(CONFIG_BOOL_AHBOT_BUYER_ENABLED)))
         return;
 
-    WorldSession _session(sWorld.getConfig(CONFIG_UINT32_AHBOT_ACCOUNT_ID), NULL, SEC_PLAYER, true, 0, LOCALE_enUS);
+    WorldSession _session(sWorld.getConfig(CONFIG_UINT32_AHBOT_ACCOUNT_ID), NULL, SEC_PLAYER, true, 0, LOCALE_enUS, false);
 
     Player _AHBplayer(&_session);
     _AHBplayer.Initialize(sWorld.getConfig(CONFIG_UINT32_AHBOT_CHARACTER_ID));
@@ -1038,8 +1038,9 @@ void AuctionHouseBot::Initialize()
         sLog.outString("loaded %d orange items", orangeItemsBin.size());
         sLog.outString("loaded %d yellow items", yellowItemsBin.size());
     }
-    sLog.outString("AuctionHouseBot is now loaded.");
-    sLog.outString("AuctionHouseBot: updated by Xeross and Darkrulerz");
+    sLog.outString("AuctionHouseBot> [AHBot-x002] is now loaded");
+    sLog.outString("AuctionHouseBot> updated by Xeross (Original by Naicisum, ChrisK, Paradox)");
+    sLog.outString("AuctionHouseBot> Includes AHBuyer by Kerbe and Paradox");
 }
 
 void AuctionHouseBot::Commands(uint32 command, uint32 ahMapID, uint32 col, char* args)

@@ -174,8 +174,55 @@ GroupQueueInfo * BattleGroundQueue::AddGroup(Player *leader, Group* grp, BattleG
         index += BG_TEAMS_COUNT;
     if (ginfo->Team == HORDE)
         index++;
-
     DEBUG_LOG("Adding Group to BattleGroundQueue bgTypeId : %u, bracket_id : %u, index : %u", BgTypeId, bracketId, index);
+    // --- TEAM BG ---
+    if(!ArenaType && !isRated && !isPremade)
+    {
+        bool isAllowed = false;
+        switch(BgTypeId)
+        {
+            case BATTLEGROUND_AB:
+                if(sWorld.getConfig(CONFIG_BOOL_TEAM_BG_ALLOW_AB))
+                    isAllowed = true;
+                break;
+            case BATTLEGROUND_AV:
+                if(sWorld.getConfig(CONFIG_BOOL_TEAM_BG_ALLOW_AV))
+                    isAllowed = true;
+                break;
+            case BATTLEGROUND_EY:
+                if(sWorld.getConfig(CONFIG_BOOL_TEAM_BG_ALLOW_EOS))
+                    isAllowed = true;
+                break;
+            case BATTLEGROUND_WS:
+                if(sWorld.getConfig(CONFIG_BOOL_TEAM_BG_ALLOW_WSG))
+                    isAllowed = true;
+                break;
+        }
+        if(isAllowed)
+        {
+            uint32 qHorde = 0;
+            uint32 qAlliance = 0;
+            GroupsQueueType::const_iterator itr;
+            for(itr = m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_ALLIANCE].begin(); itr != m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_ALLIANCE].end(); ++itr)
+                if (!(*itr)->IsInvitedToBGInstanceGUID)
+                    qAlliance += (*itr)->Players.size();
+            for(itr = m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_HORDE].begin(); itr != m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_HORDE].end(); ++itr)
+                if (!(*itr)->IsInvitedToBGInstanceGUID)
+                    qHorde += (*itr)->Players.size();
+            //If theres more ali then horde, then change index to horde
+            if(qAlliance > qHorde+1)
+            {
+                index = 3;  // Set horde
+                ginfo->Team = HORDE;
+            }
+            else if (qAlliance+1 < qHorde)
+            {
+                index = 2;  // Set Aliance
+                ginfo->Team = ALLIANCE;
+            }
+        }
+    }
+
 
     uint32 lastOnlineTime = getMSTime();
 
@@ -1274,7 +1321,7 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket *data, BattleGround *bg)
 {
     uint8 type = (bg->isArena() ? 1 : 0);
                                                             // last check on 3.0.3
-    data->Initialize(MSG_PVP_LOG_DATA, (1+1+4+40*bg->GetPlayerScoresSize()));
+    data->Initialize(MSG_PVP_LOG_DATA, (1 + 1 + 4 + (BG_TEAMS_COUNT * bg->GetMaxPlayersPerTeam() * bg->GetPlayerScoresSize())));
     *data << uint8(type);                                   // type (battleground=0/arena=1)
 
     if(type)                                                // arena
@@ -1308,7 +1355,15 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket *data, BattleGround *bg)
         *data << uint8(0);                                  // ???
     }
 
-    *data << (int32)(bg->GetPlayerScoresSize());
+    int32 scoresize = 0;
+    // hack to avoid clientcrash
+    if (bg->GetPlayerScoresSize() > BG_TEAMS_COUNT * bg->GetMaxPlayersPerTeam())
+        scoresize = BG_TEAMS_COUNT * bg->GetMaxPlayersPerTeam();
+    else
+    scoresize = bg->GetPlayerScoresSize();
+    *data << (int32)(scoresize);
+
+    uint32 counter = 0;
 
     for(BattleGround::BattleGroundScoreMap::const_iterator itr = bg->GetPlayerScoresBegin(); itr != bg->GetPlayerScoresEnd(); ++itr)
     {
@@ -1316,6 +1371,19 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket *data, BattleGround *bg)
         *data << (int32)itr->second->KillingBlows;
         if (type == 0)
         {
+            if (!bg->IsPlayerInBattleGround(itr->first))
+                sLog.outError("battleground: scoreboard: player not in bg %u", GUID_LOPART(itr->first));
+
+            counter++;
+            // hack to avoid clientcrash
+            if (counter > BG_TEAMS_COUNT * bg->GetMaxPlayersPerTeam())
+            {
+                sLog.outError("battleground: scoreboard: too much players in the scoreboard "
+                    "bgtype: %u free slots, alliance: %u, horde: %u .."
+                    "scoreboardsize: %u", bg->GetTypeID(), bg->GetFreeSlotsForTeam(BG_TEAM_ALLIANCE),
+                    bg->GetFreeSlotsForTeam(BG_TEAM_HORDE), bg->GetPlayerScoresSize());
+                break;
+            }
             *data << (int32)itr->second->HonorableKills;
             *data << (int32)itr->second->Deaths;
             *data << (int32)itr->second->BonusHonor;
@@ -1493,7 +1561,7 @@ BattleGround * BattleGroundMgr::CreateNewBattleGround(BattleGroundTypeId bgTypeI
     if (bg_template->isArena())
     {
         BattleGroundTypeId arenas[] = {BATTLEGROUND_NA, BATTLEGROUND_BE, BATTLEGROUND_RL, BATTLEGROUND_DS, BATTLEGROUND_RV};
-        uint32 arena_num = urand(0,4);
+        uint32 arena_num = urand(0,isRated ? 3 : 4);
         bgTypeId = arenas[arena_num];
         bg_template = GetBattleGroundTemplate(bgTypeId);
         if (!bg_template)

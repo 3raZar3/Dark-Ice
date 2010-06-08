@@ -398,7 +398,7 @@ const uint32 ItemQualityColors[MAX_ITEM_QUALITY] = {
 #define SPELL_ATTR_EX5_UNK10                      0x00000400            // 10
 #define SPELL_ATTR_EX5_UNK11                      0x00000800            // 11
 #define SPELL_ATTR_EX5_UNK12                      0x00001000            // 12
-#define SPELL_ATTR_EX5_UNK13                      0x00002000            // 13 haste affects duration (e.g. 8050 since 3.3.3)
+#define SPELL_ATTR_EX5_AFFECTED_BY_HASTE          0x00002000            // 13 haste affects duration (e.g. 8050 since 3.3.3)
 #define SPELL_ATTR_EX5_UNK14                      0x00004000            // 14
 #define SPELL_ATTR_EX5_UNK15                      0x00008000            // 15
 #define SPELL_ATTR_EX5_UNK16                      0x00010000            // 16
@@ -444,7 +444,7 @@ const uint32 ItemQualityColors[MAX_ITEM_QUALITY] = {
 #define SPELL_ATTR_EX6_UNK23                      0x00800000            // 23 not set in 3.0.3
 #define SPELL_ATTR_EX6_UNK24                      0x01000000            // 24 not set in 3.0.3
 #define SPELL_ATTR_EX6_UNK25                      0x02000000            // 25 not set in 3.0.3
-#define SPELL_ATTR_EX6_UNK26                      0x04000000            // 26 not set in 3.0.3
+#define SPELL_ATTR_EX6_UNK26                      0x04000000            // 26 should not stack due to Aura?
 #define SPELL_ATTR_EX6_UNK27                      0x08000000            // 27 not set in 3.0.3
 #define SPELL_ATTR_EX6_UNK28                      0x10000000            // 28 not set in 3.0.3
 #define SPELL_ATTR_EX6_NO_DMG_PERCENT_MODS        0x20000000            // 29 do not apply damage percent mods (usually in cases where it has already been applied)
@@ -517,13 +517,6 @@ enum Language
 
 #define LANGUAGES_COUNT   19
 
-enum TeamId
-{
-    TEAM_ALLIANCE = 0,
-    TEAM_HORDE,
-    TEAM_NEUTRAL,
-};
-
 enum Team
 {
     HORDE               = 67,
@@ -533,9 +526,8 @@ enum Team
     //TEAM_HORDE_FORCES        = 892,
     //TEAM_SANCTUARY           = 936,
     //TEAM_OUTLAND             = 980,
-    TEAM_OTHER               = 0,                         // if ReputationListId > 0 && Flags != FACTION_FLAG_TEAM_HEADER
+    //TEAM_OTHER               = 0,                         // if ReputationListId > 0 && Flags != FACTION_FLAG_TEAM_HEADER
 };
-const Team TeamId2Team[3] = {ALLIANCE, HORDE, TEAM_OTHER};
 
 enum SpellEffects
 {
@@ -942,7 +934,7 @@ enum Mechanics
     MECHANIC_FEAR             = 5,
     MECHANIC_GRIP             = 6,
     MECHANIC_ROOT             = 7,
-    MECHANIC_SLOWATTACK       = 8,                          //0 spells use this mechanic, but some SPELL_AURA_MOD_HASTE and SPELL_AURA_MOD_RANGED_HASTE use as effect mechanic 
+    MECHANIC_SLOWATTACK       = 8,                          //0 spells use this mechanic, but some SPELL_AURA_MOD_HASTE and SPELL_AURA_MOD_RANGED_HASTE use as effect mechanic
     MECHANIC_SILENCE          = 9,
     MECHANIC_SLEEP            = 10,
     MECHANIC_SNARE            = 11,
@@ -1113,7 +1105,7 @@ enum Targets
     TARGET_DIRECTLY_FORWARD            = 89,
     TARGET_NONCOMBAT_PET               = 90,
     TARGET_RANDOM_POINT_AROUND_CASTER  = 91,                // currently used only for Freya spell waves, should work simmilar like 73
-    TARGET_IN_FRONT_OF_CASTER_30       = 104,
+    TARGET_IN_FRONT_OF_CASTER_2        = 104,
 };
 
 enum SpellMissInfo
@@ -1222,8 +1214,8 @@ enum GameObjectFlags
     GO_FLAG_TRIGGERED       = 0x00000040,                   //typically, summoned objects. Triggered by spell or other events
     GO_FLAG_UNK_8           = 0x00000080,
     GO_FLAG_UNK_9           = 0x00000100,                   //? Seen on type 33, possible meaning "destruct in progress"
-    GO_FLAG_DAMAGED         = 0x00000200,
-    GO_FLAG_DESTROYED       = 0x00000400
+    GO_FLAG_DAMAGED         = 0x00000200,                   //? Seen on type 33
+    GO_FLAG_DESTROYED       = 0x00000400                    //? Seen on type 33, possibly meaning "destructed"
 };
 
 enum TextEmotes
@@ -2450,17 +2442,20 @@ enum DiminishingGroup
     DIMINISHING_TRIGGER_STUN,                               // By aura proced stuns, usualy chance on hit talents
     DIMINISHING_CONTROL_ROOT,                               // Immobilizing effects from casted spells
     DIMINISHING_TRIGGER_ROOT,                               // Immobilizing effects from triggered spells like Frostbite
-    // Shared Class Specific
-    DIMINISHING_FEAR_CHARM_BLIND,                           // Fears & charm and Blind
-    DIMINISHING_DISORIENT,
-    DIMINISHING_HORROR,
+    DIMINISHING_FEAR_BLIND,                                 // Fears & blind
+    DIMINISHING_DISORIENT,                                  // Various disorients like Sap, Polymorph, Repentance od Wyvern Sting
+    // Warlock and Priest Specific
+    DIMINISHING_HORROR,                                     // Death Coil and Psychic Horror
     // Druid Specific
-    DIMINISHING_CYCLONE,
+    DIMINISHING_CYCLONE,                                    // From 2.3.0
     DIMINISHING_CHEAPSHOT_POUNCE,
     DIMINISHING_DISARM,                                     // From 2.3.0
     DIMINISHING_SILENCE,                                    // From 2.3.0
-    DIMINISHING_FREEZE_SLEEP,                               // Hunter's Freezing Trap
     DIMINISHING_BANISH,
+    DIMINISHING_HIBERNATE,
+    DIMINISHING_ENTRAPMENT,
+    DIMINISHING_SCATTER_SHOT,
+    DIMINISHING_MIND_CONTROL,
     // Other
     // Don't Diminish, but limit duration to 10s
     DIMINISHING_LIMITONLY
@@ -2478,9 +2473,10 @@ enum CustomVehicleFLags
     VF_CAN_BE_HEALED                = 0x0010,                   // vehicle can be healed
     VF_GIVE_EXP                     = 0x0020,                   // vehicle will give exp for killing enemies
     VF_MOVEMENT                     = 0x0040,                   // vehicle will move on its own, not depending on rider, however rider can cast spells
-    VF_NON_SELECTABLE               = 0x0080,                    // vehicle will be not selectable after rider enter
-    VF_ALLOW_MELEE                  = 0x0100                    // Allow melee for players on vehicle   
-    //VF_HAS_FUEL                     = 0x0200,                   // TODO : find out what energy type is fuel and implement this
+    VF_NON_SELECTABLE               = 0x0080,                   // vehicle will be not selectable after rider enter
+    VF_FLYING                       = 0x0100,                   // Hack for now (256 in DB)
+    VF_CAST_AURA                    = 0x0200,                   // Cast spell1 on player on vehicle enter and remove when he leaves.
+    VF_ALLOW_MELEE                  = 0x0400                    // Allow melee for players on vehicle   
 };
 
 enum CustomVehicleSeatFLags

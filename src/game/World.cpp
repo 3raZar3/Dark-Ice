@@ -50,7 +50,6 @@
 #include "Policies/SingletonImp.h"
 #include "BattleGroundMgr.h"
 #include "Language.h"
-#include "OutdoorPvPMgr.h"
 #include "TemporarySummon.h"
 #include "VMapFactory.h"
 #include "GameEventMgr.h"
@@ -79,21 +78,6 @@ float World::m_MaxVisibleDistanceForObject    = DEFAULT_VISIBILITY_DISTANCE;
 float World::m_MaxVisibleDistanceInFlight     = DEFAULT_VISIBILITY_DISTANCE;
 float World::m_VisibleUnitGreyDistance        = 0;
 float World::m_VisibleObjectGreyDistance      = 0;
-
-///PVP Announcer
-void World::SendPvPAnnounce(Player* killer, Player* killed)
-{
-  std::ostringstream msg;
-  std::ostringstream KillerName;
-  std::ostringstream KilledName;
-
-  KillerName << killer->GetName();
-  KilledName << killed->GetName();
-
-  msg << "|CFFFFFF01[" << KillerName.str().c_str() << "]" << "|CFF0042FF Has Killed " << "|CFFFFFF01[" << KilledName.str().c_str() << "]" << "|CFFE55BB0 in " << "|CFFFE8A0E[" << killer->GetBaseMap()->GetMapName() << "]";
-  if (sWorld.getConfig(CONFIG_BOOL_PVP_ANNOUNCER))
-    SendWorldText(LANG_SYSTEMMESSAGE, msg.str().c_str());
-}
 
 /// World constructor
 World::World()
@@ -262,10 +246,12 @@ World::AddSession_ (WorldSession* s)
         return;
     }
 
+    BillingPlanFlags BillingFlags = s->IsTrial() ? SESSION_FREE_TRIAL : SESSION_NONE;
+
     WorldPacket packet(SMSG_AUTH_RESPONSE, 1 + 4 + 1 + 4 + 1);
     packet << uint8 (AUTH_OK);
     packet << uint32 (0);                                   // BillingTimeRemaining
-    packet << uint8 (0);                                    // BillingPlanFlags
+    packet << uint8 (BillingFlags);                         // BillingPlanFlags
     packet << uint32 (0);                                   // BillingTimeRested
     packet << uint8 (s->Expansion());                       // 0 - normal, 1 - TBC, must be set in database manually for each account
     s->SendPacket (&packet);
@@ -307,11 +293,13 @@ void World::AddQueuedPlayer(WorldSession* sess)
     sess->SetInQueue(true);
     m_QueuedPlayer.push_back (sess);
 
+    BillingPlanFlags BillingFlags = sess->IsTrial() ? SESSION_FREE_TRIAL : SESSION_NONE;
+
     // The 1st SMSG_AUTH_RESPONSE needs to contain other info too.
     WorldPacket packet (SMSG_AUTH_RESPONSE, 1 + 4 + 1 + 4 + 1 + 4 + 1);
     packet << uint8 (AUTH_WAIT_QUEUE);
     packet << uint32 (0);                                   // BillingTimeRemaining
-    packet << uint8 (0);                                    // BillingPlanFlags
+    packet << uint8 (BillingFlags);                         // BillingPlanFlags
     packet << uint32 (0);                                   // BillingTimeRested
     packet << uint8 (sess->Expansion());                    // 0 - normal, 1 - TBC, must be set in database manually for each account
     packet << uint32(GetQueuePos (sess));                   // position in queue
@@ -561,13 +549,13 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_BOOL_STATS_SAVE_ONLY_ON_LOGOUT, "PlayerSave.Stats.SaveOnlyOnLogout", true);
 
     setConfigMin(CONFIG_UINT32_INTERVAL_GRIDCLEAN, "GridCleanUpDelay", 5 * MINUTE * IN_MILLISECONDS, MIN_GRID_DELAY);
-    if (reload)
+    if(reload)
         sMapMgr.SetGridCleanUpDelay(getConfig(CONFIG_UINT32_INTERVAL_GRIDCLEAN));
 
     setConfig(CONFIG_UINT32_NUMTHREADS, "MapUpdate.Threads", 2);
 
     setConfigMin(CONFIG_UINT32_INTERVAL_MAPUPDATE, "MapUpdateInterval", 100, MIN_MAP_UPDATE_DELAY);
-    if (reload)
+    if(reload)
         sMapMgr.SetMapUpdateInterval(getConfig(CONFIG_UINT32_INTERVAL_MAPUPDATE));
 
     setConfig(CONFIG_UINT32_INTERVAL_CHANGEWEATHER, "ChangeWeatherInterval", 10 * MINUTE * IN_MILLISECONDS);
@@ -635,6 +623,8 @@ void World::LoadConfigSettings(bool reload)
 
     setConfig(CONFIG_BOOL_INSTANCE_IGNORE_LEVEL, "Instance.IgnoreLevel", false);
     setConfig(CONFIG_BOOL_INSTANCE_IGNORE_RAID,  "Instance.IgnoreRaid", false);
+    //Custom variable - end arena if 2v1 etc.
+    m_configBoolValues[CONFIG_BOOL_END_ARENA_IF_NOT_ENOUGH_PLAYERS] = sConfig.GetBoolDefault("EndArenaIfNotEnoughtPlayers", false);
 
     setConfig(CONFIG_BOOL_CAST_UNSTUCK, "CastUnstuck", true);
     setConfig(CONFIG_UINT32_MAX_SPELL_CASTS_IN_CHAIN, "MaxSpellCastsInChain", 10);
@@ -663,7 +653,7 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_UINT32_MAIL_DELIVERY_DELAY, "MailDeliveryDelay", HOUR);
 
     setConfigPos(CONFIG_UINT32_UPTIME_UPDATE, "UpdateUptimeInterval", 10);
-    if (reload)
+    if(reload)
     {
         m_timers[WUPDATE_UPTIME].SetInterval(getConfig(CONFIG_UINT32_UPTIME_UPDATE)*MINUTE*IN_MILLISECONDS);
         m_timers[WUPDATE_UPTIME].Reset();
@@ -790,9 +780,25 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_UINT32_BONUS_HONOR_FLAG_AV,                       "BG.BonusHonor.AV.Flag", 2);
     setConfig(CONFIG_UINT32_BONUS_HONOR_FLAG_EOS,                      "BG.BonusHonor.EOS.Flag",2);
 
-    setConfig(CONFIG_BOOL_OFFHAND_CHECK_AT_TALENTS_RESET, "OffhandCheckAtTalentsReset", false);
-
     setConfig(CONFIG_BOOL_KICK_PLAYER_ON_BAD_PACKET, "Network.KickOnBadPacket", false);
+
+    //TeamBG code
+    setConfig(CONFIG_BOOL_TEAM_BG_ALLOW_AB, "TeamBG.AllowAB", false);
+    setConfig(CONFIG_BOOL_TEAM_BG_ALLOW_AV, "TeamBG.AllowAV", false);
+    setConfig(CONFIG_BOOL_TEAM_BG_ALLOW_EOS, "TeamBG.AllowEOS", false);
+    setConfig(CONFIG_BOOL_TEAM_BG_ALLOW_WSG, "TeamBG.AllowWSG", false);
+
+    setConfig(CONFIG_UINT32_TEAM_BG_FACTION_BLUE, "TeamBG.Faction.Blue", 1);
+    setConfig(CONFIG_UINT32_TEAM_BG_FACTION_RED, "TeamBG.Faction.Red", 2);
+    setConfig(CONFIG_UINT32_TEAM_BG_BUFF_BLUE, "TeamBG.Buff.Blue", 0);
+    setConfig(CONFIG_UINT32_TEAM_BG_BUFF_RED, "TeamBG.Buff.Red", 0);
+
+    //Make some maps friendly for all
+    std::string factionedMapIds = sConfig.GetStringDefault("FactionedMap.Ids", "");
+    sMapMgr.SetFactionedMaps(factionedMapIds.c_str());
+    setConfig(CONFIG_BOOL_FACTIONED_MAP_ENABLED, "FactionedMap.Enabled", false);
+    setConfig(CONFIG_UINT32_FACTIONED_MAP_FACTION, "FactionedMap.Faction", 1);
+    setConfig(CONFIG_UINT32_FACTIONED_MAP_TEAM, "FactionedMap.Team", 1);
 
     if(int clientCacheId = sConfig.GetIntDefault("ClientCacheVersion", 0))
     {
@@ -817,37 +823,6 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_UINT32_TIMERBAR_BREATH_MAX,      "TimerBar.Breath.Max", 180);
     setConfig(CONFIG_UINT32_TIMERBAR_FIRE_GMLEVEL,    "TimerBar.Fire.GMLevel", SEC_CONSOLE);
     setConfig(CONFIG_UINT32_TIMERBAR_FIRE_MAX,        "TimerBar.Fire.Max", 1);
-
-    /* PvP Token System */
-    setConfig(CONFIG_PVP_TOKEN_ENABLE,"PvPToken.Enable", true);
-    setConfig(CONFIG_PVP_TOKEN_ITEMID,"PvPToken.ItemID", 29434);
-    setConfig(CONFIG_PVP_TOKEN_ITEMCOUNT,"PvPToken.ItemCount", 1);
-    setConfig(CONFIG_PVP_TOKEN_RESTRICTION,"PvPToken.MapRestriction", 4);
-
-    if(getConfig(CONFIG_PVP_TOKEN_ITEMCOUNT) < 1)
-        setConfig(CONFIG_PVP_TOKEN_ITEMCOUNT,"PvPToken.ItemCount",1);
-
-    setConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE, "Custom.AllowFlyingMountsEverywhere", false);
-    setConfig(CONFIG_BOOL_MAIL_ITEM_REFUNDABLE, "Custom.MailItemRefundable", false);
-    setConfig(CONFIG_MIN_LEVEL_DUALSPEC, "Custom.MinLevelDualSpec", 40);
-    setConfig(CONFIG_BOOL_EVERYONE_DRUNK, "Custom.EveryoneDrunk", false);
-    setConfig(CONFIG_BOOL_DK_NO_QUESTS_FOR_TP, "Custom.DeathKnightNoQuestsForTP", false);
-    setConfig(CONFIG_BOOL_PVP_ANNOUNCER, "Custom.PvPAnnouncer", false);
-    setConfig(CONFIG_BOOL_DUALSPEC_AT_CREATE, "Custom.DualSpecAtCreate", false);
-    setConfig(CONFIG_BOOL_EXTRA_SANCTUARY, "Custom.AddExtraSanctuary", false);
-    setConfig(CONFIG_BOOL_EXTRA_PVP, "Custom.AddExtraPvPZones", false);
-    setConfig(CONFIG_UINT32_SANCTUARY_ID, "Custom.SanctuaryZone", 0);
-    setConfig(CONFIG_UINT32_PVP_ID_1, "Custom.PvPZone1", 0);
-    setConfig(CONFIG_UINT32_PVP_ID_2, "Custom.PvPZone2", 0);
-    setConfig(CONFIG_UINT32_PVP_ID_3, "Custom.PvPZone3", 0);
-    setConfig(CONFIG_UINT32_PVP_ID_4, "Custom.PvPZone4", 0);
-    setConfig(CONFIG_BOOL_LIMIT_ALLOWED_MOUNTS, "Custom.LimitAllowedMounts", false);
-    setConfig(CONFIG_UINT32_ALLOWED_MOUNT1, "Custom.AllowedMount1", 0);
-    setConfig(CONFIG_UINT32_ALLOWED_MOUNT2, "Custom.AllowedMount2", 0);
-    setConfig(CONFIG_UINT32_ALLOWED_MOUNT3, "Custom.AllowedMount3", 0);
-    setConfig(CONFIG_BOOL_ALL_WEAPONS_MAX_SKILL, "Custom.AllWeaponSkillsAtMax", false);
-    setConfig(CONFIG_BOOL_PLAYER_AUTO_RESS, "Custom.AutoRessPlayersOnDeath", false);
-    setConfig(CONFIG_BOOL_ALL_WEAPONS_FOR_CLASS_MAX_SKILL, "Custom.AllWeaponSkillsForClassAtMax", false);
 
     m_VisibleUnitGreyDistance = sConfig.GetFloatDefault("Visibility.Distance.Grey.Unit", 1);
     if(m_VisibleUnitGreyDistance >  MAX_VISIBILITY_DISTANCE)
@@ -1098,6 +1073,14 @@ void World::SetInitialWorldSettings()
     sLog.outString( "Loading Spell Bonus Data..." );
     sSpellMgr.LoadSpellBonuses();                           // must be after LoadSpellChains
 
+    // DEVELOPER CODE START 
+    sLog.outString( "Loading Spell Stack Data..." ); 
+    sSpellMgr.LoadSpellStack(); 
+ 
+    sLog.outString( "Loading Spell Stack Group Data..." ); 
+    sSpellMgr.LoadSpellStackGroup(); 
+    // DEVELOPER CODE END 
+
     sLog.outString( "Loading Spell Proc Item Enchant..." );
     sSpellMgr.LoadSpellProcItemEnchant();                   // must be after LoadSpellChains
 
@@ -1113,6 +1096,8 @@ void World::SetInitialWorldSettings()
     sLog.outString( "Loading Items..." );                   // must be after LoadRandomEnchantmentsTable and LoadPageTexts
     sObjectMgr.LoadItemPrototypes();
 
+    sLog.outString( "Loading Items Extended Cost..." );
+    sObjectMgr.LoadItemExtendedCost();
     sLog.outString( "Loading Creature Model Based Info Data..." );
     sObjectMgr.LoadCreatureModelInfo();
 
@@ -1328,9 +1313,6 @@ void World::SetInitialWorldSettings()
     sLog.outString( "Returning old mails..." );
     sObjectMgr.ReturnOrDeleteOldMails(false);
 
-    // Loads the jail conf out of the database
-    sObjectMgr.LoadJailConf();
-
     ///- Load and initialize scripts
     sLog.outString( "Loading Scripts..." );
     sLog.outString();
@@ -1388,7 +1370,6 @@ void World::SetInitialWorldSettings()
     m_timers[WUPDATE_UPTIME].SetInterval(m_configUint32Values[CONFIG_UINT32_UPTIME_UPDATE]*MINUTE*IN_MILLISECONDS);
                                                             //Update "uptime" table based on configuration entry in minutes.
     m_timers[WUPDATE_CORPSES].SetInterval(3*HOUR*IN_MILLISECONDS);
-    m_timers[WUPDATE_AUTOBROADCAST].SetInterval(abtimer);
     m_timers[WUPDATE_DELETECHARS].SetInterval(DAY*IN_MILLISECONDS); // check for chars to delete every day
     m_timers[WUPDATE_AUTOBROADCAST].SetInterval(abtimer);
 
@@ -1413,12 +1394,7 @@ void World::SetInitialWorldSettings()
     sBattleGroundMgr.CreateInitialBattleGrounds();
     sBattleGroundMgr.InitAutomaticArenaPointDistribution();
 
-
-    ///- Initialize outdoor pvp
-    sLog.outString( "Starting Outdoor PvP System" );
-    sOutdoorPvPMgr.InitOutdoorPvP();
-
-    ///- Apply spell hacks
+    // - Apply spell hacks
     sLog.outString( "Apply spell hacks..." );
     sSpellMgr.ApplySpellHacks();
 
@@ -1444,15 +1420,14 @@ void World::SetInitialWorldSettings()
     sLog.outString("Starting Game Event system..." );
     uint32 nextGameEvent = sGameEventMgr.Initialize();
     m_timers[WUPDATE_EVENTS].SetInterval(nextGameEvent);    //depend on next event
-    
+
     // Delete all characters which have been deleted X days before
     Player::DeleteOldCharacters();
 
-    sLog.outString("Starting AuctionHouseBot System...");
+    sLog.outString("Starting Autobroadcast system by Xeross..." );
+    sLog.outString("Initialize AuctionHouseBot...");
     auctionbot.Initialize();
-    
-    sLog.outString("Starting Autobroadcast system...");
-    
+
     sLog.outString( "WORLD: World initialized" );
 
     uint32 uStartInterval = getMSTimeDiff(uStartTime, getMSTime());
@@ -1506,7 +1481,9 @@ void World::DetectDBCLang()
 /// Update the World !
 void World::Update(uint32 diff)
 {
+    //World diff time, showed in .s info, for lag detect...
     world_diff_time = diff;
+
     ///- Update the different timers
     for(int i = 0; i < WUPDATE_COUNT; ++i)
     {
@@ -1598,7 +1575,6 @@ void World::Update(uint32 diff)
         sMapMgr.Update(diff);                // As interval = 0
 
         sBattleGroundMgr.Update(diff);
-        sOutdoorPvPMgr.Update(diff);
     }
 
     ///- Delete all characters which have been deleted X days before
@@ -1794,6 +1770,12 @@ void World::KickAll()
     // session not removed at kick and will removed in next update tick
     for (SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
         itr->second->KickPlayer();
+}
+
+// Reset active_realm_id from account table
+void World::ResetRealmId()
+{
+    loginDatabase.PQuery("UPDATE account SET active_realm_id = 0 WHERE active_realm_id = %d", realmID);
 }
 
 /// Kick (and save) all players with security level less `sec`
@@ -2196,14 +2178,6 @@ void World::InitDailyQuestResetTime()
         delete result;
 }
 
-void World::ResetBGDaily()
-{
-    CharacterDatabase.Execute("DELETE FROM character_battleground_status");
-    for(SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
-        if (itr->second->GetPlayer())
-            itr->second->GetPlayer()->ResetBGStatus();
-}
-
 void World::InitRandomBGResetTime()
 {
     QueryResult * result = CharacterDatabase.Query("SELECT NextRandomBGResetTime FROM saved_variables");
@@ -2233,6 +2207,14 @@ void World::InitRandomBGResetTime()
         CharacterDatabase.PExecute("INSERT INTO saved_variables (NextRandomBGResetTime) VALUES ('"UI64FMTD"')", uint64(m_NextRandomBGReset));
     else
         delete result;
+}
+
+void World::ResetBGDaily()
+{
+    CharacterDatabase.Execute("DELETE FROM character_battleground_status");
+    for(SessionMap::const_iterator itr = m_sessions.begin(); itr != m_sessions.end(); ++itr)
+        if (itr->second->GetPlayer())
+            itr->second->GetPlayer()->ResetBGStatus();
 }
 
 void World::ResetDailyQuests()
@@ -2273,8 +2255,8 @@ void World::ResetRandomBG()
 
 void World::SetPlayerLimit( int32 limit, bool needUpdate )
 {
-    if(limit <= -SEC_CONSOLE)
-        limit = -(SEC_CONSOLE-1);
+    if (limit < -SEC_ADMINISTRATOR)
+        limit = -SEC_ADMINISTRATOR;
 
     // lock update need
     bool db_update_need = needUpdate || (limit < 0) != (m_playerLimit < 0) || (limit < 0 && m_playerLimit < 0 && limit != m_playerLimit);

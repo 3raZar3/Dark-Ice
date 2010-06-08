@@ -324,9 +324,6 @@ C_MODE_END
 #ifdef HAVE_FLOAT_H
 #include <float.h>
 #endif
-#ifdef HAVE_FENV_H
-#include <fenv.h> /* For fesetround() */
-#endif
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -486,6 +483,9 @@ typedef unsigned short ushort;
 #define test_all_bits(a,b) (((a) & (b)) == (b))
 #define set_bits(type, bit_count) (sizeof(type)*8 <= (bit_count) ? ~(type) 0 : ((((type) 1) << (bit_count)) - (type) 1))
 #define array_elements(A) ((uint) (sizeof(A)/sizeof(A[0])))
+#ifndef HAVE_RINT
+#define rint(A) floor((A)+(((A) < 0)? -0.5 : 0.5))
+#endif
 
 /* Define some general constants */
 #ifndef TRUE
@@ -533,12 +533,8 @@ C_MODE_END
 #undef DBUG_OFF
 #endif
 
-/* We might be forced to turn debug off, if not turned off already */
-#if (defined(FORCE_DBUG_OFF) || defined(_lint)) && !defined(DBUG_OFF)
-#  define DBUG_OFF
-#  ifdef DBUG_ON
-#    undef DBUG_ON
-#  endif
+#if defined(_lint) && !defined(DBUG_OFF)
+#define DBUG_OFF
 #endif
 
 #include <my_dbug.h>
@@ -713,9 +709,6 @@ typedef SOCKET_SIZE_TYPE size_socket;
 #define ulonglong2double(A) ((double) (ulonglong) (A))
 #define my_off_t2double(A)  ((double) (my_off_t) (A))
 #endif
-#ifndef double2ulonglong
-#define double2ulonglong(A) ((ulonglong) (double) (A))
-#endif
 #endif
 
 #ifndef offsetof
@@ -797,19 +790,9 @@ typedef SOCKET_SIZE_TYPE size_socket;
 #endif
 
 #ifdef HAVE_ISINF
-/* Check if C compiler is affected by GCC bug #39228 */
-#if !defined(__cplusplus) && defined(HAVE_BROKEN_ISINF)
-/* Force store/reload of the argument to/from a 64-bit double */
-static inline double my_isinf(double x)
-{
-  volatile double t= x;
-  return isinf(t);
-}
-#else
-/* System-provided isinf() is available and safe to use */
+/* isinf() can be used in both C and C++ code */
 #define my_isinf(X) isinf(X)
-#endif
-#else /* !HAVE_ISINF */
+#else
 #define my_isinf(X) (!finite(X) && !isnan(X))
 #endif
 
@@ -997,7 +980,7 @@ typedef int		myf;	/* Type of MyFlags in my_funcs */
 typedef char		byte;	/* Smallest addressable unit */
 #endif
 typedef char		my_bool; /* Small bool */
-#if !defined(bool) && (!defined(HAVE_BOOL) || !defined(__cplusplus))
+#if !defined(bool) && !defined(bool_defined) && (!defined(HAVE_BOOL) || !defined(__cplusplus))
 typedef char		bool;	/* Ordinary boolean values 0 1 */
 #endif
 	/* Macros for converting *constants* to the right type */
@@ -1070,7 +1053,7 @@ typedef char		bool;	/* Ordinary boolean values 0 1 */
 */
 
 /* Optimized store functions for Intel x86 */
-#if defined(__i386__) || defined(_WIN32)
+#if defined(__i386__) && !defined(_WIN64)
 #define sint2korr(A)	(*((int16 *) (A)))
 #define sint3korr(A)	((int32) ((((uchar) (A)[2]) & 128) ? \
 				  (((uint32) 255L << 24) | \
@@ -1082,7 +1065,7 @@ typedef char		bool;	/* Ordinary boolean values 0 1 */
 				  ((uint32) (uchar) (A)[0])))
 #define sint4korr(A)	(*((long *) (A)))
 #define uint2korr(A)	(*((uint16 *) (A)))
-#if defined(HAVE_purify) && !defined(_WIN32)
+#ifdef HAVE_purify
 #define uint3korr(A)	(uint32) (((uint32) ((uchar) (A)[0])) +\
 				  (((uint32) ((uchar) (A)[1])) << 8) +\
 				  (((uint32) ((uchar) (A)[2])) << 16))
@@ -1094,7 +1077,7 @@ typedef char		bool;	/* Ordinary boolean values 0 1 */
     It means, that you have to provide enough allocated space !
 */
 #define uint3korr(A)	(long) (*((unsigned int *) (A)) & 0xFFFFFF)
-#endif /* HAVE_purify && !_WIN32 */
+#endif
 #define uint4korr(A)	(*((uint32 *) (A)))
 #define uint5korr(A)	((ulonglong)(((uint32) ((uchar) (A)[0])) +\
 				    (((uint32) ((uchar) (A)[1])) << 8) +\
@@ -1133,8 +1116,9 @@ do { doubleget_union _tmp; \
 #define floatstore(T,V)  memcpy((byte*)(T), (byte*)(&V),sizeof(float))
 #define floatget(V,M)    memcpy((byte*) &V,(byte*) (M),sizeof(float))
 #define float8store(V,M) doublestore((V),(M))
-#else
+#endif /* __i386__ */
 
+#ifndef sint2korr
 /*
   We're here if it's not a IA-32 architecture (Win32 and UNIX IA-32 defines
   were done before)
@@ -1259,7 +1243,7 @@ do { doubleget_union _tmp; \
 #define float8store(V,M) doublestore((V),(M))
 #endif /* WORDS_BIGENDIAN */
 
-#endif /* __i386__ OR _WIN32 */
+#endif /* sint2korr */
 
 /*
   Macro for reading 32-bit integer from network byte order (big-endian)
@@ -1366,40 +1350,5 @@ do { doubleget_union _tmp; \
 /* Length of decimal number represented by INT64. */
 
 #define MY_INT64_NUM_DECIMAL_DIGITS 21
-
-#ifndef HAVE_RINT
-/**
-   All integers up to this number can be represented exactly as double precision
-   values (DBL_MANT_DIG == 53 for IEEE 754 hardware).
-*/
-#define MAX_EXACT_INTEGER ((1LL << DBL_MANT_DIG) - 1)
-
-/**
-   rint(3) implementation for platforms that do not have it.
-   Always rounds to the nearest integer with ties being rounded to the nearest
-   even integer to mimic glibc's rint() behavior in the "round-to-nearest"
-   FPU mode. Hardware-specific optimizations are possible (frndint on x86).
-   Unlike this implementation, hardware will also honor the FPU rounding mode.
-*/
-
-static inline double rint(double x)
-{
-  double f, i;
-  f = modf(x, &i);
-  /*
-    All doubles with absolute values > MAX_EXACT_INTEGER are even anyway,
-    no need to check it.
-  */
-  if (x > 0.0)
-    i += (double) ((f > 0.5) || (f == 0.5 &&
-                                 i <= (double) MAX_EXACT_INTEGER &&
-                                 (longlong) i % 2));
-  else
-    i -= (double) ((f < -0.5) || (f == -0.5 &&
-                                  i >= (double) -MAX_EXACT_INTEGER &&
-                                  (longlong) i % 2));
-  return i;
-}
-#endif /* HAVE_RINT */
 
 #endif /* my_global_h */

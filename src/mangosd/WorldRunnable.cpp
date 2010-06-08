@@ -79,6 +79,7 @@ void WorldRunnable::run()
     }
 
     sWorld.KickAll();                                       // save and kick all players
+    sWorld.ResetRealmId();                                  // reset id realm from account (active_realm_id column)
     sWorld.UpdateSessions( 1 );                             // real players unload required UpdateSessions call
 
     // unload battleground templates before different singletons destroyed

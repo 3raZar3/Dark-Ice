@@ -32,7 +32,6 @@ typedef std::map<uint32,uint32> AreaFlagByMapID;
 
 DBCStorage <AreaTableEntry> sAreaStore(AreaTableEntryfmt);
 DBCStorage <AreaGroupEntry> sAreaGroupStore(AreaGroupEntryfmt);
-DBCStorage <AreaPOIEntry> sAreaPOIStore(AreaPOIEntryfmt);
 static AreaFlagByAreaID sAreaFlagByAreaID;
 static AreaFlagByMapID  sAreaFlagByMapID;                   // for instances without generated *.map files
 
@@ -372,7 +371,6 @@ void LoadDBCStores(const std::string& dataPath)
     LoadDBC(availableDbcLocales,bar,bad_dbc_files,sAchievementCriteriaStore, dbcPath,"Achievement_Criteria.dbc");
     LoadDBC(availableDbcLocales,bar,bad_dbc_files,sAreaTriggerStore,         dbcPath,"AreaTrigger.dbc");
     LoadDBC(availableDbcLocales,bar,bad_dbc_files,sAreaGroupStore,           dbcPath,"AreaGroup.dbc");
-    LoadDBC(availableDbcLocales,bar,bad_dbc_files,sAreaPOIStore,             dbcPath,"AreaPOI.dbc");
     LoadDBC(availableDbcLocales,bar,bad_dbc_files,sAuctionHouseStore,        dbcPath,"AuctionHouse.dbc");
     LoadDBC(availableDbcLocales,bar,bad_dbc_files,sBankBagSlotPricesStore,   dbcPath,"BankBagSlotPrices.dbc");
     LoadDBC(availableDbcLocales,bar,bad_dbc_files,sBattlemasterListStore,    dbcPath,"BattlemasterList.dbc");
@@ -910,15 +908,14 @@ bool IsPointInAreaTriggerZone(AreaTriggerEntry const* atEntry, uint32 mapid, flo
 }
 
 // script support functions
-MANGOS_DLL_SPEC DBCStorage <SoundEntriesEntry>  		const* GetSoundEntriesStore()   	{ return &sSoundEntriesStore;   }
-MANGOS_DLL_SPEC DBCStorage <SpellEntry>        		 	const* GetSpellStore()          	{ return &sSpellStore;          }
-MANGOS_DLL_SPEC DBCStorage <SpellRangeEntry>    		const* GetSpellRangeStore()     	{ return &sSpellRangeStore;     }
-MANGOS_DLL_SPEC DBCStorage <FactionEntry>       		const* GetFactionStore()        	{ return &sFactionStore;        }
-MANGOS_DLL_SPEC DBCStorage <ItemEntry>          		const* GetItemDisplayStore()    	{ return &sItemStore;           }
-MANGOS_DLL_SPEC DBCStorage <CreatureDisplayInfoEntry> 	const* GetCreatureDisplayStore() 	{ return &sCreatureDisplayInfoStore; }
-MANGOS_DLL_SPEC DBCStorage <EmotesEntry>        		const* GetEmotesStore()         	{ return &sEmotesStore;         }
-MANGOS_DLL_SPEC DBCStorage <AchievementEntry>                   const* GetAchievementStore()    { return &sAchievementStore;    }
-MANGOS_DLL_SPEC DBCStorage <EmotesTextEntry>
-            const* GetEmotesTextStore()    		{ return &sEmotesTextStore;     }
+MANGOS_DLL_SPEC DBCStorage <SoundEntriesEntry>  const* GetSoundEntriesStore()   { return &sSoundEntriesStore;   }
+MANGOS_DLL_SPEC DBCStorage <SpellEntry>         const* GetSpellStore()          { return &sSpellStore;          }
+MANGOS_DLL_SPEC DBCStorage <SpellRangeEntry>    const* GetSpellRangeStore()     { return &sSpellRangeStore;     }
+MANGOS_DLL_SPEC DBCStorage <FactionEntry>       const* GetFactionStore()        { return &sFactionStore;        }
+MANGOS_DLL_SPEC DBCStorage <ItemEntry>          const* GetItemDisplayStore()    { return &sItemStore;           }
+MANGOS_DLL_SPEC DBCStorage <CreatureDisplayInfoEntry> const* GetCreatureDisplayStore() { return &sCreatureDisplayInfoStore; }
+MANGOS_DLL_SPEC DBCStorage <EmotesEntry>        const* GetEmotesStore()         { return &sEmotesStore;         }
+MANGOS_DLL_SPEC DBCStorage <EmotesTextEntry>    const* GetEmotesTextStore()     { return &sEmotesTextStore;     }
+MANGOS_DLL_SPEC DBCStorage <AchievementEntry>   const* GetAchievementStore()    { return &sAchievementStore;    }
 MANGOS_DLL_SPEC DBCStorage <CharTitlesEntry>
              const* GetCharTitlesStore() 		{ return &sCharTitlesStore; 	}

@@ -21,42 +21,6 @@
 
 enum MangosStrings
 {
-        // Added by WarHead for the Jail
-    LANG_JAIL_YOURE_JAILED              = 950,  // "You are jailed by %s for %u hour(s)!"
-    LANG_JAIL_REASON                    = 951,  // "%s wrote this as reason: %s"
-    LANG_JAIL_WAS_JAILED                = 952,  // "%s was jailed by you for %u hour(s)!"
-    LANG_JAIL_YOURE_UNJAILED            = 953,  // "You was released out of the jail by %s."
-    LANG_JAIL_WAS_UNJAILED              = 954,  // "You have released %s out of the jail."
-    LANG_JAIL_NOREASON                  = 955,  // "No reason given or reason is < %u chars!"
-    LANG_JAIL_NONAME                    = 956,  // "No name given!"
-    LANG_JAIL_NOTIME                    = 957,  // "No time given!"
-    LANG_JAIL_VALUE                     = 958,  // "The jailtime must be between 1 and %u hours!"
-    LANG_JAIL_CHAR_NOTJAILED            = 959,  // "The character (%s) is not jailed!"
-    LANG_JAIL_DENIED                    = 960,  // "Command forbidden for jailed characters!"
-    LANG_JAIL_JAILED_H_INFO             = 961,  // "You have %u hour(s) left in the jail."
-    LANG_JAIL_JAILED_M_INFO             = 962,  // "You have %u minute(s) left in the jail."
-    LANG_JAIL_NOTJAILED_INFO            = 963,  // "You're a free woman / man. ;-)"
-    LANG_JAIL_GM_INFO                   = 964,  // "%s was %u times jailed and has %u minute(s) left. Last time jailed by %s. Last reason was: '%s'"
-    LANG_JAIL_GM_NOINFO                 = 965,  // "%s was never jailed."
-    LANG_JAIL_NO_JAIL                   = 966,  // "You can't jail yourself!"
-    LANG_JAIL_NO_UNJAIL                 = 967,  // "You can't unjail yourself!"
-    LANG_JAIL_WARNING                   = 968,  // "Be carefull! Only one more jailtime and your current character will be deleted!"
-    LANG_JAIL_ANNOUNCE1                 = 969,  // "The character '"
-    LANG_JAIL_ANNOUNCE2                 = 970,  // "' was jailed for "
-    LANG_JAIL_ANNOUNCE3                 = 971,  // " hour(s) by the GM character '"
-    LANG_JAIL_ANNOUNCE4                 = 972,  // "'. The reason is: "
-    LANG_JAIL_RELOAD                    = 973,  // "The jail configuration was reloaded."
-    LANG_JAIL_CONF_LOADED               = 974,  // ">> Jail config loaded."
-    LANG_JAIL_CONF_ERR1                 = 975,  // "Can't load jail config! Table empty or missed! Use jail_conf.sql!"
-    LANG_JAIL_CONF_ERR2                 = 976,  // "Set all jail config settings to default..."
-    LANG_JAIL_CHAR_TELE                 = 977,  // "The Character '%s' (GUID %u) is jailed and teleportet into the jail."
-    LANG_JAIL_CHAR_FREE                 = 978,  // "The Character '%s' (GUID %u) was released out of the jail."
-    LANG_JAIL_WRONG_NAME                = 979,  // "A character with this name doesn't exists!"
-    LANG_JAIL_WARNING_BAN               = 980,  // "Be carefull! Only one more jailtime and your account will be banned!"
-    LANG_JAIL_BAN_REASON                = 981,  // "Max. jailtimes reached!"
-    LANG_JAIL_BAN_BY                    = 982,  // "Robotron"
-    LANG_JAIL_AMNESTII					= 983,  // "AMNESTII"
-
     // for chat commands
     LANG_SELECT_CHAR_OR_CREATURE        = 1,
     LANG_SELECT_CREATURE                = 2,
@@ -122,13 +86,8 @@ enum MangosStrings
     //LANG_RA_BUSY                      = 60, not used
     LANG_RA_USER                        = 61,
     LANG_RA_PASS                        = 62,
-    // Name Announce
-    LANG_SYSTEMMESSAGE_MODERATOR        = 63,
-    LANG_SYSTEMMESSAGE_GAMEMASTER       = 64,
-    LANG_SYSTEMMESSAGE_ADMINISTRATOR    = 65,
-    
-    // Room for more level 0              65-99 not used
-    
+    // Room for more level 0              63-99 not used
+
     // level 1 chat
     LANG_GLOBAL_NOTIFY                  = 100,
     LANG_MAP_POSITION                   = 101,
@@ -896,92 +855,9 @@ enum MangosStrings
     // Use for not-in-offcial-sources patches
     //                                    10000-10999
 
-    // opvp hp
-    LANG_OPVP_HP_CAPTURE_OVERLOOK_H     = 10001,
-    LANG_OPVP_HP_CAPTURE_OVERLOOK_A     = 10002,
-    LANG_OPVP_HP_CAPTURE_STADIUM_H      = 10003,
-    LANG_OPVP_HP_CAPTURE_STADIUM_A      = 10004,
-    LANG_OPVP_HP_CAPTURE_BROKENHILL_H   = 10005,
-    LANG_OPVP_HP_CAPTURE_BROKENHILL_A   = 10006,
-    LANG_OPVP_HP_LOOSE_OVERLOOK_H       = 10007,
-    LANG_OPVP_HP_LOOSE_OVERLOOK_A       = 10008,
-    LANG_OPVP_HP_LOOSE_STADIUM_H        = 10009,
-    LANG_OPVP_HP_LOOSE_STADIUM_A        = 10010,
-    LANG_OPVP_HP_LOOSE_BROKENHILL_H     = 10011,
-    LANG_OPVP_HP_LOOSE_BROKENHILL_A     = 10012,
-    // opvp zm
-    LANG_OPVP_ZM_CAPTURE_WEST_H         = 10013,
-    LANG_OPVP_ZM_CAPTURE_WEST_A         = 10014,
-    LANG_OPVP_ZM_CAPTURE_EAST_H         = 10015,
-    LANG_OPVP_ZM_CAPTURE_EAST_A         = 10016,
-    LANG_OPVP_ZM_CAPTURE_GY_H           = 10017,
-    LANG_OPVP_ZM_CAPTURE_GY_A           = 10018,
-    LANG_OPVP_ZM_LOOSE_WEST_H           = 10019,
-    LANG_OPVP_ZM_LOOSE_WEST_A           = 10020,
-    LANG_OPVP_ZM_LOOSE_EAST_H           = 10021,
-    LANG_OPVP_ZM_LOOSE_EAST_A           = 10022,
-    LANG_OPVP_ZM_LOOSE_GY_H             = 10023,
-    LANG_OPVP_ZM_LOOSE_GY_A             = 10024,
-    // opvp na
-    LANG_OPVP_NA_CAPTURE_H              = 10025,
-    LANG_OPVP_NA_CAPTURE_A              = 10026,
-    LANG_OPVP_NA_LOOSE_H                = 10027,
-    LANG_OPVP_NA_LOOSE_A                = 10028,
-    // opvp tf
-    LANG_OPVP_TF_CAPTURE_H              = 10029,
-    LANG_OPVP_TF_CAPTURE_A              = 10030,
-    LANG_OPVP_TF_LOOSE_H                = 10031,
-    LANG_OPVP_TF_LOOSE_A                = 10032,
-    // opvp ep
-    LANG_OPVP_EP_CAPTURE_NPT_H          = 10033,
-    LANG_OPVP_EP_CAPTURE_NPT_A          = 10034,
-    LANG_OPVP_EP_CAPTURE_EWT_H          = 10035,
-    LANG_OPVP_EP_CAPTURE_EWT_A          = 10036,
-    LANG_OPVP_EP_CAPTURE_CGT_H          = 10037,
-    LANG_OPVP_EP_CAPTURE_CGT_A          = 10038,
-    LANG_OPVP_EP_CAPTURE_PWT_H          = 10039,
-    LANG_OPVP_EP_CAPTURE_PWT_A          = 10040,
-    LANG_OPVP_EP_LOOSE_NPT_H            = 10041,
-    LANG_OPVP_EP_LOOSE_NPT_A            = 10042,
-    LANG_OPVP_EP_LOOSE_EWT_H            = 10043,
-    LANG_OPVP_EP_LOOSE_EWT_A            = 10044,
-    LANG_OPVP_EP_LOOSE_CGT_H            = 10045,
-    LANG_OPVP_EP_LOOSE_CGT_A            = 10046,
-    LANG_OPVP_EP_LOOSE_PWT_H            = 10047,
-    LANG_OPVP_EP_LOOSE_PWT_A            = 10048,
-    // opvp si
-    LANG_OPVP_SI_CAPTURE_H              = 10049,
-    LANG_OPVP_SI_CAPTURE_A              = 10050,
-    // opvp gossips
-    LANG_OPVP_EP_FLIGHT_NPT             = 10051,
-    LANG_OPVP_EP_FLIGHT_EWT             = 10052,
-    LANG_OPVP_EP_FLIGHT_CGT             = 10053,
-    LANG_OPVP_ZM_GOSSIP_ALLIANCE        = 10054,
-    LANG_OPVP_ZM_GOSSIP_HORDE           = 10055,
-
-    LANG_BG_WG_BATTLE_STARTS            = 10100,
-    LANG_BG_WG_DEFENDED                 = 10101,
-    LANG_BG_WG_CAPTURED                 = 10102,
-    LANG_BG_WG_WORKSHOP_DAMAGED         = 10103,
-    LANG_BG_WG_WORKSHOP_DESTROYED       = 10104,
-    LANG_BG_WG_TOWER_DAMAGED            = 10105,
-    LANG_BG_WG_TOWER_DESTROYED          = 10106,
-    LANG_BG_WG_FORTRESS_UNDER_ATTACK    = 10107,
-    LANG_BG_WG_SWITCH_FACTION           = 10108,
-    LANG_BG_WG_CHANGE_TIMER             = 10109,
-    LANG_BG_WG_BATTLE_FORCE_START       = 10110,
-    LANG_BG_WG_BATTLE_FORCE_STOP        = 10111,
-    LANG_BG_WG_STATUS                   = 10112,
-    LANG_BG_WG_DISABLE                  = 10113,
-    LANG_BG_WG_ENABLE                   = 10114,
-    LANG_BG_WG_RANK1                    = 10115,
-    LANG_BG_WG_RANK2                    = 10116,
-
     // Use for custom patches             11000-11999
     LANG_ANNOUNCE_CHEAT                 = 11000,
-    LANG_YOU_RECEIVE_TOKEN        		= 11050,
-    
-    
+
     // NOT RESERVED IDS                   12000-1999999999
     // `db_script_string` table index     2000000000-2000009999 (MIN_DB_SCRIPT_STRING_ID-MAX_DB_SCRIPT_STRING_ID)
     // For other tables maybe             2000010000-2147483647 (max index)

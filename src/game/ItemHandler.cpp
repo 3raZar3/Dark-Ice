@@ -1373,19 +1373,17 @@ void WorldSession::HandleCancelTempEnchantmentOpcode(WorldPacket& recv_data)
     GetPlayer()->ApplyEnchantment(item, TEMP_ENCHANTMENT_SLOT, false);
     item->ClearEnchantment(TEMP_ENCHANTMENT_SLOT);
 }
-
 /**
  * Handles the packet sent by the client when requesting information about item text.
  *
  * This function is called when player clicks on item which has some flag set
  */
-
 void WorldSession::HandleItemTextQuery(WorldPacket & recv_data )
 {
     uint64 itemGuid;
     recv_data >> itemGuid;
 
-	DEBUG_LOG("CMSG_ITEM_TEXT_QUERY item guid: %u", GUID_LOPART(itemGuid));
+    sLog.outDebug("CMSG_ITEM_TEXT_QUERY item guid: %u", GUID_LOPART(itemGuid));
 
     WorldPacket data(SMSG_ITEM_TEXT_QUERY_RESPONSE, (4+10));    // guess size
 
@@ -1459,23 +1457,24 @@ void WorldSession::HandleItemRefundInfoRequest(WorldPacket& recv_data)
 
 void WorldSession::HandleItemRefund(WorldPacket& recv_data)
 {
-    sLog.outDebug("WORLD: CMSG_ITEM_REFUND");
+    DEBUG_LOG("WORLD: CMSG_ITEM_REFUND");
     recv_data.hexlike();
 
     ObjectGuid guid;
     recv_data >> guid;                                   // item guid
+
     Item *item = _player->GetItemByGuid(guid.GetRawValue());
 
     if(!item)
     {
-        sLog.outDebug("Item refund: item not found!");
+        DEBUG_LOG("Item refund: item not found!");
         return;
     }
 
     if(!item->HasFlag(ITEM_FIELD_FLAGS, ITEM_FLAGS_REFUNDABLE) || !item->GetUInt32Value(ITEM_FIELD_CREATE_PLAYED_TIME)
         || _player->m_Played_time[0] > (item->GetUInt32Value(ITEM_FIELD_CREATE_PLAYED_TIME) + 2*60*60))  // can be refunded only two hours after buy
     {
-        sLog.outDebug("Item refund: item not refundable!");
+        DEBUG_LOG("Item refund: item not refundable!");
         return;
     }
     uint32 honor_points = 0;

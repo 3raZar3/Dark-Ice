@@ -120,8 +120,7 @@ class MANGOS_DLL_SPEC Map : public GridRefManager<NGridType>, public MaNGOS::Obj
         bool IsRemovalGrid(float x, float y) const
         {
             GridPair p = MaNGOS::ComputeGridPair(x, y);
-            NGridType* grid = getNGrid(p.x_coord, p.y_coord);
-            return !grid || grid->GetGridState() == GRID_STATE_REMOVAL;
+            return( !getNGrid(p.x_coord, p.y_coord) || getNGrid(p.x_coord, p.y_coord)->GetGridState() == GRID_STATE_REMOVAL );
         }
 
         bool IsLoaded(float x, float y) const
@@ -131,13 +130,7 @@ class MANGOS_DLL_SPEC Map : public GridRefManager<NGridType>, public MaNGOS::Obj
         }
 
         bool GetUnloadLock(const GridPair &p) const { return getNGrid(p.x_coord, p.y_coord)->getUnloadLock(); }
-        void SetUnloadLock(const GridPair &p, bool on)
-        {
-            NGridType *grid = getNGrid(p.x_coord, p.y_coord);
-
-            if (grid)
-                grid->setUnloadExplicitLock(on);
-        }
+        void SetUnloadLock(const GridPair &p, bool on) { getNGrid(p.x_coord, p.y_coord)->setUnloadExplicitLock(on); }
         void LoadGrid(const Cell& cell, bool no_unload = false);
         bool UnloadGrid(const uint32 &x, const uint32 &y, bool pForce);
         virtual void UnloadAll(bool pForce);
@@ -209,7 +202,9 @@ class MANGOS_DLL_SPEC Map : public GridRefManager<NGridType>, public MaNGOS::Obj
         // NOTE: this duplicate of Instanceable(), but Instanceable() can be changed when BG also will be instanceable
         bool IsDungeon() const { return i_mapEntry && i_mapEntry->IsDungeon(); }
         bool IsRaid() const { return i_mapEntry && i_mapEntry->IsRaid(); }
-        bool IsRaidOrHeroicDungeon() const { return IsRaid() || GetDifficulty() > DUNGEON_DIFFICULTY_NORMAL; }
+        bool IsRaidOrHeroicDungeon() const { return IsRaid() || GetDifficulty() == RAID_DIFFICULTY_25MAN_NORMAL || GetDifficulty() == DUNGEON_DIFFICULTY_HEROIC; }
+        bool IsHeroicRaid10Man() const { return IsRaid() || GetDifficulty() == RAID_DIFFICULTY_10MAN_HEROIC; }
+        bool IsHeroicRaid25Man() const { return IsRaid() || GetDifficulty() == RAID_DIFFICULTY_25MAN_HEROIC; }
         bool IsBattleGround() const { return i_mapEntry && i_mapEntry->IsBattleGround(); }
         bool IsBattleArena() const { return i_mapEntry && i_mapEntry->IsBattleArena(); }
         bool IsBattleGroundOrArena() const { return i_mapEntry && i_mapEntry->IsBattleGroundOrArena(); }
@@ -301,38 +296,21 @@ class MANGOS_DLL_SPEC Map : public GridRefManager<NGridType>, public MaNGOS::Obj
 
         NGridType* getNGrid(uint32 x, uint32 y) const
         {
-            if (x >= MAX_NUMBER_OF_GRIDS || y >= MAX_NUMBER_OF_GRIDS)
-                return NULL;
-
+            ASSERT(x < MAX_NUMBER_OF_GRIDS);
+            ASSERT(y < MAX_NUMBER_OF_GRIDS);
             return i_grids[x][y];
         }
 
-        bool isGridObjectDataLoaded(uint32 x, uint32 y) const
-        {
-            NGridType* grid = getNGrid(x, y);
-            return grid ? grid->isGridObjectDataLoaded() : false;
-        }
+        bool isGridObjectDataLoaded(uint32 x, uint32 y) const { return getNGrid(x,y)->isGridObjectDataLoaded(); }
+        void setGridObjectDataLoaded(bool pLoaded, uint32 x, uint32 y) { getNGrid(x,y)->setGridObjectDataLoaded(pLoaded); }
 
-        void setGridObjectDataLoaded(bool pLoaded, uint32 x, uint32 y)
-        {
-           NGridType* grid = getNGrid(x, y);
-
-           if (grid)
-               grid->setGridObjectDataLoaded(pLoaded);
-        }
         void setNGrid(NGridType* grid, uint32 x, uint32 y);
         void ScriptsProcess();
 
         void SendObjectUpdates();
         std::set<Object *> i_objectsToClientUpdate;
     protected:
-        void SetUnloadReferenceLock(const GridPair &p, bool on)
-        { 
-           NGridType* grid = getNGrid(p.x_coord, p.y_coord);
-      
-           if (grid)
-               grid->setUnloadReferenceLock(on);
-        }
+        void SetUnloadReferenceLock(const GridPair &p, bool on) { getNGrid(p.x_coord, p.y_coord)->setUnloadReferenceLock(on); }
 
         typedef MaNGOS::ObjectLevelLockable<Map, ACE_Thread_Mutex>::Lock Guard;
 

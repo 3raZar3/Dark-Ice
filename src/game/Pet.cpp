@@ -205,10 +205,6 @@ bool Pet::LoadPetFromDB( Player* owner, uint32 petentry, uint32 petnumber, bool 
             SetUInt32Value(UNIT_FIELD_BYTES_0, 2048);
             SetUInt32Value(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE);
                                                             // this enables popup window (pet dismiss, cancel)
-
-            // DK ghouls have energy
-            if (cinfo->family == CREATURE_FAMILY_GHOUL)
-                setPowerType(POWER_ENERGY);
             break;
         case HUNTER_PET:
             SetUInt32Value(UNIT_FIELD_BYTES_0, 0x02020100);
@@ -478,21 +474,8 @@ void Pet::setDeathState(DeathState s)                       // overwrite virtual
             MapEntry const* mapEntry = sMapStore.LookupEntry(GetMapId());
             if(!mapEntry || (mapEntry->map_type != MAP_ARENA && mapEntry->map_type != MAP_BATTLEGROUND))
                 ModifyPower(POWER_HAPPINESS, -HAPPINESS_LEVEL_SIZE);
-            if( HasSpell(55709) && GetOwner())
-                GetOwner()->CastSpell(GetOwner(), 54114, false);
 
             SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED);
-        }
-        // send cooldown for summon spell if necessary
-        if (Player* p_owner = GetCharmerOrOwnerPlayerOrPlayerItself())
-        {
-            SpellEntry const *spellInfo = sSpellStore.LookupEntry(GetUInt32Value(UNIT_CREATED_BY_SPELL));
-            if (spellInfo && spellInfo->Attributes & SPELL_ATTR_DISABLED_WHILE_ACTIVE)
-                p_owner->SendCooldownEvent(spellInfo);
-            // Raise Dead hack
-            if (spellInfo->SpellFamilyName == SPELLFAMILY_DEATHKNIGHT && spellInfo->SpellFamilyFlags & 0x1000)
-                if (spellInfo = sSpellStore.LookupEntry(46584))
-                    p_owner->SendCooldownEvent(spellInfo);
         }
     }
     else if(getDeathState()==ALIVE)
@@ -504,7 +487,7 @@ void Pet::setDeathState(DeathState s)                       // overwrite virtual
 
 void Pet::Update(uint32 diff)
 {
-    if(m_removed || m_loading)                                           // pet already removed, just wait in remove queue, no updates
+    if(m_removed)                                           // pet already removed, just wait in remove queue, no updates
         return;
 
     switch( m_deathState )
@@ -875,40 +858,8 @@ bool Pet::InitStatsForLevel(uint32 petlevel, Unit* owner)
     {
         case SUMMON_PET:
         {
-            if(owner->GetTypeId() == TYPEID_PLAYER)
-            {
-                switch(owner->getClass())
-                {
-                    case CLASS_WARLOCK:
-                    {
-
-                        //the damage bonus used for pets is either fire or shadow damage, whatever is higher
-                        uint32 fire  = owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + SPELL_SCHOOL_FIRE);
-                        uint32 shadow = owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + SPELL_SCHOOL_SHADOW);
-                        uint32 val  = (fire > shadow) ? fire : shadow;
-
-                        SetBonusDamage(int32 (val * 0.15f));
-                        //bonusAP += val * 0.57;
-                        break;
-                    }
-                    case CLASS_MAGE:
-                    {
-                                                            //40% damage bonus of mage's frost damage
-                        float val = owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + SPELL_SCHOOL_FROST) * 0.4f;
-                        if(val < 0)
-                            val = 0;
-                        SetBonusDamage( int32(val));
-                        break;
-                    }
-                    default:
-                        break;
-                }
-            }
-
-            SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, float(petlevel - (petlevel / 4)) );
-            SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, float(petlevel + (petlevel / 4)) );
-
-            //SetModifierValue(UNIT_MOD_ATTACK_POWER, BASE_VALUE, float(cinfo->attackpower));
+            float mindmg = float(petlevel - (petlevel / 4));
+            float maxdmg = float(petlevel + (petlevel / 4));
 
             PetLevelInfo const* pInfo = sObjectMgr.GetPetLevelInfo(creature_ID, petlevel);
             if(pInfo)                                       // exist in DB
@@ -922,6 +873,57 @@ bool Pet::InitStatsForLevel(uint32 petlevel, Unit* owner)
                 for(int stat = 0; stat < MAX_STATS; ++stat)
                 {
                     SetCreateStat(Stats(stat), float(pInfo->stats[stat]));
+                }
+
+                if(owner->GetTypeId() == TYPEID_PLAYER)
+                {
+                    switch(owner->getClass())
+                    {
+                        case CLASS_WARLOCK:
+                        {
+                            //the damage bonus used for pets is either fire or shadow damage, whatever is higher
+                            uint32 fire  = owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + SPELL_SCHOOL_FIRE);
+                            uint32 shadow = owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + SPELL_SCHOOL_SHADOW);
+                            uint32 val  = (fire > shadow) ? fire : shadow;
+
+                            SetBonusDamage(int32 (val * 0.15f));
+                            //bonusAP += val * 0.57;
+                            break;
+                        }
+                        case CLASS_MAGE:
+                        {
+                                                                //40% damage bonus of mage's frost damage
+                            float val = owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + SPELL_SCHOOL_FROST) * 0.4f;
+                            if(val < 0)
+                                val = 0;
+                            SetBonusDamage( int32(val));
+                            break;
+                        }
+                        case CLASS_PRIEST:
+                        {
+                            int32 spellpower = int32(owner->GetUInt32Value(PLAYER_FIELD_MOD_DAMAGE_DONE_POS + SPELL_SCHOOL_SHADOW));
+                            int32 bonusmelee = int32(spellpower * 0.3f);
+                            mindmg += int32(spellpower * 0.3f);
+                            maxdmg += int32(spellpower * 0.3f);
+                            SetAttackTime(BASE_ATTACK, 1500);
+                            break;
+                        }
+                        case CLASS_SHAMAN:
+                        {
+                            float armor = float(owner->GetArmor()) * 0.35;
+                            float attackpower = float(owner->GetTotalAttackPowerValue(BASE_ATTACK)) * 0.3;
+                            float stamina = float(owner->GetInt32Value(UNIT_FIELD_STAT2)) * 0.3;
+                            SetAttackTime(BASE_ATTACK, 1000);
+                            SetModifierValue(UNIT_MOD_ARMOR, BASE_VALUE, float(pInfo->armor) + armor);
+                            SetCreateStat(STAT_STAMINA, float(pInfo->stats[STAT_STAMINA]) + stamina);
+                            // pets do not have melee damage scaled with attack power, so damage must be add directly
+                            mindmg += attackpower / 3;
+                            maxdmg += attackpower / 3;
+                            break;
+                        }
+                        default:
+                            break;
+                    }
                 }
             }
             else                                            // not exist in DB, use some default fake data
@@ -938,6 +940,13 @@ bool Pet::InitStatsForLevel(uint32 petlevel, Unit* owner)
                 SetCreateStat(STAT_INTELLECT, 28);
                 SetCreateStat(STAT_SPIRIT, 27);
             }
+
+            SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, mindmg );
+            SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, maxdmg );
+
+            //SetModifierValue(UNIT_MOD_ATTACK_POWER, BASE_VALUE, float(cinfo->attackpower));
+                        
+
             break;
         }
         case HUNTER_PET:
@@ -969,7 +978,6 @@ bool Pet::InitStatsForLevel(uint32 petlevel, Unit* owner)
 
                 // remove elite bonuses included in DB values
                 SetCreateHealth( uint32(((float(cinfo->maxhealth) / cinfo->maxlevel) / (1 + 2 * cinfo->rank)) * petlevel) );
-                setPowerType(POWER_FOCUS);
 
                 SetCreateStat(STAT_STRENGTH, 22);
                 SetCreateStat(STAT_AGILITY, 22);
@@ -1917,37 +1925,13 @@ void Pet::CastPetAura(PetAura const* aura)
     if(!auraId)
         return;
 
-    switch (auraId)
+    if(auraId == 35696)                                       // Demonic Knowledge
     {
-        case 35696: // Demonic Knowledge
-        {
-            int32 basePoints = int32(aura->GetDamage() * (GetStat(STAT_STAMINA) + GetStat(STAT_INTELLECT)) / 100);
-            CastCustomSpell(this, auraId, &basePoints, NULL, NULL, true);
-            break;
-        }
-        case 54566: // Ravenous Dead
-        {
-            Unit* owner = GetOwner();
-            if (owner)
-            {
-                // We must give x% bonus to base bonus from owner's stamina to ghoul stamina
-                int32 basePoints0 =
-                    int32(owner->GetStat(STAT_STAMINA)*0.3f*(aura->GetDamage()+100.0f)/100.0f
-                    - (GetStat(STAT_STAMINA)-GetCreateStat(STAT_STAMINA)));
-                // We must give x% bonus to base bonus from owner's strength to ghoul strength
-                int32 basePoints1 =
-                    int32(owner->GetStat(STAT_STRENGTH)*0.3f*(aura->GetDamage()+100.0f)/100.0f
-                    - (GetStat(STAT_STRENGTH)-GetCreateStat(STAT_STRENGTH)));
-                CastCustomSpell(this, auraId, &basePoints0, &basePoints1, NULL, true);
-            }
-            break;
-        }
-        default:
-        {
-            CastSpell(this, auraId, true);
-            break;
-        }
+        int32 basePoints = int32(aura->GetDamage() * (GetStat(STAT_STAMINA) + GetStat(STAT_INTELLECT)) / 100);
+        CastCustomSpell(this, auraId, &basePoints, NULL, NULL, true);
     }
+    else
+        CastSpell(this, auraId, true);
 }
 
 struct DoPetLearnSpell

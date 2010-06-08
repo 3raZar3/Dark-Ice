@@ -42,6 +42,9 @@ HomeMovementGenerator<Creature>::_setTargetLocation(Creature & owner)
     if (owner.hasUnitState(UNIT_STAT_NOT_MOVE))
         return;
 
+    if( owner.hasUnitState(UNIT_STAT_NOT_MOVE | UNIT_STAT_ON_VEHICLE) )
+        return;
+
     float x, y, z;
 
     // at apply we can select more nice return points base at current movegen

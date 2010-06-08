@@ -36,8 +36,6 @@
 #include "AccountMgr.h"
 #include "GMTicketMgr.h"
 #include "WaypointManager.h"
-#include "WaypointMovementGenerator.h"
-#include "math.h"
 #include "Util.h"
 #include <cctype>
 #include <iostream>
@@ -1104,118 +1102,6 @@ bool ChatHandler::HandleNpcAddCommand(const char* args)
     return true;
 }
 
-bool ChatHandler::HandleNpcAddAsPetCommand(const char* args)
-{
-    if(!*args)
-        return false;
-    char* charID = extractKeyFromLink((char*)args,"Hcreature_entry");
-    if(!charID)
-        return false;
-
-    char* team = strtok(NULL, " ");
-    int32 teamval = 0;
-    if (team) { teamval = atoi(team); }
-    if (teamval < 0) { teamval = 0; }
-
-    uint32 id  = atoi(charID);
-
-    Player *chr = m_session->GetPlayer();
-    float x = chr->GetPositionX();
-    float y = chr->GetPositionY();
-    float z = chr->GetPositionZ();
-    float o = chr->GetOrientation();
-    Map *map = chr->GetMap();
-
-    Creature* pCreature = new Creature;
-    if (!pCreature->Create(sObjectMgr.GenerateLowGuid(HIGHGUID_UNIT), map, chr->GetPhaseMaskForSpawn(), id, (uint32)teamval))
-    {
-        delete pCreature;
-        return false;
-    }
-
-    pCreature->Relocate(x,y,z,o);
-
-    if(!pCreature->IsPositionValid())
-    {
-        sLog.outError("Creature (guidlow %d, entry %d) not created. Suggested coordinates isn't valid (X: %f Y: %f)",pCreature->GetGUIDLow(),pCreature->GetEntry(),pCreature->GetPositionX(),pCreature->GetPositionY());
-        delete pCreature;
-        return false;
-    }
-
-    Creature *creatureTarget = pCreature;
-	Player *player = m_session->GetPlayer ();
-    CreatureInfo const* cInfo = creatureTarget->GetCreatureInfo();
-
-    if (!cInfo->isTameable (player->CanTameExoticPets()))
-    {
-        PSendSysMessage (LANG_CREATURE_NON_TAMEABLE,cInfo->Entry);
-        SetSentErrorMessage (true);
-        return false;
-    }
-
-    pCreature->SaveToDB(map->GetId(), (1 << map->GetSpawnMode()), chr->GetPhaseMaskForSpawn());
-
-    uint32 db_guid = pCreature->GetDBTableGUIDLow();
-
-    // To call _LoadGoods(); _LoadQuests(); CreateTrainerSpells();
-    pCreature->LoadFromDB(db_guid, map);
-
-    map->Add(pCreature);
-    sObjectMgr.AddCreatureToGrid(db_guid, sObjectMgr.GetCreatureData(db_guid));
-
-    if (!creatureTarget || creatureTarget->isPet ())
-    {
-        PSendSysMessage (LANG_SELECT_CREATURE);
-        SetSentErrorMessage (true);
-        return false;
-    }
-
-    if(player->GetPetGUID ())
-    {
-        SendSysMessage (LANG_YOU_ALREADY_HAVE_PET);
-        SetSentErrorMessage (true);
-        return false;
-    }
-
-    
-
-    // Everything looks OK, create new pet
-    Pet* pet = player->CreateTamedPetFrom (creatureTarget);
-    if (!pet)
-    {
-        PSendSysMessage (LANG_CREATURE_NON_TAMEABLE,cInfo->Entry);
-        SetSentErrorMessage (true);
-        return false;
-    }
-
-    // place pet before player
-    player->GetClosePoint (x,y,z,creatureTarget->GetObjectSize (),CONTACT_DISTANCE);
-    pet->Relocate (x,y,z,M_PI_F-player->GetOrientation ());
-
-    // set pet to defensive mode by default (some classes can't control controlled pets in fact).
-    pet->GetCharmInfo()->SetReactState(REACT_DEFENSIVE);
-
-    // calculate proper level
-    uint32 level = (creatureTarget->getLevel() < (player->getLevel() - 5)) ? (player->getLevel() - 5) : creatureTarget->getLevel();
-
-    // prepare visual effect for levelup
-    pet->SetUInt32Value(UNIT_FIELD_LEVEL, level - 1);
-
-    // add to world
-    pet->GetMap()->Add((Creature*)pet);
-
-    // visual effect for levelup
-    pet->SetUInt32Value(UNIT_FIELD_LEVEL, level);
-
-    // caster have pet now
-    player->SetPet(pet);
-
-    pet->SavePetToDB(PET_SAVE_AS_CURRENT);
-    player->PetSpellInitialize();
-
-    return true;
-}
-
 //add item in vendorlist
 bool ChatHandler::HandleNpcAddVendorItemCommand(const char* args)
 {
@@ -2226,7 +2112,6 @@ bool ChatHandler::HandleModifyPhaseCommand(const char* args)
 bool ChatHandler::HandlePInfoCommand(const char* args)
 {
     Player* target;
-    char* py = NULL;
     uint64 target_guid;
     std::string target_name;
     if(!extractPlayerTarget((char*)args,&target,&target_guid,&target_name))
@@ -2237,7 +2122,6 @@ bool ChatHandler::HandlePInfoCommand(const char* args)
     uint32 total_player_time = 0;
     uint32 level = 0;
     uint32 latency = 0;
-    int32  security = 0;
 
     // get additional information from Player object
     if(target)
@@ -2251,7 +2135,6 @@ bool ChatHandler::HandlePInfoCommand(const char* args)
         total_player_time = target->GetTotalPlayedTime();
         level = target->getLevel();
         latency = target->GetSession()->GetLatency();
-        security = target->GetSession()->GetSecurity();
     }
     // get additional information from DB
     else
@@ -2261,7 +2144,7 @@ bool ChatHandler::HandlePInfoCommand(const char* args)
             return false;
 
         //                                                     0          1      2      3
-        QueryResult *result = CharacterDatabase.PQuery("SELECT totaltime, level, money, account, gmlevel FROM characters WHERE guid = '%u'", GUID_LOPART(target_guid));
+        QueryResult *result = CharacterDatabase.PQuery("SELECT totaltime, level, money, account FROM characters WHERE guid = '%u'", GUID_LOPART(target_guid));
         if (!result)
             return false;
 
@@ -2270,13 +2153,12 @@ bool ChatHandler::HandlePInfoCommand(const char* args)
         level = fields[1].GetUInt32();
         money = fields[2].GetUInt32();
         accId = fields[3].GetUInt32();
-        security = fields[4].GetInt32();
         delete result;
     }
 
     std::string username = GetMangosString(LANG_ERROR);
     std::string last_ip = GetMangosString(LANG_ERROR);
-    //AccountTypes security = SEC_PLAYER;
+    AccountTypes security = SEC_PLAYER;
     std::string last_login = GetMangosString(LANG_ERROR);
 
     QueryResult* result = loginDatabase.PQuery("SELECT username,gmlevel,last_ip,last_login FROM account WHERE id = '%u'",accId);
@@ -2284,10 +2166,7 @@ bool ChatHandler::HandlePInfoCommand(const char* args)
     {
         Field* fields = result->Fetch();
         username = fields[0].GetCppString();
-        if (security == 0)
-        {
-            security = (AccountTypes)fields[1].GetUInt32();
-        }
+        security = (AccountTypes)fields[1].GetUInt32();
 
         if(GetAccessLevel() >= security)
         {
@@ -2313,43 +2192,7 @@ bool ChatHandler::HandlePInfoCommand(const char* args)
     uint32 copp = (money % GOLD) % SILVER;
     PSendSysMessage(LANG_PINFO_LEVEL,  timeStr.c_str(), level, gold,silv,copp );
 
-    if (py && strncmp(py, "jail", 4) == 0)
-    {
-        if (target->m_jail_times > 0)
-        {
-            if(target->m_jail_release > 0)
-            {
-                time_t localtime;
-                localtime = time(NULL);
-                uint32 min_left = (uint32)floor(float(target->m_jail_release - localtime) / 60);
- 
-               if (min_left <= 0)
-                {
-                    target->m_jail_release = 0;
-                    target->_SaveJail();
-                    PSendSysMessage(LANG_JAIL_GM_INFO, target->m_jail_char.c_str(), target->m_jail_times, 0, target->m_jail_gmchar.c_str(), target->m_jail_reason.c_str());
-                    return true;
-                }
-                else
-                {
-                    PSendSysMessage(LANG_JAIL_GM_INFO, target->m_jail_char.c_str(), target->m_jail_times, min_left, target->m_jail_gmchar.c_str(), target->m_jail_reason.c_str());
-                    return true;
-                }
-            }
-            else
-            {
-                PSendSysMessage(LANG_JAIL_GM_INFO, target->m_jail_char.c_str(), target->m_jail_times, 0, target->m_jail_gmchar.c_str(), target->m_jail_reason.c_str());
-                return true;
-            }
-        }
-        else
-        {
-            PSendSysMessage(LANG_JAIL_GM_NOINFO, target->GetName());
-            return true;
-        }
     return true;
-    }
-return true;
 }
 
 //show tickets
@@ -3762,62 +3605,6 @@ bool ChatHandler::HandleCharacterCustomizeCommand(const char* args)
 
         PSendSysMessage(LANG_CUSTOMIZE_PLAYER_GUID, oldNameLink.c_str(), GUID_LOPART(target_guid));
         CharacterDatabase.PExecute("UPDATE characters SET at_login = at_login | '8' WHERE guid = '%u'", GUID_LOPART(target_guid));
-    }
-
-    return true;
-}
-
-// change player faction
-bool ChatHandler::HandleCharacterChangeFactionCommand(const char* args)
-{
-    Player* target;
-    uint64 target_guid;
-    std::string target_name;
-    if(!extractPlayerTarget((char*)args,&target,&target_guid,&target_name))
-        return false;
-
-    if(target)
-    {
-        // TODO : add text into database
-        PSendSysMessage(LANG_CUSTOMIZE_PLAYER, GetNameLink(target).c_str());
-        target->SetAtLoginFlag(AT_LOGIN_CHANGE_FACTION);
-        CharacterDatabase.PExecute("UPDATE characters SET at_login = at_login | '64' WHERE guid = '%u'", target->GetGUIDLow());
-    }
-    else
-    {
-        std::string oldNameLink = playerLink(target_name);
-
-        // TODO : add text into database
-        PSendSysMessage(LANG_CUSTOMIZE_PLAYER_GUID, oldNameLink.c_str(), GUID_LOPART(target_guid));
-        CharacterDatabase.PExecute("UPDATE characters SET at_login = at_login | '64' WHERE guid = '%u'", GUID_LOPART(target_guid));
-    }
-
-    return true;
-}
-
-// change player race
-bool ChatHandler::HandleCharacterChangeRaceCommand(const char* args)
-{
-    Player* target;
-    uint64 target_guid;
-    std::string target_name;
-    if(!extractPlayerTarget((char*)args,&target,&target_guid,&target_name))
-        return false;
-
-    if(target)
-    {
-        // TODO : add text into database
-        PSendSysMessage(LANG_CUSTOMIZE_PLAYER, GetNameLink(target).c_str());
-        target->SetAtLoginFlag(AT_LOGIN_CHANGE_RACE);
-        CharacterDatabase.PExecute("UPDATE characters SET at_login = at_login | '128' WHERE guid = '%u'", target->GetGUIDLow());
-    }
-    else
-    {
-        std::string oldNameLink = playerLink(target_name);
-
-        // TODO : add text into database
-        PSendSysMessage(LANG_CUSTOMIZE_PLAYER_GUID, oldNameLink.c_str(), GUID_LOPART(target_guid));
-        CharacterDatabase.PExecute("UPDATE characters SET at_login = at_login | '128' WHERE guid = '%u'", GUID_LOPART(target_guid));
     }
 
     return true;

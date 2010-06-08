@@ -23,7 +23,6 @@
 #include "ObjectMgr.h"
 #include "SpellMgr.h"
 #include "Log.h"
-#include "World.h"
 #include "Opcodes.h"
 #include "Spell.h"
 #include "ScriptCalls.h"
@@ -324,19 +323,6 @@ void WorldSession::HandleCastSpellOpcode(WorldPacket& recvPacket)
         return;
     }
 
-    if (sWorld.getConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE))
-    {
-        if (_player->isRunningSpell(spellInfo))
-        {
-            _player->Unmount();
-            _player->RemoveSpellsCausingAura(SPELL_AURA_MOUNTED);
-        }
-        else if (_player->isRunningFormSpell(spellInfo))
-        {
-            _player->RemoveFlyingSpells();
-        }
-    }
-
     if(mover->GetTypeId()==TYPEID_PLAYER)
     {
         // not have spell in spellbook or spell passive and not casted by client
@@ -466,8 +452,6 @@ void WorldSession::HandleCancelAuraOpcode( WorldPacket& recvPacket)
 
     // non channeled case
     _player->RemoveAurasDueToSpellByCancel(spellId);
-    if(_player->isFlyingSpell(spellInfo) || _player->isFlyingFormSpell(spellInfo))
-        _player->SetFlyingMountTimer();
 }
 
 void WorldSession::HandlePetCancelAuraOpcode( WorldPacket& recvPacket)
@@ -574,7 +558,7 @@ void WorldSession::HandleSpellClick( WorldPacket & recv_data )
     uint64 guid;
     recv_data >> guid;
 
-    Creature *unit = _player->GetMap()->GetCreatureOrPetOrVehicle(guid);
+    Creature *unit = ObjectAccessor::GetCreatureOrPetOrVehicle(*_player, guid);
     if (!unit || unit->isInCombat())                        // client prevent click and set different icon at combat state
         return;
 
@@ -584,8 +568,8 @@ void WorldSession::HandleSpellClick( WorldPacket & recv_data )
         vehicleId = cainfo->vehicle_id;
 
     if (_player->isInCombat() && !unit->isVehicle() && !vehicleId)                              // client prevent click and set different icon at combat state
-        return;
-
+        return; 
+    
     if(!_player->IsWithinDistInMap(unit, 10))
         return;
 
@@ -619,6 +603,8 @@ void WorldSession::HandleSpellClick( WorldPacket & recv_data )
             unit = v;
         }
 
+        unit->SetHealth(unit->GetMaxHealth());
+
         if(((Vehicle*)unit)->GetVehicleData())
             if(uint32 r_aura = ((Vehicle*)unit)->GetVehicleData()->req_aura)
                 if(!_player->HasAura(r_aura))
@@ -635,7 +621,7 @@ void WorldSession::HandleSpellClick( WorldPacket & recv_data )
             {
                 Unit *caster = (itr->second.castFlags & 0x1) ? (Unit*)_player : (Unit*)unit;
                 Unit *target = (itr->second.castFlags & 0x2) ? (Unit*)_player : (Unit*)unit;
-                            
+
                 caster->CastSpell(target, itr->second.spellId, true);
             }
         }
@@ -724,5 +710,6 @@ void WorldSession::HandleMirrorImageDataRequest( WorldPacket & recv_data )
         data << (uint32)0;
         data << (uint32)0;
     }
+
     SendPacket( &data );
 }

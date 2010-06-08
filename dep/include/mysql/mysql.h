@@ -82,7 +82,13 @@ extern char *mysql_unix_port;
 #define CLIENT_NET_WRITE_TIMEOUT	365*24*3600	/* Timeout on write */
 
 #ifdef __NETWARE__
-#pragma pack(push, 8)		/* 8 byte alignment */
+// GCC have alternative #pragma pack(8) syntax and old gcc version not support pack(push,8), also any gcc version not support it at some paltform
+#if defined( __GNUC__ )
+#pragma pack(8) 
+#else 
+#pragma pack(push,8) 
+#endif 
+
 #endif
 
 #define IS_PRI_KEY(n)	((n) & PRI_KEY_FLAG)
@@ -848,7 +854,14 @@ int		STDCALL mysql_drop_db(MYSQL *mysql, const char *DB);
                                         0, arg, length, 1, stmt)
 
 #ifdef __NETWARE__
-#pragma pack(pop)		/* restore alignment */
+
+// GCC have alternative #pragma pack() syntax and old gcc version not support pack(pop), also any gcc version not support it at some paltform
+#if defined( __GNUC__ )
+#pragma pack()
+#else
+#pragma pack(pop)
+#endif 
+
 #endif
 
 #ifdef	__cplusplus

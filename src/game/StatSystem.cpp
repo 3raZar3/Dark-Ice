@@ -39,18 +39,11 @@ bool Player::UpdateStats(Stats stat)
 
     SetStat(stat, int32(value));
 
-    if(stat == STAT_STAMINA || stat == STAT_INTELLECT || stat == STAT_STRENGTH)
+    if(stat == STAT_STAMINA || stat == STAT_INTELLECT)
     {
         Pet *pet = GetPet();
         if(pet)
-        {
             pet->UpdateStats(stat);
-            if (getClass() == CLASS_DEATH_KNIGHT && pet->getPetType() == SUMMON_PET)
-            {
-                pet->RemoveAllAuras();
-                pet->CastPetAuras(true);
-            }
-        }
     }
 
     switch(stat)
@@ -110,7 +103,7 @@ void Player::ApplySpellPowerBonus(int32 amount, bool apply)
 
 void Player::UpdateSpellDamageAndHealingBonus()
 {
-    // Magic damage modifiers implemented in Unit::SpellDamageBonus
+    // Magic damage modifiers implemented in Unit::SpellDamageBonusDone
     // This information for client side use only
     // Get healing bonus for all schools
     SetStatInt32Value(PLAYER_FIELD_MOD_HEALING_DONE_POS, SpellBaseHealingBonusDone(SPELL_SCHOOL_MASK_ALL));
@@ -445,7 +438,7 @@ void Player::CalculateMinMaxDamage(WeaponAttackType attType, bool normalized, fl
         weapon_mindamage = lvl*0.85f*att_speed;
         weapon_maxdamage = lvl*1.25f*att_speed;
     }
-    else if(!IsUseEquipedWeapon(attType==BASE_ATTACK))      //check if player not in form but still can't use weapon (broken/etc)
+    else if(!IsUseEquipedWeapon(attType))                   //check if player not in form but still can't use weapon (broken/etc)
     {
         weapon_mindamage = BASE_MINDAMAGE;
         weapon_maxdamage = BASE_MAXDAMAGE;
@@ -882,16 +875,19 @@ bool Pet::UpdateStats(Stats stat)
     Unit *owner = GetOwner();
     if ( stat == STAT_STAMINA )
     {
-        if(owner && owner->GetTypeId() == TYPEID_PLAYER  && owner->getClass() == CLASS_WARLOCK)
-            value += float(owner->GetStat(stat)) * 0.75f;
-        else if (owner)
-            value += float(owner->GetStat(stat)) * 0.3f;
-    }
-	else if ( stat == STAT_STRENGTH && getPetType() == SUMMON_PET )
-    {
-        if (owner && (owner->getClass() == CLASS_DEATH_KNIGHT))
+        if(owner)
         {
-            value += float(owner->GetStat(stat)) * 1.0f;
+            float scale_coeff = 0.3f;
+            switch (owner->getClass())
+            {
+                case CLASS_HUNTER:
+                    scale_coeff = 0.45f;
+                    break;
+                case CLASS_WARLOCK:
+                    scale_coeff = 0.75f;
+                    break;
+            }
+            value += float(owner->GetStat(stat)) * scale_coeff;
         }
     }
                                                             //warlock's and mage's pets gain 30% of owner's intellect
@@ -972,23 +968,11 @@ void Pet::UpdateMaxHealth()
 {
     UnitMods unitMod = UNIT_MOD_HEALTH;
     float stamina = GetStat(STAT_STAMINA) - GetCreateStat(STAT_STAMINA);
-    float multiplicator;
 
-    // nesocips warlock pet stats calculation
-    switch(GetEntry())
-    {
-        case 416:   multiplicator = 8.4f;  break; // imp
-        case 1860:                                // voidwalker
-        case 17252: multiplicator = 11.0f; break; // felguard
-        case 1863:  multiplicator = 9.1f;  break; // succubus
-        case 417:   multiplicator = 9.5f;  break; // felhunter
-        default:    multiplicator = 10.0f; break;
-    }
-
-    float value   = GetModifierValue(unitMod, BASE_VALUE) + GetCreateHealth();
-    value  *= GetModifierValue(unitMod, BASE_PCT);
-    value  += GetModifierValue(unitMod, TOTAL_VALUE) + stamina * multiplicator;
-    value  *= GetModifierValue(unitMod, TOTAL_PCT);
+    float value = GetModifierValue(unitMod, BASE_VALUE) + GetCreateHealth();
+    value *= GetModifierValue(unitMod, BASE_PCT);
+    value += GetModifierValue(unitMod, TOTAL_VALUE) + stamina * 10.0f;
+    value *= GetModifierValue(unitMod, TOTAL_PCT);
 
     SetMaxHealth((uint32)value);
 }
@@ -1040,12 +1024,6 @@ void Pet::UpdateAttackPowerAndDamage(bool ranged)
         {
             bonusAP = owner->GetTotalAttackPowerValue(RANGED_ATTACK) * 0.22f;
             SetBonusDamage( int32(owner->GetTotalAttackPowerValue(RANGED_ATTACK) * 0.1287f));
-        }
-        //ghouls benefit from deathknight's attack power
-        else if(getPetType() == SUMMON_PET && owner->getClass() == CLASS_DEATH_KNIGHT)
-        {
-            bonusAP = owner->GetTotalAttackPowerValue(BASE_ATTACK) * 0.82f;
-            SetBonusDamage( int32(owner->GetTotalAttackPowerValue(BASE_ATTACK) * 0.8287f));
         }
         //demons benefit from warlocks shadow or fire damage
         else if(getPetType() == SUMMON_PET && owner->getClass() == CLASS_WARLOCK)
