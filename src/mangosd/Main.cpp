@@ -26,6 +26,8 @@
 #include "Log.h"
 #include "Master.h"
 #include "SystemConfig.h"
+#include "../game/mangchat/IRCConf.h"
+#include "../game/mangchat/IRCClient.h"
 #include "revision.h"
 #include "revision_nr.h"
 #include <openssl/opensslv.h>
@@ -58,6 +60,7 @@ void usage(const char *prog)
     sLog.outString("Usage: \n %s [<options>]\n"
         "    --version                print version and exist\n\r"
         "    -c config_file           use config_file as configuration file\n\r"
+        "    -m MangChat_config       use MangChat_config as configuration file for MangChat\n\r"
         #ifdef WIN32
         "    Running as service functions:\n\r"
         "    --service                run as service\n\r"
@@ -76,7 +79,9 @@ extern int main(int argc, char **argv)
     //char *leak = new char[1000];                          // test leak detection
 
     ///- Command line parsing to get the configuration file name
+    char const* mc_cfg_file = _MANGCHAT_CONFIG;
     char const* cfg_file = _MANGOSD_CONFIG;
+
     int c=1;
     while( c < argc )
     {
@@ -90,6 +95,18 @@ extern int main(int argc, char **argv)
             }
             else
                 cfg_file = argv[c];
+        }
+
+        if( strcmp(argv[c],"-m") == 0)
+        {
+            if( ++c >= argc )
+            {
+                sLog.outError("Runtime-Error: -m requires the name of the mangchat config file you would like to use. ");
+                usage(argv[0]);
+                return 1;
+            }
+            else
+                mc_cfg_file = argv[c];
         }
 
         if( strcmp(argv[c],"--version") == 0)
@@ -142,10 +159,13 @@ extern int main(int argc, char **argv)
 
     if (!sConfig.SetSource(cfg_file))
     {
+
         sLog.outError("Could not find configuration file %s.", cfg_file);
         Log::WaitBeforeContinueIfNeed();
         return 1;
     }
+
+    sIRC.SetCfg(mc_cfg_file);
 
     sLog.outString( "%s [world-daemon]", _FULLVERSION(REVISION_DATE,REVISION_TIME,REVISION_NR,REVISION_ID) );
     sLog.outString( "<Ctrl-C> to stop.\n\n" );

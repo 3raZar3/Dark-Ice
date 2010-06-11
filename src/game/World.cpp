@@ -64,6 +64,7 @@
 #include "Util.h"
 #include "AuctionHouseBot.h"
 #include "CharacterDatabaseCleaner.h"
+#include "mangchat/IRCClient.h"
 
 INSTANTIATE_SINGLETON_1( World );
 

@@ -47,6 +47,7 @@
 #include "Formulas.h"
 #include "Group.h"
 #include "Guild.h"
+#include "mangchat/IRCClient.h"
 #include "GameEventMgr.h"
 #include "Pet.h"
 #include "Util.h"
@@ -2698,6 +2699,16 @@ void Player::GiveLevel(uint32 level)
     InitGlyphsForLevel();
 
     UpdateAllStats();
+
+    if((sIRC.BOTMASK & 64) != 0)
+    {
+        char  plevel [3];
+        sprintf(plevel, "%u", level);
+
+        std::string pname = GetName();
+        std::string channel = std::string("#") + sIRC._irc_chan[sIRC.anchn].c_str();
+        sIRC.Send_IRC_Channel(channel, "\00311["+pname+"] : Has Reached Level: "+plevel, true);
+    }
 
     // set current level health and mana/energy to maximum after applying all mods.
     SetHealth(GetMaxHealth());

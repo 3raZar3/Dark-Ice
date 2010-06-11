@@ -24,6 +24,7 @@
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "Chat.h"
+#include "mangchat/IRCClient.h"
 
 void WorldSession::SendGMTicketGetTicket(uint32 status, char const* text)
 {
@@ -94,6 +95,11 @@ void WorldSession::HandleGMTicketDeleteTicketOpcode( WorldPacket & /*recv_data*/
     SendPacket( &data );
 
     SendGMTicketGetTicket(0x0A, 0);
+
+    /* IRC Additions */
+    std::string name = GetPlayer()->GetName();
+    std::string channel = std::string("#") + sIRC._irc_chan[sIRC.Status];
+    sIRC.Send_IRC_Channel(channel, sIRC.MakeMsg("\00304,08\037/!\\\037\017\00304 GM Ticket Deleted For:\00304,08\037/!\\\037\017 %s", "%s", name.c_str()), true);
 }
 
 void WorldSession::HandleGMTicketCreateOpcode( WorldPacket & recv_data )
@@ -139,6 +145,13 @@ void WorldSession::HandleGMTicketCreateOpcode( WorldPacket & recv_data )
         if(itr->second->GetSession()->GetSecurity() >= SEC_GAMEMASTER && itr->second->isAcceptTickets())
             ChatHandler(itr->second).PSendSysMessage(LANG_COMMAND_TICKETNEW,GetPlayer()->GetName());
     }
+
+    /* IRC Additions */
+    std::string name = GetPlayer()->GetName();
+    std::string details = ticketText;
+    std::string channel = std::string("#") + sIRC._irc_chan[sIRC.Status];
+    sIRC.Send_IRC_Channel(channel, sIRC.MakeMsg("\00304,08\037/!\\\037\017\00304 New GM Ticket from:\00304,08\037/!\\\037\017 %s", "%s", name.c_str()), true);
+    sIRC.Send_IRC_Channel(channel, sIRC.MakeMsg("\00304,08\037/!\\\037\017\00304 Ticket Details:\00304,08\037/!\\\037\017 %s", "%s", details.c_str()), true);
 }
 
 void WorldSession::HandleGMTicketSystemStatusOpcode( WorldPacket & /*recv_data*/ )

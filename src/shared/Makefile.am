@@ -72,7 +72,8 @@ EXTRA_DIST = \
 
 # System configuration
 EXTRA_DIST += \
-	SystemConfig.h
+    SystemConfig.h \
+    ../game/mangchat/IRCConf.h
 
 # System Win32 files
 EXTRA_DIST += \

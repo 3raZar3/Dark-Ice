@@ -33,14 +33,21 @@ namespace ACE_Based
             virtual ~Runnable() {}
             virtual void run() = 0;
 
+            Runnable() { m_deleted = false; }
+
             void incReference() { ++m_refs; }
             void decReference()
             {
-                if(!--m_refs)
+                if(!--m_refs && !m_deleted)
+                {
+                    m_deleted = true;
                     delete this;
+                }
             }
         private:
             ACE_Atomic_Op<ACE_Thread_Mutex, int> m_refs;
+
+            bool m_deleted;
     };
 
     enum Priority

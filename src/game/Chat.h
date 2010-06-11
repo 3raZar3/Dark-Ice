@@ -529,6 +529,8 @@ class ChatHandler
         bool HandleWaterwalkCommand(const char* args);
         bool HandlePlayerbotCommand(const char* args);
         bool HandleQuitCommand(const char* args);
+        bool HandleIRCpmCommand(const char* args);	
+
         // Jail by WarHead
         bool HandleJailCommand(const char* args);
         bool HandleJailInfoCommand(const char* args);

@@ -306,6 +306,9 @@ AC_CONFIG_FILES([
    src/realmd/realmd.conf.dist
    src/mangosd/Makefile
    src/mangosd/mangosd.conf.dist
+   src/game/mangchat/mangchat.conf.dist
+   src/game/mangchat/Makefile
+   src/game/mangchat/IRCConf.h
    src/bindings/Makefile
    src/bindings/ScriptDev2/Makefile
    src/bindings/ScriptDev2/scriptdev2.conf.dist
