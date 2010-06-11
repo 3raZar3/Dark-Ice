@@ -311,8 +311,6 @@ AC_CONFIG_FILES([
    src/bindings/ScriptDev2/scriptdev2.conf.dist
    src/bindings/ScriptDev2/darkice.conf.dist
    src/bindings/ScriptDev2/config.h
-   src/bindings/ScriptDev2/sql/Makefile
-   src/bindings/ScriptDev2/sql/Updates/Makefile
    src/bindings/ScriptDev2/darkice_config.h
 ])
 

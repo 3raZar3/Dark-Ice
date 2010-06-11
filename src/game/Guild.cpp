@@ -43,12 +43,8 @@ Guild::Guild()
 
     m_CreatedDate = time(0);
 
-    m_EventLogLoaded = false;
-    m_GuildBankLoaded = false;
-    m_OnlineMembers = 0;
     m_GuildBankMoney = 0;
     m_PurchasedTabs = 0;
-
 
     m_GuildEventLogNextGuid = 0;
     m_GuildBankEventLogNextGuid_Money = 0;
@@ -159,7 +155,7 @@ bool Guild::AddMember(uint64 plGuid, uint32 plRank)
         if (newmember.Level < 1 || newmember.Level > STRONG_MAX_LEVEL ||
             newmember.Class < CLASS_WARRIOR || newmember.Class >= MAX_CLASSES)
         {
-            sLog.outError("Player (GUID: %u) has a broken data in field `characters` table, cannot add him to guild.",GUID_LOPART(plGuid));
+            DEBUG_LOG("Player (GUID: %u) has a broken data in field `characters` table, cannot add him to guild.",GUID_LOPART(plGuid));
             return false;
         }
     }
@@ -267,7 +263,7 @@ bool Guild::LoadRanksFromDB(QueryResult *guildRanksResult)
 {
     if (!guildRanksResult)
     {
-        sLog.outError("Guild %u has broken `guild_rank` data, creating new...",m_Id);
+        DEBUG_LOG("Guild %u has broken `guild_rank` data, creating new...",m_Id);
         CreateDefaultGuildRanks(0);
         return true;
     }
@@ -317,14 +313,14 @@ bool Guild::LoadRanksFromDB(QueryResult *guildRanksResult)
     if (m_Ranks.size() < GUILD_RANKS_MIN_COUNT)             // if too few ranks, renew them
     {
         m_Ranks.clear();
-        sLog.outError("Guild %u has broken `guild_rank` data, creating new...", m_Id);
+        DEBUG_LOG("Guild %u has broken `guild_rank` data, creating new...", m_Id);
         CreateDefaultGuildRanks(0);                         // 0 is default locale_idx
         broken_ranks = false;
     }
     // guild_rank have wrong numbered ranks, repair
     if (broken_ranks)
     {
-        sLog.outError("Guild %u has broken `guild_rank` data, repairing...", m_Id);
+        DEBUG_LOG("Guild %u has broken `guild_rank` data, repairing...", m_Id);
         CharacterDatabase.BeginTransaction();
         CharacterDatabase.PExecute("DELETE FROM guild_rank WHERE guildid='%u'", m_Id);
         for(size_t i = 0; i < m_Ranks.size(); ++i)
@@ -390,20 +386,20 @@ bool Guild::LoadMembersFromDB(QueryResult *guildMembersResult)
         // this code will remove not existing character guids from guild
         if (newmember.Level < 1 || newmember.Level > STRONG_MAX_LEVEL) // can be at broken `data` field
         {
-            sLog.outError("Player (GUID: %u) has a broken data in field `characters`.`data`, deleting him from guild!",GUID_LOPART(guid));
+            DEBUG_LOG("Player (GUID: %u) has a broken data in field `characters`.`data`, deleting him from guild!",GUID_LOPART(guid));
             CharacterDatabase.PExecute("DELETE FROM guild_member WHERE guid = '%u'", GUID_LOPART(guid));
             continue;
         }
         if (!newmember.ZoneId)
         {
-            sLog.outError("Player (GUID: %u) has broken zone-data", GUID_LOPART(guid));
+            DEBUG_LOG("Player (GUID: %u) has broken zone-data", GUID_LOPART(guid));
             // here it will also try the same, to get the zone from characters-table, but additional it tries to find
             // the zone through xy coords .. this is a bit redundant, but shouldn't be called often
             newmember.ZoneId = Player::GetZoneIdFromDB(guid);
         }
         if (newmember.Class < CLASS_WARRIOR || newmember.Class >= MAX_CLASSES) // can be at broken `class` field
         {
-            sLog.outError("Player (GUID: %u) has a broken data in field `characters`.`class`, deleting him from guild!",GUID_LOPART(guid));
+            DEBUG_LOG("Player (GUID: %u) has a broken data in field `characters`.`class`, deleting him from guild!",GUID_LOPART(guid));
             CharacterDatabase.PExecute("DELETE FROM guild_member WHERE guid = '%u'", GUID_LOPART(guid));
             continue;
         }
@@ -804,14 +800,6 @@ void Guild::UpdateLogoutTime(uint64 guid)
         return;
 
     itr->second.LogoutTime = time(NULL);
-
-    if (m_OnlineMembers > 0)
-        --m_OnlineMembers;
-    else
-    {
-        UnloadGuildBank();
-        UnloadGuildEventLog();
-    }
 }
 
 // *************************************************
@@ -820,10 +808,6 @@ void Guild::UpdateLogoutTime(uint64 guid)
 // Display guild eventlog
 void Guild::DisplayGuildEventLog(WorldSession *session)
 {
-    // Load guild eventlog, if not already done
-    if (!m_EventLogLoaded)
-        LoadGuildEventLogFromDB();
-
     // Sending result
     WorldPacket data(MSG_GUILD_EVENT_LOG_QUERY, 0);
     // count, max count == 100
@@ -850,10 +834,6 @@ void Guild::DisplayGuildEventLog(WorldSession *session)
 // Load guild eventlog from DB
 void Guild::LoadGuildEventLogFromDB()
 {
-    // Return if already loaded
-    if (m_EventLogLoaded)
-        return;
-
     //                                                     0        1          2            3            4        5
     QueryResult *result = CharacterDatabase.PQuery("SELECT LogGuid, EventType, PlayerGuid1, PlayerGuid2, NewRank, TimeStamp FROM guild_eventlog WHERE guildid=%u ORDER BY TimeStamp DESC,LogGuid DESC LIMIT %u", m_Id, GUILD_EVENTLOG_MAX_RECORDS);
     if (!result)
@@ -886,18 +866,6 @@ void Guild::LoadGuildEventLogFromDB()
 
     } while( result->NextRow() );
     delete result;
-
-    m_EventLogLoaded = true;
-}
-
-// Unload guild eventlog
-void Guild::UnloadGuildEventLog()
-{
-    if (!m_EventLogLoaded)
-        return;
-
-    m_GuildEventLog.clear();
-    m_EventLogLoaded = false;
 }
 
 // Add entry to guild eventlog
@@ -1060,10 +1028,6 @@ Item* Guild::GetItem(uint8 TabId, uint8 SlotId)
 
 void Guild::DisplayGuildBankTabsInfo(WorldSession *session)
 {
-    // Time to load bank if not already done
-    if (!m_GuildBankLoaded)
-        LoadGuildBankFromDB();
-
     WorldPacket data(SMSG_GUILD_BANK_LIST, 500);
 
     data << uint64(GetGuildBankMoney());
@@ -1124,17 +1088,11 @@ uint32 Guild::GetBankRights(uint32 rankId, uint8 TabId) const
 }
 
 // *************************************************
-// Guild bank loading/unloading related
+// Guild bank loading related
 
-// This load should be called when the bank is first accessed by a guild member
+// This load should be called on startup only
 void Guild::LoadGuildBankFromDB()
 {
-    if (m_GuildBankLoaded)
-        return;
-
-    m_GuildBankLoaded = true;
-    LoadGuildBankEventLogFromDB();
-
     //                                                     0      1        2        3
     QueryResult *result = CharacterDatabase.PQuery("SELECT TabId, TabName, TabIcon, TabText FROM guild_bank_tab WHERE guildid='%u' ORDER BY TabId", m_Id);
     if (!result)
@@ -1177,13 +1135,13 @@ void Guild::LoadGuildBankFromDB()
 
         if (TabId >= m_PurchasedTabs || TabId >= GUILD_BANK_MAX_TABS)
         {
-            sLog.outError( "Guild::LoadGuildBankFromDB: Invalid tab for item (GUID: %u id: #%u) in guild bank, skipped.", ItemGuid,ItemEntry);
+            DEBUG_LOG( "Guild::LoadGuildBankFromDB: Invalid tab for item (GUID: %u id: #%u) in guild bank, skipped.", ItemGuid,ItemEntry);
             continue;
         }
 
         if (SlotId >= GUILD_BANK_MAX_SLOTS)
         {
-            sLog.outError( "Guild::LoadGuildBankFromDB: Invalid slot for item (GUID: %u id: #%u) in guild bank, skipped.", ItemGuid,ItemEntry);
+            DEBUG_LOG( "Guild::LoadGuildBankFromDB: Invalid slot for item (GUID: %u id: #%u) in guild bank, skipped.", ItemGuid,ItemEntry);
             continue;
         }
 
@@ -1191,7 +1149,7 @@ void Guild::LoadGuildBankFromDB()
 
         if (!proto)
         {
-            sLog.outError( "Guild::LoadGuildBankFromDB: Unknown item (GUID: %u id: #%u) in guild bank, skipped.", ItemGuid,ItemEntry);
+            DEBUG_LOG( "Guild::LoadGuildBankFromDB: Unknown item (GUID: %u id: #%u) in guild bank, skipped.", ItemGuid,ItemEntry);
             continue;
         }
 
@@ -1210,28 +1168,7 @@ void Guild::LoadGuildBankFromDB()
 
     delete result;
 }
-// This unload should be called when the last member of the guild gets offline
-void Guild::UnloadGuildBank()
-{
-    if (!m_GuildBankLoaded)
-        return;
-    for (uint8 i = 0 ; i < m_PurchasedTabs ; ++i )
-    {
-        for (uint8 j = 0 ; j < GUILD_BANK_MAX_SLOTS ; ++j)
-        {
-            if (m_TabListMap[i]->Slots[j])
-            {
-                m_TabListMap[i]->Slots[j]->RemoveFromWorld();
-                delete m_TabListMap[i]->Slots[j];
-            }
-        }
-        delete m_TabListMap[i];
-    }
-    m_TabListMap.clear();
 
-    UnloadGuildBankEventLog();
-    m_GuildBankLoaded = false;
-}
 // *************************************************
 // Money deposit/withdraw related
 
@@ -1549,13 +1486,7 @@ void Guild::LoadGuildBankEventLogFromDB()
     } while (result->NextRow());
     delete result;
 }
-void Guild::UnloadGuildBankEventLog()
-{
-    m_GuildBankEventLog_Money.clear();
 
-    for (int i = 0; i < GUILD_BANK_MAX_TABS; ++i)
-        m_GuildBankEventLog_Item[i].clear();
-}
 void Guild::DisplayGuildBankLogs(WorldSession *session, uint8 TabId)
 {
     if (TabId > GUILD_BANK_MAX_TABS)

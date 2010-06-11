@@ -73,7 +73,6 @@ class AuthSocket: public BufferedSocket
         // between enUS and enGB, which is important for the patch system
         std::string _localizationName;
         uint16 _build;
-        bool _isTrial;
         AccountTypes _accountSecurityLevel;
 
         ACE_HANDLE patch_;

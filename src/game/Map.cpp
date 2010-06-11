@@ -156,18 +156,27 @@ void Map::InitVisibilityDistance()
 template<class T>
 void Map::AddToGrid(T* obj, NGridType *grid, Cell const& cell)
 {
+    if (!grid)
+        return;
+
     (*grid)(cell.CellX(), cell.CellY()).template AddGridObject<T>(obj);
 }
 
 template<>
 void Map::AddToGrid(Player* obj, NGridType *grid, Cell const& cell)
 {
+    if (!grid)
+        return;
+
     (*grid)(cell.CellX(), cell.CellY()).AddWorldObject(obj);
 }
 
 template<>
 void Map::AddToGrid(Corpse *obj, NGridType *grid, Cell const& cell)
 {
+    if (!grid)
+        return;
+
     // add to world object registry in grid
     if(obj->GetType()!=CORPSE_BONES)
     {
@@ -183,6 +192,9 @@ void Map::AddToGrid(Corpse *obj, NGridType *grid, Cell const& cell)
 template<>
 void Map::AddToGrid(Creature* obj, NGridType *grid, Cell const& cell)
 {
+    if (!grid)
+        return;
+
     // add to world object registry in grid
     if(obj->isPet() || obj->isVehicle())
     {
@@ -200,18 +212,27 @@ void Map::AddToGrid(Creature* obj, NGridType *grid, Cell const& cell)
 template<class T>
 void Map::RemoveFromGrid(T* obj, NGridType *grid, Cell const& cell)
 {
+    if (!grid)
+        return;
+
     (*grid)(cell.CellX(), cell.CellY()).template RemoveGridObject<T>(obj);
 }
 
 template<>
 void Map::RemoveFromGrid(Player* obj, NGridType *grid, Cell const& cell)
 {
+    if (!grid)
+        return;
+
     (*grid)(cell.CellX(), cell.CellY()).RemoveWorldObject(obj);
 }
 
 template<>
 void Map::RemoveFromGrid(Corpse *obj, NGridType *grid, Cell const& cell)
 {
+    if (!grid)
+        return;
+
     // remove from world object registry in grid
     if(obj->GetType()!=CORPSE_BONES)
     {
@@ -355,13 +376,6 @@ void Map::LoadGrid(const Cell& cell, bool no_unload)
 
 bool Map::Add(Player *player)
 {
-    //TEAMBG - this must NOT happen!
-    if(!IsBattleGround() && player->isInTeamBG())
-    {
-        player->SetTeamBG(false, 0);
-        sLog.outError("Something is wrong, player %u is not added to bg map but has TeamBG data!", player->GetGUID());
-    }
-
     player->GetMapRef().link(this, player);
     player->SetMap(this);
 
@@ -378,18 +392,6 @@ bool Map::Add(Player *player)
     UpdateObjectsVisibilityFor(player,cell,p);
 
     AddNotifier(player,cell,p);
-
-    //Factioned maps
-    if(sMapMgr.isFactioned(GetId()) && sWorld.getConfig(CONFIG_BOOL_FACTIONED_MAP_ENABLED))
-    {
-        player->setFaction(sWorld.getConfig(CONFIG_UINT32_FACTIONED_MAP_FACTION));
-        player->SetFakeTeam(sWorld.getConfig(CONFIG_UINT32_FACTIONED_MAP_TEAM));
-    }
-    else if (player->getFakeTeam() != 0 && !sMapMgr.isFactioned(GetId()) && !player->isInTeamBG())
-    {
-        player->SetFakeTeam(0);
-        player->setFactionForRace(player->getRace());
-    }
     return true;
 }
 
@@ -522,6 +524,10 @@ void Map::MessageDistBroadcast(WorldObject *obj, WorldPacket *msg, float dist)
 
 bool Map::loaded(const GridPair &p) const
 {
+  // crash guard if x, y coordinates are outside grids
+  if ( (p.x_coord >= MAX_NUMBER_OF_GRIDS) || (p.y_coord >= MAX_NUMBER_OF_GRIDS) )
+    return false;  // consider already loaded, skip
+
     return ( getNGrid(p.x_coord, p.y_coord) && isGridObjectDataLoaded(p.x_coord, p.y_coord) );
 }
 
@@ -653,7 +659,7 @@ void Map::Update(const uint32 &t_diff)
         }
     }
 
-	///- Process necessary scripts
+    ///- Process necessary scripts
     if (!m_scriptSchedule.empty())
         ScriptsProcess();
 }
@@ -808,6 +814,17 @@ Map::CreatureRelocation(Creature *creature, float x, float y, float z, float ang
     {
         DEBUG_FILTER_LOG(LOG_FILTER_CREATURE_MOVES, "Creature (GUID: %u Entry: %u) added to moving list from grid[%u,%u]cell[%u,%u] to grid[%u,%u]cell[%u,%u].", creature->GetGUIDLow(), creature->GetEntry(), old_cell.GridX(), old_cell.GridY(), old_cell.CellX(), old_cell.CellY(), new_cell.GridX(), new_cell.GridY(), new_cell.CellX(), new_cell.CellY());
 
+        // hack for eye of acherus part 1
+        if(creature->isCharmed())
+        {
+            NGridType* oldGrid = getNGrid(old_cell.GridX(), old_cell.GridY());
+            RemoveFromGrid(creature->GetCharmerOrOwnerPlayerOrPlayerItself(), oldGrid, old_cell);
+            if(!old_cell.DiffGrid(new_cell))
+                AddToGrid(creature->GetCharmerOrOwnerPlayerOrPlayerItself(), oldGrid, new_cell);
+            else
+                EnsureGridLoadedAtEnter(new_cell, creature->GetCharmerOrOwnerPlayerOrPlayerItself());
+        }
+
         // do move or do move to respawn or remove creature if previous all fail
         if(CreatureCellRelocation(creature,new_cell))
         {
@@ -816,6 +833,23 @@ Map::CreatureRelocation(Creature *creature, float x, float y, float z, float ang
 
             // in diffcell/diffgrid case notifiers called in Creature::Update
             creature->SetNeedNotify();
+
+        // hack for eye of acherus part 2
+        if(creature->isCharmed())
+        {
+            creature->InterruptSpell(CURRENT_CHANNELED_SPELL);
+            UpdateObjectVisibility(creature->GetCharmerOrOwnerPlayerOrPlayerItself(), new_cell, new_val);
+            UpdateObjectsVisibilityFor(creature->GetCharmerOrOwnerPlayerOrPlayerItself(), new_cell, new_val);
+            PlayerRelocationNotify(creature->GetCharmerOrOwnerPlayerOrPlayerItself(), new_cell, new_val);
+
+            bool same_cell = (new_cell == old_cell);
+            NGridType* newGrid = getNGrid(new_cell.GridX(), new_cell.GridY());
+            if(!same_cell && newGrid->GetGridState()!= GRID_STATE_ACTIVE)
+            {
+                ResetGridExpiry(*newGrid, 0.1f);
+                newGrid->SetGridState(GRID_STATE_ACTIVE);
+            }
+        }
         }
         else
         {
@@ -1747,7 +1781,7 @@ InstanceMap::~InstanceMap()
 void InstanceMap::InitVisibilityDistance()
 {
     //init visibility distance for instances
-    m_VisibleDistance = sWorld.GetMaxVisibleDistanceInInstances();
+    m_VisibleDistance = World::GetMaxVisibleDistanceInInstances();
 }
 
 /*
@@ -1773,7 +1807,7 @@ bool InstanceMap::CanEnter(Player *player)
 
     // cannot enter while players in the instance are in combat
     Group *pGroup = player->GetGroup();
-    if(pGroup && pGroup->InCombatToInstance(GetInstanceId(), true) && player->GetMapId() != GetId())
+    if(pGroup && pGroup->InCombatToInstance(GetInstanceId()) && player->isAlive() && player->GetMapId() != GetId())
     {
         player->SendTransferAborted(GetId(), TRANSFER_ABORT_ZONE_IN_COMBAT);
         return false;
@@ -1848,11 +1882,7 @@ bool InstanceMap::Add(Player *player)
                                 sLog.outError("GroupBind save players: %d, group count: %d", groupBind->save->GetPlayerCount(), groupBind->save->GetGroupCount());
                             else
                                 sLog.outError("GroupBind save NULL");
-                            if (WorldSafeLocsEntry const *ClosestGrave = sObjectMgr.GetClosestGraveYard(player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(), player->GetMapId(), player->GetTeam() ))
-                                player->RepopAtGraveyard();
-                            else
-                                player->SendTransferAborted(GetId(), TRANSFER_ABORT_MAP_NOT_ALLOWED);
-                            return false;
+                            player->RepopAtGraveyard();
                         }
                         // if the group/leader is permanently bound to the instance
                         // players also become permanently bound when they enter
@@ -1870,16 +1900,9 @@ bool InstanceMap::Add(Player *player)
                     // set up a solo bind or continue using it
                     if(!playerBind)
                         player->BindToInstance(mapSave, false);
-                    else if (playerBind->save != mapSave)
-                    {
+                    else
                         // cannot jump to a different instance without resetting it
-                        // lets send him to nearest graveyard or homebind
-                        if (WorldSafeLocsEntry const *ClosestGrave = sObjectMgr.GetClosestGraveYard(player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(), player->GetMapId(), player->GetTeam() ))
-                            player->RepopAtGraveyard();
-                        else player->RelocateToHomebind();
-                        error_log("Player %s (GUID %u) logged into instance which is not bound to. Cheat, exploit?",player->GetName(),player->GetGUID());
-                        //ASSERT(playerBind->save == mapSave);
-                    }
+                        ASSERT(playerBind->save == mapSave);
                 }
             }
         }
@@ -3044,6 +3067,7 @@ void Map::SendObjectUpdates()
         (*it)->BuildUpdateData(update_players);
 
     i_objectsToClientUpdate.clear();
+
     WorldPacket packet;                                     // here we allocate a std::vector with a size of 0x10000
     for(UpdateDataMapType::iterator iter = update_players.begin(); iter != update_players.end(); ++iter)
     {

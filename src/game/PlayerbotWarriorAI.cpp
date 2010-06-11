@@ -299,7 +299,7 @@ void PlayerbotWarriorAI::DoNextCombatManeuver(Unit *pTarget)
 
 void PlayerbotWarriorAI::DoNonCombatActions()
 {
-	PlayerbotAI *ai = GetAI();
+    PlayerbotAI *ai = GetAI();
     Player * m_bot = GetPlayerBot();
     if (!m_bot)
         return;

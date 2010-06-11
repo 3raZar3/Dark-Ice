@@ -53,6 +53,7 @@
 #include "CreatureEventAIMgr.h"
 #include "DBCEnums.h"
 #include "AuctionHouseBot.h"
+#include "BattleGround.h"
 
 bool ChatHandler::HandleAHBotOptionsCommand(const char* args)
 {
@@ -531,6 +532,13 @@ bool ChatHandler::HandleAHBotOptionsCommand(const char* args)
 }
 
 //reload commands
+bool ChatHandler::HandleJailReloadCommand(const char* arg)
+{
+    sObjectMgr.LoadJailConf();
+    SendSysMessage(LANG_JAIL_RELOAD);
+    return true;
+}
+
 bool ChatHandler::HandleReloadAllCommand(const char*)
 {
     HandleReloadSkillFishingBaseLevelCommand("");
@@ -642,7 +650,6 @@ bool ChatHandler::HandleReloadAllSpellCommand(const char*)
     HandleReloadSpellElixirCommand("a");
     HandleReloadSpellLearnSpellCommand("a");
     HandleReloadSpellProcEventCommand("a");
-    HandleReloadSpellStackCommand("a"); 
     HandleReloadSpellBonusesCommand("a");
     HandleReloadSpellProcItemEnchantCommand("a");
     HandleReloadSpellScriptTargetCommand("a");
@@ -1057,15 +1064,7 @@ bool ChatHandler::HandleReloadSpellProcEventCommand(const char*)
     SendGlobalSysMessage("DB table `spell_proc_event` (spell proc trigger requirements) reloaded.");
     return true;
 }
-bool ChatHandler::HandleReloadSpellStackCommand(const char*) 
-{ 
-    sLog.outString( "Re-Loading Spell stacking conditions..." ); 
-    sSpellMgr.LoadSpellStack(); 
-    sSpellMgr.LoadSpellStackGroup(); 
-    SendGlobalSysMessage("DB table `spell_stack_data` and `spell_stack_group_data` reloaded."); 
-    return true; 
-} 
- 
+
 bool ChatHandler::HandleReloadSpellBonusesCommand(const char*)
 {
     sLog.outString( "Re-Loading Spell Bonus Data..." );
@@ -2687,6 +2686,68 @@ bool ChatHandler::HandleAddItemCommand(const char* args)
     return true;
 }
 
+bool ChatHandler::HandleDeleteItemCommand(const char* args)
+{
+    if (!*args)
+        return false;
+
+    uint32 itemId = 0;
+
+    if(args[0]=='[')                                        // [name] manual form
+    {
+        char* citemName = strtok((char*)args, "]");
+
+        if(citemName && citemName[0])
+        {
+            std::string itemName = citemName+1;
+            WorldDatabase.escape_string(itemName);
+            QueryResult *result = WorldDatabase.PQuery("SELECT entry FROM item_template WHERE name = '%s'", itemName.c_str());
+            if (!result)
+            {
+                PSendSysMessage(LANG_COMMAND_COULDNOTFIND, citemName+1);
+                SetSentErrorMessage(true);
+                return false;
+            }
+            itemId = result->Fetch()->GetUInt16();
+            delete result;
+        }
+        else
+            return false;
+    }
+    else                                                    // item_id or [name] Shift-click form |color|Hitem:item_id:0:0:0|h[name]|h|r
+    {
+        char* cId = extractKeyFromLink((char*)args,"Hitem");
+        if(!cId)
+            return false;
+        itemId = atol(cId);
+    }
+
+    char* ccount = strtok(NULL, " ");
+
+    int32 count = 1;
+
+    if (ccount)
+        count = strtol(ccount, NULL, 10);
+
+    if (count == 0)
+        count = 1;
+
+    Player* pl = m_session->GetPlayer();
+    Player* plTarget = getSelectedPlayer();
+    if(!plTarget)
+        plTarget = pl;
+
+    //Remove the item
+    if (count > 0)
+    {
+        plTarget->DestroyItemCount(itemId, -count, true, false);
+        PSendSysMessage(LANG_REMOVEITEM, itemId, -count, GetNameLink(plTarget).c_str());
+        return true;
+    }
+
+    return true;
+}
+
 bool ChatHandler::HandleAddItemSetCommand(const char* args)
 {
     if (!*args)
@@ -4004,7 +4065,7 @@ bool ChatHandler::HandleDamageCommand(const char * args)
         damage -= absorb + resist;
 
         m_session->GetPlayer()->DealDamageMods(target,damage,&absorb);
-        m_session->GetPlayer()->DealDamage(target, damage, NULL, DIRECT_DAMAGE, schoolmask, NULL, false, absorb);
+        m_session->GetPlayer()->DealDamage(target, damage, NULL, DIRECT_DAMAGE, schoolmask, NULL, false);
         m_session->GetPlayer()->SendAttackStateUpdate (HITINFO_NORMALSWING2, target, 1, schoolmask, damage, absorb, resist, VICTIMSTATE_NORMAL, 0);
         return true;
     }
@@ -4543,6 +4604,51 @@ bool ChatHandler::HandleCharacterLevelCommand(const char* args)
     return true;
 }
 
+bool ChatHandler::HandleCharacterGMLevelCommand(const char* args)
+{
+    char* nameStr;
+    char* levelStr;
+    extractOptFirstArg((char*)args,&nameStr,&levelStr);
+    if(!levelStr)
+        return false;
+
+    // exception opt second arg: .character gmlevel $name
+    if(isalpha(levelStr[0]))
+    {
+        nameStr = levelStr;
+        levelStr = NULL;                                    // current level will used
+    }
+
+    Player* target;
+    uint64 target_guid;
+    std::string target_name;
+    if(!extractPlayerTarget(nameStr,&target,&target_guid,&target_name))
+        return false;
+
+    int32 oldlevel = target ? target->GetSecurity() : Player::GetGMLevelFromDB(target_guid);
+    int32 newlevel = levelStr ? atoi(levelStr) : oldlevel;
+
+    if(newlevel < 0)
+        return false;                                       // invalid level
+
+    if (oldlevel >= m_session->GetSecurity())
+    {
+        PSendSysMessage("You too low level to affect this player");
+        return true;
+    }
+
+    if (newlevel >= m_session->GetSecurity())
+    {
+        PSendSysMessage("You cannot set a level equal to or greater than your own");
+        return true;
+    }
+
+    target->SetSecurity(newlevel);
+    target->SaveToDB();
+
+    return true;
+}
+
 bool ChatHandler::HandleLevelUpCommand(const char* args)
 {
     char* nameStr;
@@ -4997,11 +5103,11 @@ bool ChatHandler::HandleResetSpellsCommand(const char * args)
         if(!m_session || m_session->GetPlayer()!=target)
             PSendSysMessage(LANG_RESET_SPELLS_ONLINE,GetNameLink(target).c_str());
     }
-    /*else
+    else
     {
         CharacterDatabase.PExecute("UPDATE characters SET at_login = at_login | '%u' WHERE guid = '%u'",uint32(AT_LOGIN_RESET_SPELLS), GUID_LOPART(target_guid));
         PSendSysMessage(LANG_RESET_SPELLS_OFFLINE,target_name.c_str());
-    } */
+    }
 
     return true;
 }
@@ -6600,6 +6706,26 @@ bool ChatHandler::HandleInstanceStatsCommand(const char* /*args*/)
     PSendSysMessage("players bound: %d", sInstanceSaveMgr.GetNumBoundPlayersTotal());
     PSendSysMessage("groups bound: %d", sInstanceSaveMgr.GetNumBoundGroupsTotal());
     return true;
+}
+
+bool ChatHandler::HandleInstanceStartCommand(const char * /*args*/)
+{
+    Player* pl = m_session->GetPlayer();
+	BattleGround *bg = pl->GetBattleGround();
+    if(!bg)
+        return false;
+    if(bg->GetTypeID(true))
+    {
+        bg->StartBattleGround();
+        bg->AddPlayer(pl);
+		return true;
+    }
+    else
+    {
+        PSendSysMessage("Map is not a battleground.");
+        SetSentErrorMessage(true);
+        return false;
+    }
 }
 
 bool ChatHandler::HandleInstanceSaveDataCommand(const char * /*args*/)

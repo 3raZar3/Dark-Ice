@@ -37,13 +37,13 @@ void WorldSession::HandleQuestgiverStatusQueryOpcode( WorldPacket & recv_data )
 {
     uint64 guid;
     recv_data >> guid;
-    uint8 dialogStatus = DIALOG_STATUS_NONE;
+    uint8 questStatus = DIALOG_STATUS_NONE;
+    uint8 defstatus = DIALOG_STATUS_NONE;
 
     Object* questgiver = _player->GetObjectByTypeMask(guid, TYPEMASK_CREATURE_OR_GAMEOBJECT);
-
-    if (!questgiver)
+    if(!questgiver)
     {
-        DETAIL_LOG("Error in CMSG_QUESTGIVER_STATUS_QUERY, called for not found questgiver (Typeid: %u GUID: %u)", GuidHigh2TypeId(GUID_HIPART(guid)), GUID_LOPART(guid));
+        DETAIL_LOG("Error in CMSG_QUESTGIVER_STATUS_QUERY, called for not found questgiver (Typeid: %u GUID: %u)",GuidHigh2TypeId(GUID_HIPART(guid)),GUID_LOPART(guid));
         return;
     }
 
@@ -51,29 +51,23 @@ void WorldSession::HandleQuestgiverStatusQueryOpcode( WorldPacket & recv_data )
     {
         case TYPEID_UNIT:
         {
-            DEBUG_LOG("WORLD: Received CMSG_QUESTGIVER_STATUS_QUERY for npc, guid = %u", uint32(GUID_LOPART(guid)));
-
-            Creature* cr_questgiver = (Creature*)questgiver;
-
-            if (!cr_questgiver->IsHostileTo(_player))       // not show quest status to enemies
+            DEBUG_LOG( "WORLD: Received CMSG_QUESTGIVER_STATUS_QUERY for npc, guid = %u",uint32(GUID_LOPART(guid)) );
+            Creature* cr_questgiver=(Creature*)questgiver;
+            if( !cr_questgiver->IsHostileTo(_player))       // not show quest status to enemies
             {
-                dialogStatus = Script->NPCDialogStatus(_player, cr_questgiver);
-
-                if (dialogStatus > DIALOG_STATUS_REWARD_REP)
-                    dialogStatus = getDialogStatus(_player, cr_questgiver, DIALOG_STATUS_NONE);
+                questStatus = Script->NPCDialogStatus(_player, cr_questgiver);
+                if( questStatus > 6 )
+                    questStatus = getDialogStatus(_player, cr_questgiver, defstatus);
             }
             break;
         }
         case TYPEID_GAMEOBJECT:
         {
-            DEBUG_LOG("WORLD: Received CMSG_QUESTGIVER_STATUS_QUERY for GameObject guid = %u", uint32(GUID_LOPART(guid)));
-
-            GameObject* go_questgiver = (GameObject*)questgiver;
-            dialogStatus = Script->GODialogStatus(_player, go_questgiver);
-
-            if (dialogStatus > DIALOG_STATUS_REWARD_REP)
-                dialogStatus = getDialogStatus(_player, go_questgiver, DIALOG_STATUS_NONE);
-
+            DEBUG_LOG( "WORLD: Received CMSG_QUESTGIVER_STATUS_QUERY for GameObject guid = %u",uint32(GUID_LOPART(guid)) );
+            GameObject* go_questgiver=(GameObject*)questgiver;
+            questStatus = Script->GODialogStatus(_player, go_questgiver);
+            if( questStatus > 6 )
+                questStatus = getDialogStatus(_player, go_questgiver, defstatus);
             break;
         }
         default:
@@ -82,7 +76,7 @@ void WorldSession::HandleQuestgiverStatusQueryOpcode( WorldPacket & recv_data )
     }
 
     //inform client about status of quest
-    _player->PlayerTalkClass->SendQuestGiverStatus(dialogStatus, guid);
+    _player->PlayerTalkClass->SendQuestGiverStatus(questStatus, guid);
 }
 
 void WorldSession::HandleQuestgiverHelloOpcode(WorldPacket & recv_data)
@@ -556,7 +550,7 @@ void WorldSession::HandleQuestPushResult(WorldPacket& recvPacket)
 
 uint32 WorldSession::getDialogStatus(Player *pPlayer, Object* questgiver, uint32 defstatus)
 {
-    uint32 dialogStatus = defstatus;
+    uint32 result = defstatus;
 
     QuestRelations const* qir;
     QuestRelations const* qr;
@@ -581,73 +575,66 @@ uint32 WorldSession::getDialogStatus(Player *pPlayer, Object* questgiver, uint32
             return DIALOG_STATUS_NONE;
     }
 
-    for(QuestRelations::const_iterator i = qir->lower_bound(questgiver->GetEntry()); i != qir->upper_bound(questgiver->GetEntry()); ++i)
+    for(QuestRelations::const_iterator i = qir->lower_bound(questgiver->GetEntry()); i != qir->upper_bound(questgiver->GetEntry()); ++i )
     {
-        uint32 dialogStatusNew = 0;
+        uint32 result2 = 0;
         uint32 quest_id = i->second;
         Quest const *pQuest = sObjectMgr.GetQuestTemplate(quest_id);
+        if ( !pQuest ) continue;
 
-        if (!pQuest)
-            continue;
-
-        QuestStatus status = pPlayer->GetQuestStatus(quest_id);
-
-        if ((status == QUEST_STATUS_COMPLETE && !pPlayer->GetQuestRewardStatus(quest_id)) ||
-            (pQuest->IsAutoComplete() && pPlayer->CanTakeQuest(pQuest, false)))
+        QuestStatus status = pPlayer->GetQuestStatus( quest_id );
+        if( (status == QUEST_STATUS_COMPLETE && !pPlayer->GetQuestRewardStatus(quest_id)) ||
+            (pQuest->IsAutoComplete() && pPlayer->CanTakeQuest(pQuest, false)) )
         {
-            if (pQuest->IsAutoComplete() && pQuest->IsRepeatable())
-                dialogStatusNew = DIALOG_STATUS_REWARD_REP;
+            if ( pQuest->IsAutoComplete() && pQuest->IsRepeatable() )
+                result2 = DIALOG_STATUS_REWARD_REP;
             else
-                dialogStatusNew = DIALOG_STATUS_REWARD;
+                result2 = DIALOG_STATUS_REWARD;
         }
-        else if (status == QUEST_STATUS_INCOMPLETE)
-            dialogStatusNew = DIALOG_STATUS_INCOMPLETE;
+        else if ( status == QUEST_STATUS_INCOMPLETE )
+            result2 = DIALOG_STATUS_INCOMPLETE;
 
-        if (dialogStatusNew > dialogStatus)
-            dialogStatus = dialogStatusNew;
+        if (result2 > result)
+            result = result2;
     }
 
-    for(QuestRelations::const_iterator i = qr->lower_bound(questgiver->GetEntry()); i != qr->upper_bound(questgiver->GetEntry()); ++i)
+    for(QuestRelations::const_iterator i = qr->lower_bound(questgiver->GetEntry()); i != qr->upper_bound(questgiver->GetEntry()); ++i )
     {
-        uint32 dialogStatusNew = 0;
+        uint32 result2 = 0;
         uint32 quest_id = i->second;
         Quest const *pQuest = sObjectMgr.GetQuestTemplate(quest_id);
-
-        if (!pQuest)
+        if ( !pQuest )
             continue;
 
-        QuestStatus status = pPlayer->GetQuestStatus(quest_id);
-
-        if (status == QUEST_STATUS_NONE)
+        QuestStatus status = pPlayer->GetQuestStatus( quest_id );
+        if ( status == QUEST_STATUS_NONE )
         {
-            if (pPlayer->CanSeeStartQuest(pQuest))
+            if ( pPlayer->CanSeeStartQuest( pQuest ) )
             {
-                if (pPlayer->SatisfyQuestLevel(pQuest, false))
+                if ( pPlayer->SatisfyQuestLevel(pQuest, false) )
                 {
-                    if (pQuest->IsAutoComplete() || (pQuest->IsRepeatable() && pPlayer->getQuestStatusMap()[quest_id].m_rewarded))
-                    {
-                        dialogStatusNew = DIALOG_STATUS_REWARD_REP;
-                    }
-                    else if (pPlayer->getLevel() <= pPlayer->GetQuestLevelForPlayer(pQuest) + sWorld.getConfig(CONFIG_UINT32_QUEST_LOW_LEVEL_HIDE_DIFF))
+                    if ( pQuest->IsAutoComplete() || (pQuest->IsRepeatable() && pPlayer->getQuestStatusMap()[quest_id].m_rewarded))
+                        result2 = DIALOG_STATUS_REWARD_REP;
+                    else if (pPlayer->getLevel() <= pPlayer->GetQuestLevelForPlayer(pQuest) + sWorld.getConfig(CONFIG_UINT32_QUEST_LOW_LEVEL_HIDE_DIFF) )
                     {
                         if (pQuest->HasFlag(QUEST_FLAGS_DAILY) || pQuest->HasFlag(QUEST_FLAGS_WEEKLY))
-                            dialogStatusNew = DIALOG_STATUS_AVAILABLE_REP;
+                            result2 = DIALOG_STATUS_AVAILABLE_REP;
                         else
-                            dialogStatusNew = DIALOG_STATUS_AVAILABLE;
+                            result2 = DIALOG_STATUS_AVAILABLE;
                     }
                     else
-                        dialogStatusNew = DIALOG_STATUS_LOW_LEVEL_AVAILABLE;
+                        result2 = DIALOG_STATUS_LOW_LEVEL_AVAILABLE;
                 }
                 else
-                    dialogStatusNew = DIALOG_STATUS_UNAVAILABLE;
+                    result2 = DIALOG_STATUS_UNAVAILABLE;
             }
         }
 
-        if (dialogStatusNew > dialogStatus)
-            dialogStatus = dialogStatusNew;
+        if (result2 > result)
+            result = result2;
     }
 
-    return dialogStatus;
+    return result;
 }
 
 void WorldSession::HandleQuestgiverStatusMultipleQuery(WorldPacket& /*recvPacket*/)
@@ -661,44 +648,38 @@ void WorldSession::HandleQuestgiverStatusMultipleQuery(WorldPacket& /*recvPacket
 
     for(ObjectGuidSet::const_iterator itr = _player->m_clientGUIDs.begin(); itr != _player->m_clientGUIDs.end(); ++itr)
     {
-        uint8 dialogStatus = DIALOG_STATUS_NONE;
+        uint8 questStatus = DIALOG_STATUS_NONE;
+        uint8 defstatus = DIALOG_STATUS_NONE;
 
         if (itr->IsCreatureOrPet())
         {
             // need also pet quests case support
             Creature *questgiver = ObjectAccessor::GetCreatureOrPetOrVehicle(*GetPlayer(),*itr);
-            if (!questgiver || questgiver->IsHostileTo(_player))
+            if(!questgiver || questgiver->IsHostileTo(_player))
                 continue;
-
-            if (!questgiver->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER))
+            if(!questgiver->HasFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER))
                 continue;
-
-            dialogStatus = Script->NPCDialogStatus(_player, questgiver);
-
-            if (dialogStatus > DIALOG_STATUS_REWARD_REP)
-                dialogStatus = getDialogStatus(_player, questgiver, DIALOG_STATUS_NONE);
+            questStatus = Script->NPCDialogStatus(_player, questgiver);
+            if( questStatus > 6 )
+                questStatus = getDialogStatus(_player, questgiver, defstatus);
 
             data << uint64(questgiver->GetGUID());
-            data << uint8(dialogStatus);
+            data << uint8(questStatus);
             ++count;
         }
         else if (itr->IsGameobject())
         {
             GameObject *questgiver = GetPlayer()->GetMap()->GetGameObject(*itr);
-
-            if (!questgiver)
+            if(!questgiver)
                 continue;
-
-            if (questgiver->GetGoType() != GAMEOBJECT_TYPE_QUESTGIVER)
+            if(questgiver->GetGoType() != GAMEOBJECT_TYPE_QUESTGIVER)
                 continue;
-
-            dialogStatus = Script->GODialogStatus(_player, questgiver);
-
-            if (dialogStatus > DIALOG_STATUS_REWARD_REP)
-                dialogStatus = getDialogStatus(_player, questgiver, DIALOG_STATUS_NONE);
+            questStatus = Script->GODialogStatus(_player, questgiver);
+            if( questStatus > 6 )
+                questStatus = getDialogStatus(_player, questgiver, defstatus);
 
             data << uint64(questgiver->GetGUID());
-            data << uint8(dialogStatus);
+            data << uint8(questStatus);
             ++count;
         }
     }

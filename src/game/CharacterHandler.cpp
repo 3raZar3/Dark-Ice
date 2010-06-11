@@ -75,7 +75,7 @@ bool LoginQueryHolder::Initialize()
         "position_x, position_y, position_z, map, orientation, taximask, cinematic, totaltime, leveltime, rest_bonus, logout_time, is_logout_resting, resettalents_cost,"
         "resettalents_time, trans_x, trans_y, trans_z, trans_o, transguid, extra_flags, stable_slots, at_login, zone, online, death_expire_time, taxi_path, dungeon_difficulty,"
         "arenaPoints, totalHonorPoints, todayHonorPoints, yesterdayHonorPoints, totalKills, todayKills, yesterdayKills, chosenTitle, knownCurrencies, watchedFaction, drunk,"
-        "health, power1, power2, power3, power4, power5, power6, power7, specCount, activeSpec, exploredZones, equipmentCache, ammoId, knownTitles, actionBars FROM characters WHERE guid = '%u'", GUID_LOPART(m_guid));
+        "health, power1, power2, power3, power4, power5, power6, power7, specCount, activeSpec, exploredZones, equipmentCache, ammoId, knownTitles, actionBars, gmlevel FROM characters WHERE guid = '%u'", GUID_LOPART(m_guid));
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADGROUP,           "SELECT groupId FROM group_member WHERE memberGuid ='%u'", GUID_LOPART(m_guid));
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADBOUNDINSTANCES,  "SELECT id, permanent, map, difficulty, resettime FROM character_instance LEFT JOIN instance ON instance = id WHERE guid = '%u'", GUID_LOPART(m_guid));
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADAURAS,           "SELECT caster_guid,spell,effect_index,stackcount,amount,maxduration,remaintime,remaincharges FROM character_aura WHERE guid = '%u'", GUID_LOPART(m_guid));
@@ -97,9 +97,9 @@ bool LoginQueryHolder::Initialize()
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADACHIEVEMENTS,    "SELECT achievement, date FROM character_achievement WHERE guid = '%u'", GUID_LOPART(m_guid));
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADCRITERIAPROGRESS,"SELECT criteria, counter, date FROM character_achievement_progress WHERE guid = '%u'", GUID_LOPART(m_guid));
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADEQUIPMENTSETS,   "SELECT setguid, setindex, name, iconname, item0, item1, item2, item3, item4, item5, item6, item7, item8, item9, item10, item11, item12, item13, item14, item15, item16, item17, item18 FROM character_equipmentsets WHERE guid = '%u' ORDER BY setindex", GUID_LOPART(m_guid));
-    res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADBGDATA,          "SELECT instance_id, team, join_x, join_y, join_z, join_o, join_map, taxi_start, taxi_end, mount_spell, teambg_faction FROM character_battleground_data WHERE guid = '%u'", GUID_LOPART(m_guid));
+    res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADBGDATA,          "SELECT instance_id, team, join_x, join_y, join_z, join_o, join_map, taxi_start, taxi_end, mount_spell FROM character_battleground_data WHERE guid = '%u'", GUID_LOPART(m_guid));
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADBGSTATUS,        "SELECT daily_bg FROM character_battleground_status WHERE guid = '%u'", GUID_LOPART(m_guid));
-    res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADACCOUNTDATA,     "SELECT type, time, data FROM character_account_data WHERE guid='%u'", GUID_LOPART(m_guid));
+	res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADACCOUNTDATA,     "SELECT type, time, data FROM character_account_data WHERE guid='%u'", GUID_LOPART(m_guid));
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADTALENTS,         "SELECT talent_id, current_rank, spec FROM character_talent WHERE guid = '%u'", GUID_LOPART(m_guid));
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADSKILLS,          "SELECT skill, value, max FROM character_skills WHERE guid = '%u'", GUID_LOPART(m_guid));
     res &= SetPQuery(PLAYER_LOGIN_QUERY_LOADGLYPHS,          "SELECT spec, slot, glyph FROM character_glyphs WHERE guid='%u'", GUID_LOPART(m_guid));
@@ -157,7 +157,7 @@ class CharacterHandler
 
             // The bot's WorldSession is owned by the bot's Player object
             // The bot's WorldSession is deleted by PlayerbotMgr::LogoutPlayerBot
-            WorldSession *botSession = new WorldSession(lqh->GetAccountId(), NULL, SEC_PLAYER, masterSession->Expansion(), 0, LOCALE_enUS, false);
+            WorldSession *botSession = new WorldSession(lqh->GetAccountId(), NULL, SEC_PLAYER, masterSession->Expansion(), 0, LOCALE_enUS);
             botSession->m_Address = "bot";
             botSession->HandlePlayerLogin(lqh); // will delete lqh
             masterSession->GetPlayer()->GetPlayerbotMgr()->OnBotLogin(botSession->GetPlayer());
@@ -719,8 +719,6 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
             SendPacket(&data);
             DEBUG_LOG( "WORLD: Sent guild-motd (SMSG_GUILD_EVENT)" );
 
-            // Increment online members of the guild
-            guild->IncOnlineMemberCount();
             guild->DisplayGuildBankTabsInfo(this);
 
             guild->BroadcastEvent(GE_SIGNED_ON, pCurrChar->GetGUID(), 1, pCurrChar->GetName(), "", "");
@@ -738,6 +736,71 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
     data << uint32(0);
     SendPacket(&data);
 
+    if (sWorld.getConfig(CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE))
+        pCurrChar->FlyingMountsSpellsToItems();
+        
+    if (sWorld.getConfig(CONFIG_BOOL_EVERYONE_DRUNK))
+    {
+        pCurrChar->SetDrunkValue(23000);
+    }
+    if (pCurrChar->GetDrunkValue() >= 10000)
+        pCurrChar->SetDrunkValue(0);
+    
+    if (sWorld.getConfig(CONFIG_BOOL_ALL_WEAPONS_MAX_SKILL))
+    {
+        pCurrChar->SetSkill(SKILL_UNARMED, 450, 450);
+        pCurrChar->SetSkill(SKILL_2H_SWORDS, 450, 450);
+        pCurrChar->SetSkill(SKILL_GUNS, 450, 450);
+        pCurrChar->SetSkill(SKILL_BOWS, 450, 450);
+        pCurrChar->SetSkill(SKILL_AXES, 450, 450);
+        pCurrChar->SetSkill(SKILL_SWORDS, 450, 450);
+        pCurrChar->SetSkill(SKILL_STAVES, 450, 450);
+        pCurrChar->SetSkill(SKILL_2H_MACES, 450, 450);
+        pCurrChar->SetSkill(SKILL_MACES, 450, 450);
+        pCurrChar->SetSkill(SKILL_WANDS, 450, 450);
+        pCurrChar->SetSkill(SKILL_2H_AXES, 450, 450);
+        pCurrChar->SetSkill(SKILL_DAGGERS, 450, 450);
+        pCurrChar->SetSkill(SKILL_THROWN, 450, 450);
+        pCurrChar->SetSkill(SKILL_CROSSBOWS, 450, 450);
+        pCurrChar->SetSkill(SKILL_POLEARMS, 450, 450);
+        pCurrChar->SetSkill(SKILL_FIST_WEAPONS, 450, 450);
+    }
+
+    if (sWorld.getConfig(CONFIG_BOOL_ALL_WEAPONS_FOR_CLASS_MAX_SKILL))
+    {
+        if(pCurrChar->getClass() == CLASS_HUNTER || pCurrChar->getClass() == CLASS_ROGUE || pCurrChar->getClass() == CLASS_WARRIOR)
+        {
+            pCurrChar->SetSkill(SKILL_BOWS, 450, 450);
+            pCurrChar->SetSkill(SKILL_CROSSBOWS, 450, 450);
+            pCurrChar->SetSkill(SKILL_GUNS, 450, 450);
+            pCurrChar->SetSkill(SKILL_THROWN, 450, 450);
+        }
+        if(pCurrChar->getClass() == CLASS_DRUID || pCurrChar->getClass() == CLASS_HUNTER || pCurrChar->getClass() == CLASS_MAGE || pCurrChar->getClass() == CLASS_PRIEST || pCurrChar->getClass() == CLASS_ROGUE || pCurrChar->getClass() == CLASS_SHAMAN || pCurrChar->getClass() == CLASS_WARLOCK || pCurrChar->getClass() == CLASS_WARRIOR)
+        {
+            pCurrChar->SetSkill(SKILL_DAGGERS, 450, 450);
+            pCurrChar->SetSkill(SKILL_STAVES, 450, 450);
+        }
+        if(pCurrChar->getClass() == CLASS_DRUID || pCurrChar->getClass() == CLASS_HUNTER || pCurrChar->getClass() == CLASS_ROGUE || pCurrChar->getClass() == CLASS_SHAMAN || pCurrChar->getClass() == CLASS_WARRIOR)
+            pCurrChar->SetSkill(SKILL_FIST_WEAPONS, 450, 450);
+        if(pCurrChar->getClass() == CLASS_DEATH_KNIGHT || pCurrChar->getClass() == CLASS_HUNTER || pCurrChar->getClass() == CLASS_PALADIN || pCurrChar->getClass() == CLASS_ROGUE || pCurrChar->getClass() == CLASS_SHAMAN || pCurrChar->getClass() == CLASS_WARRIOR)
+            pCurrChar->SetSkill(SKILL_AXES, 450, 450);
+        if(pCurrChar->getClass() == CLASS_DEATH_KNIGHT || pCurrChar->getClass() == CLASS_DRUID || pCurrChar->getClass() == CLASS_PALADIN || pCurrChar->getClass() == CLASS_PRIEST || pCurrChar->getClass() == CLASS_ROGUE || pCurrChar->getClass() == CLASS_SHAMAN || pCurrChar->getClass() == CLASS_WARRIOR)
+            pCurrChar->SetSkill(SKILL_MACES, 450, 450);
+        if(pCurrChar->getClass() == CLASS_DEATH_KNIGHT || pCurrChar->getClass() == CLASS_HUNTER || pCurrChar->getClass() == CLASS_MAGE || pCurrChar->getClass() == CLASS_PALADIN || pCurrChar->getClass() == CLASS_PRIEST || pCurrChar->getClass() == CLASS_ROGUE || pCurrChar->getClass() == CLASS_WARLOCK || pCurrChar->getClass() == CLASS_WARRIOR)
+            pCurrChar->SetSkill(SKILL_SWORDS, 450, 450);
+        if(pCurrChar->getClass() == CLASS_DEATH_KNIGHT || pCurrChar->getClass() == CLASS_DRUID || pCurrChar->getClass() == CLASS_HUNTER || pCurrChar->getClass() == CLASS_PALADIN || pCurrChar->getClass() == CLASS_WARRIOR)
+            pCurrChar->SetSkill(SKILL_POLEARMS, 450, 450);
+        if(pCurrChar->getClass() == CLASS_MAGE || pCurrChar->getClass() == CLASS_PRIEST || pCurrChar->getClass() == CLASS_WARLOCK)
+            pCurrChar->SetSkill(SKILL_WANDS, 450, 450);
+        if(pCurrChar->getClass() == CLASS_DEATH_KNIGHT || pCurrChar->getClass() == CLASS_HUNTER || pCurrChar->getClass() == CLASS_PALADIN || pCurrChar->getClass() == CLASS_SHAMAN || pCurrChar->getClass() == CLASS_WARRIOR)
+            pCurrChar->SetSkill(SKILL_2H_AXES, 450, 450);
+        if(pCurrChar->getClass() == CLASS_DEATH_KNIGHT || pCurrChar->getClass() == CLASS_DRUID || pCurrChar->getClass() == CLASS_PALADIN || pCurrChar->getClass() == CLASS_SHAMAN || pCurrChar->getClass() == CLASS_WARRIOR)
+            pCurrChar->SetSkill(SKILL_2H_MACES, 450, 450);
+        if(pCurrChar->getClass() == CLASS_DEATH_KNIGHT || pCurrChar->getClass() == CLASS_HUNTER || pCurrChar->getClass() == CLASS_PALADIN || pCurrChar->getClass() == CLASS_WARRIOR)
+            pCurrChar->SetSkill(SKILL_2H_SWORDS, 450, 450);
+        pCurrChar->SetSkill(SKILL_UNARMED, 450, 450);
+    }
+    
     pCurrChar->SendInitialPacketsBeforeAddToMap();
 
     //Show cinematic at the first time that player login
@@ -842,6 +905,8 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder *holder)
 
     if(!pCurrChar->IsStandState() && !pCurrChar->hasUnitState(UNIT_STAT_STUNNED))
         pCurrChar->SetStandState(UNIT_STAND_STATE_STAND);
+
+    pCurrChar->UpdateHonorFields();
 
     m_playerLoading = false;
     delete holder;
@@ -1128,8 +1193,8 @@ void WorldSession::HandleAlterAppearance( WorldPacket & recv_data )
 {
     DEBUG_LOG("CMSG_ALTER_APPEARANCE");
 
-    uint32 Hair, Color, FacialHair, SkinColor;
-    recv_data >> Hair >> Color >> FacialHair >> SkinColor;
+    uint32 Hair, Color, FacialHair;
+    recv_data >> Hair >> Color >> FacialHair;
 
     BarberShopStyleEntry const* bs_hair = sBarberShopStyleStore.LookupEntry(Hair);
 
@@ -1141,11 +1206,7 @@ void WorldSession::HandleAlterAppearance( WorldPacket & recv_data )
     if(!bs_facialHair || bs_facialHair->type != 2 || bs_facialHair->race != _player->getRace() || bs_facialHair->gender != _player->getGender())
         return;
 
-    BarberShopStyleEntry const* bs_skinColor = sBarberShopStyleStore.LookupEntry(SkinColor);
-    if( bs_skinColor && (bs_skinColor->type != 3 || bs_skinColor->race != _player->getRace() || bs_skinColor->gender != _player->getGender()))
-        return;
-
-    uint32 Cost = _player->GetBarberShopCost(bs_hair->hair_id, Color, bs_facialHair->hair_id, bs_skinColor);
+    uint32 Cost = _player->GetBarberShopCost(bs_hair->hair_id, Color, bs_facialHair->hair_id);
 
     // 0 - ok
     // 1,3 - not enough money
@@ -1170,8 +1231,6 @@ void WorldSession::HandleAlterAppearance( WorldPacket & recv_data )
     _player->SetByteValue(PLAYER_BYTES, 2, uint8(bs_hair->hair_id));
     _player->SetByteValue(PLAYER_BYTES, 3, uint8(Color));
     _player->SetByteValue(PLAYER_BYTES_2, 0, uint8(bs_facialHair->hair_id));
-    if (bs_skinColor)
-        _player->SetByteValue(PLAYER_BYTES, 0, uint8(bs_skinColor->hair_id));
 
     _player->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_VISIT_BARBER_SHOP, 1);
 
@@ -1195,6 +1254,197 @@ void WorldSession::HandleRemoveGlyph( WorldPacket & recv_data )
         _player->SetGlyph(slot, 0);
         _player->SendTalentsInfoData(false);
     }
+}
+
+void WorldSession::HandleCharFactionOrRaceChange(WorldPacket& recv_data)
+{
+    uint64 guid;
+    std::string newname;
+    uint8 gender, skin, face, hairStyle, hairColor, facialHair, race;
+    recv_data >> guid;
+    recv_data >> newname;
+    recv_data >> gender >> skin >> hairColor >> hairStyle >> facialHair >> face >> race;
+
+    QueryResult *result = CharacterDatabase.PQuery("SELECT at_login FROM characters WHERE guid ='%u'", GUID_LOPART(guid));
+    if (!result)
+    {
+        WorldPacket data(SMSG_CHAR_FACTION_CHANGE, 1);
+        data << uint8(CHAR_CREATE_ERROR);
+        SendPacket( &data );
+        return;
+    }
+
+    Field *fields = result->Fetch();
+    uint32 at_loginFlags = fields[0].GetUInt32();
+    uint32 used_loginFlag = recv_data.GetOpcode() == CMSG_CHAR_RACE_CHANGE ? AT_LOGIN_CHANGE_RACE : AT_LOGIN_CHANGE_FACTION;
+    delete result;
+
+    if (!(at_loginFlags & used_loginFlag))
+    {
+        WorldPacket data(SMSG_CHAR_FACTION_CHANGE, 1);
+        data << uint8(CHAR_CREATE_ERROR);
+        SendPacket( &data );
+        return;
+    }
+
+    // prevent character rename to invalid name
+    if (!normalizePlayerName(newname))
+    {
+        WorldPacket data(SMSG_CHAR_FACTION_CHANGE, 1);
+        data << uint8(CHAR_NAME_NO_NAME);
+        SendPacket( &data );
+        return;
+    }
+
+    uint8 res = ObjectMgr::CheckPlayerName(newname,true);
+    if (res != CHAR_NAME_SUCCESS)
+    {
+        WorldPacket data(SMSG_CHAR_FACTION_CHANGE, 1);
+        data << uint8(res);
+        SendPacket( &data );
+        return;
+    }
+
+    // check name limitations
+    if (GetSecurity() == SEC_PLAYER && sObjectMgr.IsReservedName(newname))
+    {
+        WorldPacket data(SMSG_CHAR_FACTION_CHANGE, 1);
+        data << uint8(CHAR_NAME_RESERVED);
+        SendPacket( &data );
+        return;
+    }
+
+    // character with this name already exist
+    if (uint64 newguid = sObjectMgr.GetPlayerGUIDByName(newname))
+    {
+        if (newguid != guid)
+        {
+            WorldPacket data(SMSG_CHAR_FACTION_CHANGE, 1);
+            data << uint8(CHAR_CREATE_NAME_IN_USE);
+            SendPacket( &data );
+            return;
+        }
+    }
+
+    CharacterDatabase.escape_string(newname);
+    Player::Customize(guid, gender, skin, face, hairStyle, hairColor, facialHair);
+    CharacterDatabase.BeginTransaction();
+    CharacterDatabase.PExecute("UPDATE characters set name = '%s', race = '%u', at_login = at_login & ~ %u WHERE guid ='%u'", newname.c_str(), race, uint32(used_loginFlag), GUID_LOPART(guid));
+    CharacterDatabase.PExecute("DELETE FROM character_declinedname WHERE guid ='%u'", GUID_LOPART(guid));
+
+    if(recv_data.GetOpcode() == CMSG_CHAR_FACTION_CHANGE)
+    {
+        // Delete all Flypaths
+        CharacterDatabase.PExecute("UPDATE characters set taxi_path = '' WHERE guid ='%u'",GUID_LOPART(guid));
+        // Delete all current quests
+        CharacterDatabase.PExecute("DELETE FROM `character_queststatus` WHERE `status` = 3 AND guid ='%u'",GUID_LOPART(guid));
+        // Reset guild
+        CharacterDatabase.PExecute("DELETE FROM `guild_member` WHERE `guid`= '%u'",GUID_LOPART(guid));
+        // Delete Friend List
+        CharacterDatabase.PExecute("DELETE FROM `character_social` WHERE `guid`= '%u'",GUID_LOPART(guid));
+        CharacterDatabase.PExecute("DELETE FROM `character_social` WHERE `friend`= '%u'",GUID_LOPART(guid));
+        // Leave Arena Teams
+        Player::LeaveAllArenaTeams(GUID_LOPART(guid));
+
+        // Search each faction is targeted
+        BattleGroundTeamId team = BG_TEAM_ALLIANCE;
+        switch(race)
+        {
+            case RACE_ORC:
+            case RACE_TAUREN:
+            case RACE_UNDEAD_PLAYER:
+            case RACE_TROLL:
+            case RACE_BLOODELF:
+            //case RACE_GOBLIN: for cataclysm
+                team = BG_TEAM_HORDE;
+                break;
+            default: break;
+        }
+        
+        // Reset homebind
+        CharacterDatabase.PExecute("DELETE FROM `character_homebind` WHERE guid = '%u'",GUID_LOPART(guid));
+        if(team == BG_TEAM_ALLIANCE)
+            CharacterDatabase.PExecute("INSERT INTO `character_homebind` VALUES ('%u','0','1519','-8867.68','673.373','97.9034')",GUID_LOPART(guid));
+        else
+            CharacterDatabase.PExecute("INSERT INTO `character_homebind` VALUES ('%u','1','1637','1633.33','-4439.11','15.7588')",GUID_LOPART(guid));
+
+        // Achievement conversion
+        if(QueryResult *result2 = WorldDatabase.Query("SELECT alliance_id, horde_id FROM player_factionchange_achievements"))
+        {
+            do
+            {
+                Field *fields2 = result2->Fetch();
+                uint32 achiev_alliance = fields2[0].GetUInt32();
+                uint32 achiev_horde = fields2[1].GetUInt32();
+                CharacterDatabase.PExecute("UPDATE `character_achievement` set achievement = '%u' where achievement = '%u' AND guid = '%u'",
+                    team == BG_TEAM_ALLIANCE ? achiev_alliance : achiev_horde, team == BG_TEAM_ALLIANCE ? achiev_horde : achiev_alliance, GUID_LOPART(guid));
+            }
+            while( result2->NextRow() );
+        }
+
+        // Item conversion
+        if(QueryResult *result2 = WorldDatabase.Query("SELECT alliance_id, horde_id FROM player_factionchange_items"))
+        {
+            do
+            {
+                Field *fields2 = result2->Fetch();
+                uint32 item_alliance = fields2[0].GetUInt32();
+                uint32 item_horde = fields2[1].GetUInt32();
+                CharacterDatabase.PExecute("UPDATE `character_inventory` set item = '%u' where item = '%u' AND guid = '%u'",
+                    team == BG_TEAM_ALLIANCE ? item_alliance : item_horde, team == BG_TEAM_ALLIANCE ? item_horde : item_alliance, guid);
+
+                CharacterDatabase.PExecute("UPDATE `item_instance` SET `data`=CONCAT(CAST(SUBSTRING_INDEX(`data`, ' ', 3) AS CHAR), ' ', '%u', ' ',    CAST(SUBSTRING_INDEX(`data`, ' ', (3-64))AS CHAR)) WHERE CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ', 4), ' ', '-1') AS UNSIGNED) = '%u' AND owner_guid = '%u'",
+                        team == BG_TEAM_ALLIANCE ? item_alliance : item_horde, team == BG_TEAM_ALLIANCE ? item_horde : item_alliance, GUID_LOPART(guid));
+            }
+            while( result2->NextRow() );
+        }
+
+        // Spell conversion
+        if(QueryResult *result2 = WorldDatabase.Query("SELECT alliance_id, horde_id FROM player_factionchange_spells"))
+        {
+            do
+            {
+                Field *fields2 = result2->Fetch();
+                uint32 spell_alliance = fields2[0].GetUInt32();
+                uint32 spell_horde = fields2[1].GetUInt32();
+                CharacterDatabase.PExecute("UPDATE `character_spell` set spell = '%u' where spell = '%u' AND guid = '%u'",
+                    team == BG_TEAM_ALLIANCE ? spell_alliance : spell_horde, team == BG_TEAM_ALLIANCE ? spell_horde : spell_alliance, GUID_LOPART(guid));
+            }
+            while( result2->NextRow() );
+        }
+
+        // Reputation conversion
+        if(QueryResult *result2 = WorldDatabase.Query("SELECT alliance_id, horde_id FROM player_factionchange_reputations"))
+        {
+            do
+            {
+                Field *fields2 = result2->Fetch();
+                uint32 reputation_alliance = fields2[0].GetUInt32();
+                uint32 reputation_horde = fields2[1].GetUInt32();
+                CharacterDatabase.PExecute("DELETE FROM character_reputation WHERE faction = '%u' AND guid = '%u'",team == BG_TEAM_ALLIANCE ? reputation_horde : reputation_alliance, GUID_LOPART(guid));
+                CharacterDatabase.PExecute("UPDATE `character_reputation` set faction = '%u' where faction = '%u' AND guid = '%u'",
+                    team == BG_TEAM_ALLIANCE ? reputation_alliance : reputation_horde, team == BG_TEAM_ALLIANCE ? reputation_horde : reputation_alliance, GUID_LOPART(guid));
+            }
+            while( result2->NextRow() );
+        }
+    }
+    CharacterDatabase.CommitTransaction();
+
+    std::string IP_str = GetRemoteAddress();
+    sLog.outChar("Account: %d (IP: %s), Character guid: %u Change Race/Faction to: %s", GetAccountId(), IP_str.c_str(), GUID_LOPART(guid), newname.c_str());
+
+    WorldPacket data(SMSG_CHAR_FACTION_CHANGE, 1+8+(newname.size()+1)+7);
+    data << uint8(RESPONSE_SUCCESS);
+    data << uint64(guid);
+    data << newname;
+    data << uint8(gender);
+    data << uint8(skin);
+    data << uint8(face);
+    data << uint8(hairStyle);
+    data << uint8(hairColor);
+    data << uint8(facialHair);
+    data << uint8(race);
+    SendPacket(&data);
 }
 
 void WorldSession::HandleCharCustomize(WorldPacket& recv_data)

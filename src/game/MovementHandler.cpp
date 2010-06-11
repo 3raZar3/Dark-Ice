@@ -456,7 +456,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
             float trans_rad = movementInfo.GetTransportPos()->x*movementInfo.GetTransportPos()->x + movementInfo.GetTransportPos()->y*movementInfo.GetTransportPos()->y + movementInfo.GetTransportPos()->z*movementInfo.GetTransportPos()->z;
             if (trans_rad > 3600.0f) // transport radius = 60 yards //cheater with on_transport_flag
             {
- 	            return;
+                 return;
             }
             // elevators also cause the client to send MOVEFLAG_ONTRANSPORT - just unmount if the guid can be found in the transport list
             for (MapManager::TransportSet::const_iterator iter = sMapMgr.m_Transports.begin(); iter != sMapMgr.m_Transports.end(); ++iter)
@@ -557,7 +557,6 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
             GetPlayer()->m_anti_NextLenCheck = CurTime+500;
             GetPlayer()->m_anti_MovedLen = 0.0f;
             static const float MaxDeltaXYT = sWorld.GetMvAnticheatMaxXYT();
-
             if (delta_xyt > MaxDeltaXYT && delta<=100.0f && GetPlayer()->GetZoneId() != 2257)
             {
                 if (sWorld.GetMvAnticheatSpeedCheck())
@@ -655,14 +654,15 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
     movementInfo.UpdateTime(getMSTime());
 
     WorldPacket data(opcode, recv_data.size());
-    data.appendPackGUID(mover->GetGUID());                  // write guid
-    movementInfo.Write(data);                               // write data
-    mover->SendMessageToSetExcept(&data, _player);
-
+    
     if(plMover)                                             // nothing is charmed, or player charmed
     {
-        plMover->SetPosition(movementInfo.GetPos()->x, movementInfo.GetPos()->y, movementInfo.GetPos()->z, movementInfo.GetPos()->o);
+        data.appendPackGUID(mover->GetGUID());                  // write guid
+        movementInfo.Write(data);                               // write data
+        mover->SendMessageToSetExcept(&data, _player);
+
         plMover->m_movementInfo = movementInfo;
+        plMover->SetPosition(movementInfo.GetPos()->x, movementInfo.GetPos()->y, movementInfo.GetPos()->z, movementInfo.GetPos()->o);
         plMover->UpdateFallInformationIfNeed(movementInfo, opcode);
 
         // after move info set
@@ -755,7 +755,7 @@ void WorldSession::HandleForceSpeedChangeAck(WorldPacket &recv_data)
         case CMSG_FORCE_FLIGHT_BACK_SPEED_CHANGE_ACK:   move_type = MOVE_FLIGHT_BACK;   force_move_type = MOVE_FLIGHT_BACK; break;
         case CMSG_FORCE_PITCH_RATE_CHANGE_ACK:          move_type = MOVE_PITCH_RATE;    force_move_type = MOVE_PITCH_RATE;  break;
         default:
-            sLog.outError("WorldSession::HandleForceSpeedChangeAck: Unknown move type opcode: %u", opcode);
+            DEBUG_LOG("WorldSession::HandleForceSpeedChangeAck: Unknown move type opcode: %u", opcode);
             return;
     }
 
@@ -792,18 +792,18 @@ void WorldSession::HandleSetActiveMoverOpcode(WorldPacket &recv_data)
 
     uint64 guid;
     recv_data >> guid;
-
+    
     if(_player->m_mover_in_queve && _player->m_mover_in_queve->GetGUID() == guid)
     {
         _player->m_mover = _player->m_mover_in_queve;
         _player->m_mover_in_queve = NULL;
     }
 
-    if(_player->m_mover->GetGUID() != guid)
+    /*if(_player->m_mover->GetGUID() != guid)
     {
         sLog.outError("HandleSetActiveMoverOpcode: incorrect mover guid: mover is " I64FMT " and should be " I64FMT, _player->m_mover->GetGUID(), guid);
         return;
-    }
+    }*/
 }
 
 void WorldSession::HandleMoveNotActiveMover(WorldPacket &recv_data)
@@ -816,18 +816,18 @@ void WorldSession::HandleMoveNotActiveMover(WorldPacket &recv_data)
 
     recv_data >> old_mover_guid.ReadAsPacked();
     recv_data >> mi;
-
+/*
     if(_player->m_mover->GetObjectGuid() == old_mover_guid)
     {
-        sLog.outError("HandleMoveNotActiveMover: incorrect mover guid: mover is " I64FMT " and should be " I64FMT " instead of " UI64FMTD, _player->m_mover->GetGUID(), _player->GetGUID(), old_mover_guid.GetRawValue());
+        DEBUG_LOG("HandleMoveNotActiveMover: incorrect mover guid: mover is " I64FMT " and should be " I64FMT " instead of " UI64FMTD, _player->m_mover->GetGUID(), _player->GetGUID(), old_mover_guid.GetRawValue());
         recv_data.rpos(recv_data.wpos());                   // prevent warnings spam
         return;
     }
-
+*/
     _player->m_movementInfo = mi;
 }
 
-void WorldSession::HandleDismissControlledVehicle(WorldPacket &recv_data)
+void WorldSession::HandleDismissControlledVehicle(WorldPacket & recv_data)
 {
     DEBUG_LOG("WORLD: Recvd CMSG_DISMISS_CONTROLLED_VEHICLE");
     recv_data.hexlike();
@@ -856,7 +856,7 @@ void WorldSession::HandleDismissControlledVehicle(WorldPacket &recv_data)
 
 void WorldSession::HandleRequestVehicleExit(WorldPacket &recv_data)
 {
-    sLog.outDebug("WORLD: Recvd CMSG_REQUEST_VEHICLE_EXIT");
+    DEBUG_LOG("WORLD: Recvd CMSG_REQUEST_VEHICLE_EXIT");
     recv_data.hexlike();
 
     uint64 vehicleGUID = _player->GetVehicleGUID();
@@ -872,7 +872,7 @@ void WorldSession::HandleRequestVehicleExit(WorldPacket &recv_data)
 
 void WorldSession::HandleRequestVehicleSwitchSeat(WorldPacket &recv_data)
 {
-    sLog.outDebug("WORLD: Recvd CMSG_REQUEST_VEHICLE_SWITCH_SEAT");
+    DEBUG_LOG("WORLD: Recvd CMSG_REQUEST_VEHICLE_SWITCH_SEAT");
     recv_data.hexlike();
 
     uint64 vehicleGUID = _player->GetVehicleGUID();
@@ -916,7 +916,7 @@ void WorldSession::HandleRequestVehicleSwitchSeat(WorldPacket &recv_data)
 
 void WorldSession::HandleChangeSeatsOnControlledVehicle(WorldPacket &recv_data)
 {
-    sLog.outDebug("WORLD: Recvd CMSG_CHANGE_SEATS_ON_CONTROLLED_VEHICLE");
+    DEBUG_LOG("WORLD: Recvd CMSG_CHANGE_SEATS_ON_CONTROLLED_VEHICLE");
     recv_data.hexlike();
 
     uint64 vehicleGUID = _player->GetVehicleGUID();
@@ -926,12 +926,12 @@ void WorldSession::HandleChangeSeatsOnControlledVehicle(WorldPacket &recv_data)
 
     if(recv_data.GetOpcode() == CMSG_REQUEST_VEHICLE_PREV_SEAT)
     {
-        GetPlayer()->ChangeSeat(-1, false);
+        _player->ChangeSeat(-1, false);
         return;
     }
     else if(recv_data.GetOpcode() == CMSG_REQUEST_VEHICLE_NEXT_SEAT)
     {
-        GetPlayer()->ChangeSeat(-1, true);
+        _player->ChangeSeat(-1, true);
         return;
     }
 
@@ -978,6 +978,7 @@ void WorldSession::HandleMoveKnockBackAck( WorldPacket & recv_data )
 
     recv_data >> guid.ReadAsPacked();
     recv_data >> Unused<uint32>();                          // unk
+
     recv_data >> movementInfo;
 }
 

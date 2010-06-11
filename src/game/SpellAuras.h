@@ -89,14 +89,13 @@ class MANGOS_DLL_SPEC Aura
         void HandleModTaunt(bool Apply, bool Real);
         void HandleFeignDeath(bool Apply, bool Real);
         void HandleAuraModDisarm(bool Apply, bool Real);
-        void HandleAuraModDisarmOffhand(bool Apply, bool Real);
-        void HandleAuraModDisarmRanged(bool Apply, bool Real);
         void HandleAuraModStalked(bool Apply, bool Real);
         void HandleAuraWaterWalk(bool Apply, bool Real);
         void HandleAuraFeatherFall(bool Apply, bool Real);
         void HandleAuraHover(bool Apply, bool Real);
         void HandleAddModifier(bool Apply, bool Real);
 
+        void HandleAddTargetTrigger(bool Apply, bool Real);
         void HandleAuraModStun(bool Apply, bool Real);
         void HandleModDamageDone(bool Apply, bool Real);
         void HandleAuraUntrackable(bool Apply, bool Real);
@@ -222,25 +221,15 @@ class MANGOS_DLL_SPEC Aura
         void HandleIgnoreUnitState(bool Apply, bool Real);
         void HandleModTargetArmorPct(bool Apply, bool Real);
         void HandleAuraModAllCritChance(bool Apply, bool Real);
-        void HandleAuraInitializeImages(bool Apply, bool Real);
-        void HandleAuraCloneCaster(bool Apply, bool Real);
         void HandleAuraLinked(bool Apply, bool Real);
         void HandleAuraOpenStable(bool apply, bool Real);
         void HandleAllowOnlyAbility(bool Apply, bool Real);
+        void HandleAuraInitializeImages(bool Apply, bool Real);
+        void HandleAuraCloneCaster(bool Apply, bool Real);
 
         virtual ~Aura();
 
         void SetModifier(AuraType t, int32 a, uint32 pt, int32 miscValue);
-
-// DEVELOPER CODE START
-        void SetDeactivatedModifier(AuraType t, int32 a, uint32 pt, int32 miscValue);
-        void SetDeactivity(bool deactivate);
-        void DeactivateAura(bool apply);
-        Modifier*       GetDeactivatedModifier()       { return &m_deactivatedModifier; }
-        Modifier const* GetDeactivatedModifier() const { return &m_deactivatedModifier; }
-        bool IsActive() { return !m_deactivated; }
-// DEVELOPER CODE END
-
         Modifier*       GetModifier()       { return &m_modifier; }
         Modifier const* GetModifier() const { return &m_modifier; }
         int32 GetMiscValue() const { return m_spellProto->EffectMiscValue[m_effIndex]; }
@@ -261,7 +250,6 @@ class MANGOS_DLL_SPEC Aura
         time_t GetAuraApplyTime() const { return m_applyTime; }
         uint32 GetAuraTicks() const { return m_periodicTick; }
         uint32 GetAuraMaxTicks() const { return m_maxduration > 0 && m_modifier.periodictime > 0 ? m_maxduration / m_modifier.periodictime : 0; }
-        void SetAuraPeriodicTimer (int32 timer) { m_periodicTimer = timer; }
 
         uint64 const& GetCasterGUID() const { return m_caster_guid; }
         Unit* GetCaster() const;
@@ -359,7 +347,7 @@ class MANGOS_DLL_SPEC Aura
 
         // add/remove SPELL_AURA_MOD_SHAPESHIFT (36) linked auras
         void HandleShapeshiftBoosts(bool apply);
-        void HandleSpellSpecificBoosts(bool apply, bool last_stack);
+        void HandleSpellSpecificBoosts(bool apply);
 
         // Allow Apply Aura Handler to modify and access m_AuraDRGroup
         void setDiminishGroup(DiminishingGroup group) { m_AuraDRGroup = group; }
@@ -371,6 +359,7 @@ class MANGOS_DLL_SPEC Aura
         uint32 const *getAuraSpellClassMask() const { return  m_spellProto->GetEffectSpellClassMask(m_effIndex); }
         bool isAffectedOnSpell(SpellEntry const *spell) const;
         bool isWeaponBuffCoexistableWith(Aura* ref);
+
         void ApplyHasteToPeriodic();
     protected:
         Aura(SpellEntry const* spellproto, SpellEffectIndex eff, int32 *currentBasePoints, Unit *target, Unit *caster = NULL, Item* castItem = NULL);
@@ -386,12 +375,6 @@ class MANGOS_DLL_SPEC Aura
         void ReapplyAffectedPassiveAuras();
 
         Modifier m_modifier;
-
-// DEVELOPER CODE START
-        Modifier m_deactivatedModifier;
-        bool m_deactivated;
-// DEVELOPER CODE END
-
         SpellModifier *m_spellmod;
 
         SpellEntry const *m_spellProto;
@@ -400,7 +383,7 @@ class MANGOS_DLL_SPEC Aura
         uint64 m_castItemGuid;                              // it is NOT safe to keep a pointer to the item because it may get deleted
         time_t m_applyTime;
 
-        int32 m_currentBasePoints;                          // cache SpellEntry::EffectBasePoints and use for set custom base points
+        int32 m_currentBasePoints;                          // cache SpellEntry::CalculateSimpleValue and use for set custom base points
         int32 m_maxduration;                                // Max aura duration
         int32 m_duration;                                   // Current time
         int32 m_timeCla;                                    // Timer for power per sec calcultion

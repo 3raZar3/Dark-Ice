@@ -108,10 +108,10 @@ class MANGOS_DLL_DECL ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, 
 
         // possible local search for specific object map
         static Unit* GetUnit(WorldObject const &, ObjectGuid guid);
+        static Creature* GetCreatureOrPetOrVehicle(WorldObject const &, ObjectGuid guid);
         //static Player* GetPlayer(Unit const &, uint64 guid) { return FindPlayer(guid); }
         //static Corpse* GetCorpse(WorldObject const &u, uint64 guid);
         //static Pet* GetPet(uint64 guid) { return GetObjectInWorld(guid, (Pet*)NULL); }
-        static Creature* GetCreatureOrPetOrVehicle(WorldObject const &, ObjectGuid guid);
         static Vehicle* GetVehicle(uint64 guid) { return GetGameObjectInWorld(guid, (Vehicle*)NULL); }
         //static Player* FindPlayer(uint64);
 
@@ -143,13 +143,13 @@ class MANGOS_DLL_DECL ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, 
         void RemoveObject(Player *object) { HashMapHolder<Player>::Remove(object); }
 
         // TODO: This methods will need lock in MT environment
-        static void LinkMap(Map* map)   { ACE_Write_Guard<LockType> guard(m_Lock); i_mapList.push_back(map); }
-        static void DelinkMap(Map* map) { ACE_Write_Guard<LockType> guard(m_Lock); i_mapList.remove(map); }	 
+        static void LinkMap(Map* map)   { ACE_Guard<ACE_Thread_Mutex> guard(m_Lock); i_mapList.push_back(map); }
+        static void DelinkMap(Map* map) { ACE_Guard<ACE_Thread_Mutex> guard(m_Lock); i_mapList.remove(map); }
     private:
-        static ACE_Thread_Mutex  m_Lock;
         // TODO: This methods will need lock in MT environment
         // Theoreticaly multiple threads can enter and search in this method but
         // in that case linking/delinking other map should be guarded
+        static ACE_Thread_Mutex  m_Lock;
         template <class OBJECT> static OBJECT* FindHelper(ObjectGuid guid)
         {
             ACE_Guard<ACE_Thread_Mutex> guard(m_Lock);
@@ -184,11 +184,10 @@ inline Unit* ObjectAccessor::GetUnitInWorld(WorldObject const& obj, ObjectGuid g
     if (guid.IsPet())
         return obj.IsInWorld() ? obj.GetMap()->GetPet(guid) : NULL;
 
-    if (guid.IsVehicle())
+     if (guid.IsVehicle())
         return obj.IsInWorld() ? ((Unit*)obj.GetMap()->GetVehicle(guid)) : NULL;
 
     return GetCreatureInWorld(guid);
-
 }
 
 #define sObjectAccessor ObjectAccessor::Instance()

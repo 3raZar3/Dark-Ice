@@ -191,7 +191,7 @@ void PlayerbotPriestAI::DoNextCombatManeuver(Unit *pTarget)
 
     // Damage Spells
     ai->SetInFront( pTarget );
-	float dist = m_bot->GetDistance( pTarget );
+    float dist = m_bot->GetDistance( pTarget );
 
     switch (SpellSequence)
     {

@@ -100,6 +100,8 @@ bool AchievementCriteriaRequirement::IsValid(AchievementCriteriaEntry const* cri
         case ACHIEVEMENT_CRITERIA_TYPE_BE_SPELL_TARGET2:
             break;
         default:
+            if (requirementType == ACHIEVEMENT_CRITERIA_REQUIRE_HOLIDAY)
+            break;
             sLog.outErrorDb( "Table `achievement_criteria_requirement` have data for not supported criteria type (Entry: %u Type: %u), ignore.", criteria->ID, criteria->requiredType);
             return false;
     }
@@ -342,14 +344,12 @@ bool AchievementCriteriaRequirement::Meets(uint32 criteria_id, Player const* sou
                     return false;
             }
             InstanceData* data = ((InstanceMap*)map)->GetInstanceData();
-            if (!data || !target)
+            if (!data)
             {
                 sLog.outErrorDb("Achievement system call ACHIEVEMENT_CRITERIA_REQUIRE_INSTANCE_SCRIPT (%u) for achievement criteria %u for map %u but map not have instance script",
                     ACHIEVEMENT_CRITERIA_REQUIRE_INSTANCE_SCRIPT, criteria_id, map->GetId());
                 return false;
             }
-            if(!target->IsInWorld() || !target->isAlive())
-                return false;
             return data->CheckAchievementCriteriaMeet(criteria_id, source, target, miscvalue1);
         }
         case ACHIEVEMENT_CRITERIA_REQUIRE_S_EQUIPED_ITEM_LVL:
@@ -808,6 +808,7 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
                             // set 8 minutes because there is 2 minutes long preparation
                             if(GetPlayer()->GetBattleGround()->GetStartTime() > (8 * MINUTE * IN_MILLISECONDS))
                                 continue;
+                            
                             break;
                         }
                         case 201:							// WS, win under 7 minutes
@@ -815,14 +816,15 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
                             // set 9 minutes because there is 2 minutes long preparation
                             if(GetPlayer()->GetBattleGround()->GetStartTime() > (9 * MINUTE * IN_MILLISECONDS))
                                 continue;
+                            
                             break;
                         }
                         default:
                         {
-                            // those requirements couldn't be found in the dbc
-                            AchievementCriteriaRequirementSet const* data = sAchievementMgr.GetCriteriaRequirementSet(achievementCriteria);
-                            if (!data || !data->Meets(GetPlayer(),unit))
-                                continue;
+                    // those requirements couldn't be found in the dbc
+                    AchievementCriteriaRequirementSet const* data = sAchievementMgr.GetCriteriaRequirementSet(achievementCriteria);
+                    if (!data || !data->Meets(GetPlayer(),unit))
+                        continue;
                             break;
                         }
                     }
@@ -1184,6 +1186,12 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
                 // AchievementMgr::UpdateAchievementCriteria might also be called on login - skip in this case
                 if(!miscvalue1)
                     continue;
+                if(AchievementCriteriaRequirementSet const* data = sAchievementMgr.GetCriteriaRequirementSet(achievementCriteria))
+                {
+                    if(!data->Meets(GetPlayer(),unit))
+                        continue;
+                }
+
                 if(achievementCriteria->use_item.itemID != miscvalue1)
                     continue;
                 SetCriteriaProgress(achievementCriteria, 1, PROGRESS_ACCUMULATE);
@@ -1482,7 +1490,7 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
                     }
                     case 233:					// Bloodthirsty Berserker
                     {
-                        if(bg->GetTypeID() != BATTLEGROUND_EY)
+                        if(bg->GetTypeID(true) != BATTLEGROUND_EY)
                             continue;
                         if(!GetPlayer()->HasAura(23505))
                             continue;
@@ -1510,21 +1518,24 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
                 // some hardcoded requirements
                 switch(achievementCriteria->objective_capture.captureID)
                 {
-                    case 42:                           // WS, capture a flag
+                    case 42:							// WS, capture a flag
                     {
-                        if(bg->GetTypeID() != BATTLEGROUND_WS || miscvalue2 == 1)
+                        if(bg->GetTypeID(true) != BATTLEGROUND_WS)
+                            continue;
+
+                        if(miscvalue2 == 1)
                             continue;
                         break;
                     }
                     case 44:                           // WS, return a flag
                     {
-                        if(bg->GetTypeID() != BATTLEGROUND_WS || miscvalue1 == 0)
+                        if(bg->GetTypeID(true) != BATTLEGROUND_WS)
                             continue;
                         break;
                     }
-                    case 183:                          // EY, capture a flag
+                    case 183:							// EY, capture a flag
                     {
-                        if(bg->GetTypeID() != BATTLEGROUND_EY)
+                        if(bg->GetTypeID(true) != BATTLEGROUND_EY)
                             continue;
 
                         switch(achievementCriteria->referredAchievement)
@@ -1546,7 +1557,7 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
                     }
                     case 122:                           // AB, assault a base
                     {
-                        if(bg->GetTypeID() != BATTLEGROUND_AB)
+                        if(bg->GetTypeID(true) != BATTLEGROUND_AB)
                             continue;
                         
                         if(miscvalue2 == 1)
@@ -1556,7 +1567,7 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
                     }
                     case 123:                           // AB, defend a base
                     {
-                        if(bg->GetTypeID() != BATTLEGROUND_AB)
+                        if(bg->GetTypeID(true) != BATTLEGROUND_AB)
                             continue;
                         
                         if(miscvalue2 == 0)
@@ -1564,16 +1575,36 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
 
                         break;
                     }
-                    case 61:							// AV, assault a tower
+                    case 61:                            // AV, assault a tower
+                    {                   
+                        if(miscvalue2 != 0)
+                            continue;
+                        break;
+                    }
                     case 63:	                        // AV, take a graveyard
+                    {                   
+                        if(miscvalue2 != 1)
+                            continue;
+                        break;
+                    }
                     case 64:	                        // AV, defend a tower
+                    {                   
+                        if(miscvalue2 != 2)
+                            continue;
+                        break;
+                    }
                     case 65:	                        // AV, defend a graveyard
-                        continue;
+                    {                   
+                        if(miscvalue2 != 3)
+                            continue;
+                        break;
+                    }
 
                 }
                 SetCriteriaProgress(achievementCriteria, miscvalue1, PROGRESS_ACCUMULATE);
                 break;
-            }           
+            }
+
             // std case: not exist in DBC, not triggered in code as result
             case ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_HEALTH:
             case ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_SPELLPOWER:

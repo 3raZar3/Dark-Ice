@@ -28,6 +28,8 @@ Vehicle::Vehicle() : Creature(CREATURE_SUBTYPE_VEHICLE), m_vehicleId(0), m_vehic
                      despawn(false), m_creation_time(0), m_VehicleData(NULL)
 {
     m_updateFlag = (UPDATEFLAG_LIVING | UPDATEFLAG_HAS_POSITION | UPDATEFLAG_VEHICLE);
+    m_comboPointsForCast = 0;
+    m_regenUpdateTimer = 100;
 }
 
 Vehicle::~Vehicle()
@@ -36,16 +38,13 @@ Vehicle::~Vehicle()
 
 void Vehicle::AddToWorld()
 {
+    ///- Register the vehicle for guid lookup
     if(!IsInWorld())
         GetMap()->GetObjectsStore().insert<Vehicle>(GetGUID(), (Vehicle*)this);
 
     Unit::AddToWorld();
 }
-void Vehicle::Respawn()
-{
-    Creature::Respawn();
-    InstallAllAccessories();
-}
+
 void Vehicle::RemoveFromWorld()
 {
     ///- Remove the vehicle from the accessor
@@ -54,6 +53,12 @@ void Vehicle::RemoveFromWorld()
 
     ///- Don't call the function for Creature, normal mobs + totems go in a different storage
     Unit::RemoveFromWorld();
+}
+
+void Vehicle::Respawn()
+{
+    Creature::Respawn();
+    InstallAllAccessories();
 }
 
 void Vehicle::setDeathState(DeathState s)                       // overwrite virtual Creature::setDeathState and Unit::setDeathState
@@ -80,13 +85,13 @@ void Vehicle::Update(uint32 diff)
         despawn = false;
     }
 
-    if(m_regenTimer <= diff)
+    if(m_regenUpdateTimer <= diff)
     {
         RegeneratePower(getPowerType());
-        m_regenTimer = 500;
+        m_regenTimer = 1000;
     }
     else
-        m_regenTimer -= diff;
+        m_regenUpdateTimer -= diff;
 }
 
 void Vehicle::RegeneratePower(Powers power)
@@ -104,18 +109,15 @@ void Vehicle::RegeneratePower(Powers power)
     if(m_vehicleInfo->m_powerType == POWER_TYPE_PYRITE)
         return;
 
-    addvalue = 10.0f;
+    addvalue = 10.0;
 
     ModifyPower(power, (int32)addvalue);
 
-    for(int i =0; i != MAX_SEAT; i++)
-    {
-        if(Unit *pPassanger = GetPassenger(i))
-        {
-            if(pPassanger->GetTypeId() == TYPEID_PLAYER)
-                SendCreateUpdateToPlayer((Player*)pPassanger);
-        }
-    }
+    WorldPacket data(SMSG_POWER_UPDATE);
+    data << GetPackGUID();
+    data << uint8(power);
+    data << uint32(addvalue+curValue);
+    SendMessageToSet(&data, true);
 }
 
 bool Vehicle::Create(uint32 guidlow, Map *map, uint32 phaseMask, uint32 Entry, uint32 vehicleId, uint32 team, const CreatureData *data)
@@ -159,6 +161,7 @@ bool Vehicle::Create(uint32 guidlow, Map *map, uint32 phaseMask, uint32 Entry, u
     if(map->IsDungeon() && ((InstanceMap*)map)->GetInstanceData())
     {
         ((InstanceMap*)map)->GetInstanceData()->OnCreatureCreate(this);
+    SetHealth(GetMaxHealth());
     }
     
     if(m_vehicleInfo->m_powerType == POWER_TYPE_STEAM)
@@ -197,6 +200,7 @@ bool Vehicle::Create(uint32 guidlow, Map *map, uint32 phaseMask, uint32 Entry, u
     }
     SetHealth(GetMaxHealth());
     InstallAllAccessories();
+
     return true;
 }
 
@@ -343,7 +347,6 @@ int8 Vehicle::GetEmptySeatsCount(bool force)
 
     return count;
 }
-
 int8 Vehicle::GetNextEmptySeatNum(int8 seatId, bool next) const
 {
     SeatMap::const_iterator seat = m_Seats.find(seatId);
@@ -509,13 +512,10 @@ void Vehicle::AddPassenger(Unit *unit, int8 seatId, bool force)
             if(canFly() || HasAuraType(SPELL_AURA_FLY) || HasAuraType(SPELL_AURA_MOD_FLIGHT_SPEED))
             {
                 WorldPacket data3(SMSG_MOVE_SET_CAN_FLY, 12);
-                data3 << GetPackGUID();
+                data3<< GetPackGUID();
                 data3 << (uint32)(0);
                 SendMessageToSet(&data3,false);
             }
-            //Make vehicle fly
-            if(GetVehicleFlags() & VF_FLYING)
-                CastSpell(this, 49303, false);
         }
 
         SpellClickInfoMapBounds clickPair = sObjectMgr.GetSpellClickInfoMapBounds(GetEntry());
@@ -546,13 +546,10 @@ void Vehicle::AddPassenger(Unit *unit, int8 seatId, bool force)
         if(GetVehicleFlags() & VF_CANT_MOVE)
         {
             WorldPacket data2(SMSG_FORCE_MOVE_ROOT, 10);
-            data2 << GetPackGUID();
+            data2<< GetPackGUID();
             data2 << (uint32)(2);
             SendMessageToSet(&data2,false);
         }
-
-        if(GetVehicleFlags() & VF_CAST_AURA && m_VehicleData  && m_VehicleData->v_spells[0] != 0)
-            CastSpell(unit, m_VehicleData->v_spells[0], true);
 
         if(GetVehicleFlags() & VF_NON_SELECTABLE)
             SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
@@ -591,8 +588,6 @@ void Vehicle::RemovePassenger(Unit *unit)
             }
             if(GetVehicleFlags() & VF_NON_SELECTABLE)
                 RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
-            if(GetVehicleFlags() & VF_CAST_AURA && m_VehicleData  && m_VehicleData->v_spells[0] != 0)
-                unit->RemoveAurasDueToSpell(m_VehicleData->v_spells[0]);
             if(seat->second.vs_flags & SF_UNATTACKABLE)
                 unit->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
             // restore player control
@@ -711,7 +706,7 @@ void Vehicle::BuildVehicleActionBar(Player *plr) const
 void Vehicle::InstallAllAccessories()
 {
     if(!GetMap())
-        return;
+       return;
 
     CreatureDataAddon const *cainfo = GetCreatureAddon();
     if(!cainfo || !cainfo->passengers)
@@ -771,6 +766,7 @@ void Vehicle::InstallAllAccessories()
         pPassenger->SendMessageToSet(&data, false);
     }
 }
+
 Unit *Vehicle::GetPassenger(int8 seatId) const
 {
     SeatMap::const_iterator seat = m_Seats.find(seatId);
@@ -785,4 +781,3 @@ void Vehicle::Die()
                 ((Vehicle*)passenger)->Dismiss();
     RemoveAllPassengers();
 }
-

@@ -1,4 +1,4 @@
-﻿#####################################
+#####################################
 # MaNGOS Configuration file         #
 #####################################
 ConfVersion=2010051901
@@ -49,9 +49,9 @@ ConfVersion=2010051901
 RealmID = 1
 DataDir = "."
 LogsDir = ""
-LoginDatabaseInfo     = "127.0.0.1;3306;mangos;mangos;realmd"
-WorldDatabaseInfo     = "127.0.0.1;3306;mangos;mangos;mangos"
-CharacterDatabaseInfo = "127.0.0.1;3306;mangos;mangos;characters"
+LoginDatabaseInfo     = "127.0.0.1;3306;root;mangos;realmd"
+WorldDatabaseInfo     = "127.0.0.1;3306;root;mangos;mangos"
+CharacterDatabaseInfo = "127.0.0.1;3306;root;mangos;characters"
 MaxPingTime = 30
 WorldServerPort = 8085
 BindIP = "0.0.0.0"
@@ -202,18 +202,18 @@ AddonChannel = 1
 CleanCharacterDB = 1
 
 ###################################################################################################################
-# ACE mtmaps Config
+# OpenMP Config
 #
-#    ACE mtmaps
+#    OpenMP
 #    MapUpdate.Threads
-#        Number of threads to run if the binary was compiled with mtmaps support.
-#        Default: 2
-#        For stable work 2
+#        Number of threads to run if the binary was compiled with OpenMP support.
+#        Default: 1
+#        For stable work 4 (if online ~2000)
 #        1 (minimum, normal behavior (single-threaded updates)
 #
 ###################################################################################################################
 
-MapUpdate.Threads = 2
+MapUpdate.Threads = 1
 
 ###################################################################################################################
 # SERVER LOGGING
@@ -307,11 +307,6 @@ MapUpdate.Threads = 2
 #        Default: 0 - don't include dumping chars to log
 #                 1 - include dumping chars to log
 #
-#	CharLogCommand
-#		Save log command used by players
-#		Default: 1 (Enable)
-#                0 (Disabled)
-#
 #    GmLogFile
 #        GM Log file of gm commands
 #        Default: "" (Disable)
@@ -331,11 +326,6 @@ MapUpdate.Threads = 2
 #    RaLogFile
 #        Log file of RA commands
 #        Default: "Ra.log"
-#                 "" - Empty name for disable
-#
-#    ArenaRatedLogFile
-#        Log of arena matches
-#        Default: "Arena.log"
 #                 "" - Empty name for disable
 #
 #    LogColors
@@ -374,12 +364,10 @@ DBErrorLogFile = "DBErrors.log"
 CharLogFile = "Char.log"
 CharLogTimestamp = 0
 CharLogDump = 0
-CharLogCommand = 1
 GmLogFile = ""
 GmLogTimestamp = 0
 GmLogPerAccount = 0
 RaLogFile = ""
-ArenaRatedLogFile = "Arena.log"
 LogColors = ""
 
 # Chat log parameters
@@ -1234,10 +1222,6 @@ Visibility.Distance.InFlight      = 100
 Visibility.Distance.Grey.Unit   = 1
 Visibility.Distance.Grey.Object = 10
 
-Visibility.Notify.Period.OnContinents = 1000
-Visibility.Notify.Period.InInstances  = 1000
-Visibility.Notify.Period.InBGArenas   = 1000
-
 ###################################################################################################################
 # SERVER RATES
 #
@@ -1750,6 +1734,146 @@ SOAP.IP = 127.0.0.1
 SOAP.Port = 7878
 
 ###################################################################################################################
+#    CharDelete.Method
+#        Character deletion behavior
+#        Default: 0  - Completely remove the character from the database
+#                 1  - Unlinking, the character gets unlinked from the account,
+#                      the name gets freed up and appears as deleted ingame
+#
+#    CharDelete.MinLevel
+#        Character gets deleted by CharDelete.Mode=0 when the character
+#        hasn't the specified level yet.
+#        Default: 0  - For all characters the specified mode will be used
+#                 1+ - Only for players which have reached the specified level
+#                      will be deleted by the specified mode.
+#                      the rest will be deleted by CharDelete.Mode=0
+#
+#    CharDelete.KeepDays
+#        Define the amount of days for which the characters are kept in the database before
+#        they will be removed
+#        Default: 30
+#                 0  - Don't delete any characters, they stay in the database forever.
+#
+###################################################################################################################
+
+CharDelete.Method = 0
+CharDelete.MinLevel = 0
+CharDelete.KeepDays = 30
+
+###################################################################################################################
+# PLAYERBOTAI CONFIGURATION
+#
+#    PlayerbotAI.DisableBots
+#        Disable the bot command and bot menu
+#        Default: 0 - off
+#                 1 - on
+#
+#    PlayerbotAI.DebugWhisper
+#        Enable debug output by whispering master
+#        Default: 0 - off
+#                 1 - on
+#
+#    PlayerbotAI.FollowDistanceMin
+#    PlayerbotAI.FollowDistanceMax
+#        Min. and Max. follow distance for bots
+#        Default: 0.5 / 1.0
+#
+#    PlayerbotAI.MaxNumBots
+#        Limits the number of bots per account (Max 9)
+#        Default: 9
+#
+#    PlayerbotAI.RestrictBotLevel
+#        Restrict the allowed bot level (Current Max 80)
+#        Default: 80
+#
+###################################################################################################################
+
+PlayerbotAI.DisableBots = 0
+PlayerbotAI.DebugWhisper = 0
+PlayerbotAI.FollowDistanceMin = 0.5
+PlayerbotAI.FollowDistanceMax = 1.0
+PlayerbotAI.MaxNumBots = 9
+PlayerbotAI.RestrictBotLevel = 80
+
+###################################################################################################################
+# PvP Token System (custom patch)
+#
+#    PvPToken.Enable
+#         Enable/disable PvP Token system.
+#         Default: 1 (enabled)
+#                  0 (disabled)
+#
+#    PvPToken.ItemID
+#         The item ID of the token that players will receive after killing an enemy.
+#         Default: 29434 (Badge of Justice)
+#
+#    PvPToken.ItemCount
+#         The count amount of the ItemID
+#         Default: 1
+#
+#    PvPToken.MapRestriction
+#         The type of maps where players can receive the token
+#         Default: 4 - all maps
+#                  3 - battlegrounds only
+#                  2 - FFA areas only (both instanced and world arenas)
+#                  1 - battlegrounds and FFA areas only
+#
+###################################################################################################################
+
+PvPToken.Enable = 1
+PvPToken.ItemID = 29434
+PvPToken.ItemCount = 1
+PvPToken.MapRestriction = 4
+
+###################################################################################################################
+# HONOR SETTINGS
+#
+#    HonorableKill
+#         Number of honors for one kill at max level
+#         Default: 124
+#
+#   BG.BonusHonor.AB.Win
+#   BG.BonusHonor.AV.Win <-- not implemented
+#   BG.BonusHonor.WSG.Win
+#   BG.BonusHonor.EOS.Win
+#         Number of honorable kills bonus for winning this BG
+#         Default: 1 or 5
+#
+#   BG.BonusHonor.AB.End  
+#   BG.BonusHonor.AV.End  <-- not implemented
+#   BG.BonusHonor.WSG.End
+#   BG.BonusHonor.EOS.End
+#         Number of honorable kills bonus for this BG
+#         Default: 1 or 5
+#
+#   BG.BonusHonor.AB.Flag <-- for tick
+#   BG.BonusHonor.AV.Flag <-- not implemented
+#   BG.BonusHonor.WSG.Flag
+#   BG.BonusHonor.EOS.Flag <-- for tick
+#         Bonus Honor for capturing flag in this bg
+#         Default: 2
+#
+#   BG.BonusHonor.Holiday
+#         Bonus honor for Call to Arms Q
+#         Default: 5
+###################################################################################################################
+
+HonorableKill = 60
+BG.BonusHonor.AB.Win = 1
+BG.BonusHonor.AV.Win = 1
+BG.BonusHonor.WSG.Win = 5
+BG.BonusHonor.EOS.Win = 1
+BG.BonusHonor.AB.End = 1
+BG.BonusHonor.AV.End = 1
+BG.BonusHonor.WSG.End = 5
+BG.BonusHonor.EOS.End = 1
+BG.BonusHonor.AB.Flag = 1
+BG.BonusHonor.AV.Flag = 2
+BG.BonusHonor.WSG.Flag = 2
+BG.BonusHonor.EOS.Flag = 1
+BG.BonusHonor.Holiday = 5
+
+###################################################################################################################
 # MOVEMENT ANTICHEAT
 #
 #    Anticheat.Movement.Enable
@@ -1850,80 +1974,6 @@ Anticheat.Movement.IgnoreSecAfterTeleport = 10
 Anticheat.Movement.GmLevel = 0
 
 ###################################################################################################################
-#    CharDelete.Method
-#        Character deletion behavior
-#        Default: 0  - Completely remove the character from the database
-#                 1  - Unlinking, the character gets unlinked from the account,
-#                      the name gets freed up and appears as deleted ingame
-#
-#    CharDelete.MinLevel
-#        Character gets deleted by CharDelete.Method=0 when the character
-#        hasn't the specified level yet.
-#        Default: 0  - For all characters the specified mode will be used
-#                 1+ - Only for players which have reached the specified level
-#                      will be deleted by the specified mode.
-#                      the rest will be deleted by CharDelete.Method=0
-#
-#    CharDelete.KeepDays
-#        Define the amount of days for which the characters are kept in the database before
-#        they will be removed
-#        Default: 30
-#                 0  - Don't delete any characters, they stay in the database forever.
-#
-###################################################################################################################
-
-CharDelete.Method = 0
-CharDelete.MinLevel = 0
-CharDelete.KeepDays = 30
-###################################################################################################################
-# HONOR SETTINGS
-#
-#    HonorableKill
-#         Number of honors for one kill at max level
-#         Default: 124
-#
-#   BG.BonusHonor.AB.Win
-#   BG.BonusHonor.AV.Win <-- not implemented
-#   BG.BonusHonor.WSG.Win
-#   BG.BonusHonor.EOS.Win
-#         Number of honorable kills bonus for winning this BG
-#         Default: 1 or 5
-#
-#   BG.BonusHonor.AB.End  
-#   BG.BonusHonor.AV.End  <-- not implemented
-#   BG.BonusHonor.WSG.End
-#   BG.BonusHonor.EOS.End
-#         Number of honorable kills bonus for this BG
-#         Default: 1 or 5
-#
-#   BG.BonusHonor.AB.Flag <-- for tick
-#   BG.BonusHonor.AV.Flag <-- not implemented
-#   BG.BonusHonor.WSG.Flag
-#   BG.BonusHonor.EOS.Flag <-- for tick
-#         Bonus Honor for capturing flag in this bg
-#         Default: 2
-#
-#   BG.BonusHonor.Holiday
-#         Bonus honor for Call to Arms Q
-#         Default: 5
-###################################################################################################################
-
-HonorableKill = 60
-BG.BonusHonor.AB.Win = 1
-BG.BonusHonor.AV.Win = 1
-BG.BonusHonor.WSG.Win = 5
-BG.BonusHonor.EOS.Win = 1
-BG.BonusHonor.AB.End = 1
-BG.BonusHonor.AV.End = 1
-BG.BonusHonor.WSG.End = 5
-BG.BonusHonor.EOS.End = 1
-BG.BonusHonor.AB.Flag = 1
-BG.BonusHonor.AV.Flag = 2
-BG.BonusHonor.WSG.Flag = 2
-BG.BonusHonor.EOS.Flag = 1
-BG.BonusHonor.Holiday = 5
-
-###################################################################################################################
 # TEAMBG CONFIG
 #
 #    TeamBG.AllowAB
@@ -1987,51 +2037,114 @@ FactionedMap.Faction = 1
 FactionedMap.Team = 1
 
 ###################################################################################################################
-# OpenMP Config
 #
-#    OpenMP
-#    MapUpdate.Threads
-#        Number of threads to run if the binary was compiled with OpenMP support.
-#        Default: 1
-#        For stable work 4 (if online ~2000)
-#        1 (minimum, normal behavior (single-threaded updates)
+#     ~~~~~~~~~~~~~~CUSTOMS~~~~~~~~~~~~~~
+#
+#     Custom.AllowFlyingMountsEverywhere
+#         Set it to 1 to enable flying mounts everywhere
+#         If you do it, mounts are now used as item...
+#     Default : 0
+#
+#     Custom.MailItemRefundable
+#         Set it to 0 to make items not-refundable anymore after mailing
+#     Default : 1
+#
+#     Custom.MinLevelDualSpec
+#	      Put the minimum level required to learn dual-spec here
+#	  Default : 40
+#
+#	  Custom.EveryoneDrunk
+#		  Everyone has the drunken view on login (for events)
+#	  Default : 0
+#
+#	  Custom.DualSpecAtCreate
+#		  All newly made accounts start with DualSpec already learned if enabled
+#	  Default : 0
+#
+#	  Custom.PvPAnnouncer
+#		  PvP announcer will announce killed players (X killed by Y) if enabled
+#	  Default : 0
+#
+#	  Custom.DeathKnightNoQuestsForTP
+#		  If enabled, Death Knights will get their TP from leveling instead of having to do the start quests
+#	  Default : 0
+#
+#	  Custom.AddExtraSanctuary = 0
+#		  If enabled, You can set one extra zone as "Sanctuary" where players are safe from PvP
+#	  Default : 0
+#	  
+#	  Custom.AddExtraPvPZones = 0
+#	  	  If enabled, You can set one extra zone as "PvPZone" where players can PvP (Arena-like)
+#	  Default : 0
+#
+#	  Custom.SanctuaryZone = 0
+#	  	  Zone ID that turns into a Sanctuary after enabling "Custom.AddExtraSanctuary"
+#	  Default : 0
+#
+#	  Custom.PvPZone1 = 0
+#	  	  First Zone ID that turns into an Arena-like zone after enabling "Custom.AddExtraPvPZones"
+#	  Default : 0
+#
+#	  Custom.PvPZone2 = 0
+#	  	  Second Zone ID that turns into an Arena-like zone after enabling "Custom.AddExtraPvPZones"
+#	  Default : 0
+#
+#	  Custom.PvPZone3 = 0
+#	  	  Third Zone ID that turns into an Arena-like zone after enabling "Custom.AddExtraPvPZones"
+#	  Default : 0
+#
+#	  Custom.PvPZone4 = 0
+#	  	  Fourth Zone ID that turns into an Arena-like zone after enabling "Custom.AddExtraPvPZones"
+#	  Default : 0
+#
+#	  Custom.LimitAllowedMounts = 0
+#	  	  If enabled together with Custom.AllowFlyingMountsEverywhere, only the mount IDs stated in Custom.AllowedMount1, Custom.AllowedMount2 and Custom.AllowedMount3 can be used
+#	  Default : 0
+#
+#	  Custom.AllowedMount1 = 0
+#	  	  First allowed Mount ID
+#	  Default : 0
+#
+#	  Custom.AllowedMount2 = 0
+#	  	  Second allowed Mount ID
+#	  Default : 0
+#
+#	  Custom.AllowedMount3 = 0
+#	  	  Third allowed Mount ID
+#	  Default : 0
+#
+#	  Custom.AllWeaponSkillsAtMax = 0
+#	  	  If enabled, at character creation, all characters will have ALL weapon skills at level 450 (for funservers / pvp servers)
+#	  Default : 0
+#
+#	  Custom.AutoRessPlayersOnDeath = 0
+#	  	  If enabled, upon dying you instantly revive with full health (check for enemies will be made later on) this can be fun for events
+#	  Default : 0
+#
+#	  Custom.AllWeaponSkillsForClassAtMax = 0
+#	  	  If enabled, at character creation, all characters will have all weapon skills their class should have at level 450 (for funservers / pvp servers)
+#	  Default : 0
 #
 ###################################################################################################################
 
-MapUpdate.Threads = 1
-
-
-###################################################################################################################
-# PLAYERBOTAI CONFIGURATION
-#
-#    PlayerbotAI.DisableBots
-#        Disable the bot command and bot menu
-#        Default: 0 - off
-#                 1 - on
-#
-#    PlayerbotAI.DebugWhisper
-#        Enable debug output by whispering master
-#        Default: 0 - off
-#                 1 - on
-#
-#    PlayerbotAI.FollowDistanceMin
-#    PlayerbotAI.FollowDistanceMax
-#        Min. and Max. follow distance for bots
-#        Default: 0.5 / 1.0
-#
-#    PlayerbotAI.MaxNumBots
-#        Limits the number of bots per account (Max 9)
-#        Default: 9
-#
-#    PlayerbotAI.RestrictBotLevel
-#        Restrict the allowed bot level (Current Max 80)
-#        Default: 80
-#
-###################################################################################################################
-
-PlayerbotAI.DisableBots = 0
-PlayerbotAI.DebugWhisper = 0
-PlayerbotAI.FollowDistanceMin = 0.5
-PlayerbotAI.FollowDistanceMax = 1.0
-PlayerbotAI.MaxNumBots = 9
-PlayerbotAI.RestrictBotLevel = 80
+Custom.AllowFlyingMountsEverywhere = 0
+Custom.MailItemRefundable = 1
+Custom.MinLevelDualSpec = 40
+Custom.EveryoneDrunk = 0
+Custom.DualSpecAtCreate = 0
+Custom.PvPAnnouncer = 0
+Custom.DeathKnightNoQuestsForTP = 0
+Custom.AddExtraSanctuary = 0
+Custom.AddExtraPvPZones = 0
+Custom.SanctuaryZone = 0
+Custom.PvPZone1 = 0
+Custom.PvPZone2 = 0
+Custom.PvPZone3 = 0
+Custom.PvPZone4 = 0
+Custom.LimitAllowedMounts = 0
+Custom.AllowedMount1 = 0
+Custom.AllowedMount2 = 0
+Custom.AllowedMount3 = 0
+Custom.AllWeaponSkillsAtMax = 0
+Custom.AutoRessPlayersOnDeath = 0
+Custom.AllWeaponSkillsForClassAtMax = 0

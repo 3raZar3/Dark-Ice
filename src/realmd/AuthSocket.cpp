@@ -179,7 +179,7 @@ AuthSocket::AuthSocket()
     _authed = false;
 
     _accountSecurityLevel = SEC_PLAYER;
-    _isTrial = false;
+
     _build = 0;
     patch_ = ACE_INVALID_HANDLE;
 }
@@ -381,7 +381,7 @@ bool AuthSocket::_HandleLogonChallenge()
         ///- Get the account details from the account table
         // No SQL injection (escaped user name)
 
-        result = loginDatabase.PQuery("SELECT sha_pass_hash,id,locked,last_ip,gmlevel,v,s,trial_client FROM account WHERE username = '%s'",_safelogin.c_str ());
+        result = loginDatabase.PQuery("SELECT sha_pass_hash,id,locked,last_ip,gmlevel,v,s FROM account WHERE username = '%s'",_safelogin.c_str ());
         if( result )
         {
             ///- If the IP is 'locked', check that the player comes indeed from the correct IP address
@@ -491,7 +491,6 @@ bool AuthSocket::_HandleLogonChallenge()
 
                     uint8 secLevel = (*result)[4].GetUInt8();
                     _accountSecurityLevel = secLevel <= SEC_ADMINISTRATOR ? AccountTypes(secLevel) : SEC_ADMINISTRATOR;
-                    _isTrial = (*result)[7].GetUInt8() == 1 ? true : false; 
 
                     _localizationName.resize(4);
                     for(int i = 0; i < 4; ++i)
@@ -524,8 +523,7 @@ bool AuthSocket::_HandleLogonProof()
     bool valid_version = FindBuildInfo(_build) != NULL;
 
     /// <ul><li> If the client has no valid version
-    /// Ignore if its trial client account
-    if(!valid_version && !_isTrial)
+    if(!valid_version)
     {
         if (this->patch_ != ACE_INVALID_HANDLE)
             return false;
@@ -970,7 +968,7 @@ void AuthSocket::LoadRealmlist(ByteBuffer &pkt, uint32 acctid)
                 RealmFlags realmFlags = i->second.realmflags;
 
                 // Show offline state for unsupported client builds
-                if (!ok_build && !_isTrial)
+                if (!ok_build)
                     realmFlags = RealmFlags(realmFlags | REALM_FLAG_OFFLINE);
 
                 if (!buildInfo)

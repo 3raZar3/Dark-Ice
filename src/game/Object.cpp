@@ -44,6 +44,7 @@
 #include "ObjectPosSelector.h"
 
 #include "TemporarySummon.h"
+#include "OutdoorPvPMgr.h"
 
 uint32 GuidHigh2TypeId(uint32 guid_hi)
 {
@@ -286,7 +287,6 @@ void Object::BuildMovementUpdate(ByteBuffer * data, uint16 updateFlags) const
                 }
                 if(unit->GetVehicleGUID())
                    unit->m_movementInfo.AddMovementFlag(MOVEFLAG_ONTRANSPORT);
-
             }
             break;
             case TYPEID_PLAYER:
@@ -599,7 +599,7 @@ void Object::BuildValuesUpdate(uint8 updatetype, ByteBuffer * data, UpdateMask *
                 if( index == UNIT_NPC_FLAGS )
                 {
                     // remove custom flag before sending
-                    uint32 appendValue = m_uint32Values[ index ] & ~UNIT_NPC_FLAG_GUARD;
+                    uint32 appendValue = m_uint32Values[ index ] & ~(UNIT_NPC_FLAG_GUARD + UNIT_NPC_FLAG_OUTDOORPVP);
 
                     if (GetTypeId() == TYPEID_UNIT)
                     {
@@ -1090,7 +1090,7 @@ void Object::BuildUpdateData( UpdateDataMapType& /*update_players */)
 }
 
 WorldObject::WorldObject()
-    : m_currMap(NULL), m_mapId(0), m_InstanceId(0), m_phaseMask(PHASEMASK_NORMAL),
+    : m_currMap(NULL), m_zoneScript(NULL), m_mapId(0), m_InstanceId(0), m_phaseMask(PHASEMASK_NORMAL),
     m_positionX(0.0f), m_positionY(0.0f), m_positionZ(0.0f), m_orientation(0.0f)
 {
 }
@@ -1465,15 +1465,15 @@ void WorldObject::UpdateGroundPositionZ(float x, float y, float &z, float maxDif
 {
     maxDiff = maxDiff >= 100.0f ? 10.0f : sqrtf(maxDiff);
     bool useVmaps = false;
-    if( GetBaseMap()->GetHeight(x, y, z, false) <  GetBaseMap()->GetHeight(x, y, z, true) ) // check use of vmaps
+    if( GetBaseMap()->GetHeight(x, y, z+2.0f, false) <  GetBaseMap()->GetHeight(x, y, z+2.0f, true) ) // check use of vmaps
         useVmaps = true;
 
-    float normalizedZ = GetBaseMap()->GetHeight(x, y, z, useVmaps);
+    float normalizedZ = GetBaseMap()->GetHeight(x, y, z+2.0f, useVmaps);
     // check if its reacheable
     if(normalizedZ <= INVALID_HEIGHT || fabs(normalizedZ-z) > maxDiff)
     {
         useVmaps = !useVmaps;                                // try change vmap use
-        normalizedZ = GetBaseMap()->GetHeight(x, y, z, useVmaps);
+        normalizedZ = GetBaseMap()->GetHeight(x, y, z+2.0f, useVmaps);
         if(normalizedZ <= INVALID_HEIGHT || fabs(normalizedZ-z) > maxDiff)
             return;                                        // Do nothing in case of another bad result 
     }
@@ -1678,6 +1678,16 @@ void WorldObject::AddObjectToRemoveList()
     GetMap()->AddObjectToRemoveList(this);
 }
 
+void WorldObject::SetZoneScript()
+{
+    if(Map *map = FindMap())
+    {
+        if(!map->IsBattleGroundOrArena() && !map->IsDungeon())
+            m_zoneScript = sOutdoorPvPMgr.GetZoneScript(GetZoneId());
+    }
+}
+
+
 Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, float ang,TempSummonType spwtype,uint32 despwtime)
 {
     TemporarySummon* pCreature = new TemporarySummon(GetObjectGuid());
@@ -1712,6 +1722,26 @@ Creature* WorldObject::SummonCreature(uint32 id, float x, float y, float z, floa
 
     // return the creature therewith the summoner has access to it
     return pCreature;
+}
+
+GameObject* WorldObject::SummonGameobject(uint32 id, float x, float y, float z, float angle, uint32 despwtime)
+{
+    GameObject* pGameObj = new GameObject;
+
+    Map *map = GetMap();
+
+    if(!pGameObj->Create(sObjectMgr.GenerateLowGuid(HIGHGUID_GAMEOBJECT), id, map,
+        GetPhaseMask(), x, y, z, angle, 0.0f, 0.0f, 0.0f, 0.0f, 100, GO_STATE_READY))
+    {
+        delete pGameObj;
+        return NULL;
+    }
+
+    pGameObj->SetRespawnTime(despwtime/IN_MILLISECONDS);
+
+    map->Add(pGameObj);
+
+    return pGameObj;
 }
 
 Vehicle* WorldObject::SummonVehicle(uint32 id, float x, float y, float z, float ang, uint32 vehicleId)
@@ -1750,26 +1780,6 @@ Vehicle* WorldObject::SummonVehicle(uint32 id, float x, float y, float z, float 
     return v;
 }
 
-GameObject* WorldObject::SummonGameobject(uint32 id, float x, float y, float z, float ang, uint32 despwTime)
-{
-    GameObject* GameObj = new GameObject;
-
-    Map *map = GetMap();
-    if(!GameObj->Create(sObjectMgr.GenerateLowGuid(HIGHGUID_GAMEOBJECT), id, map,
-        GetPhaseMask(), x, y, z, ang, 0.0f, 0.0f, 0.0f, 0.0f, 100, GO_STATE_READY))
-    {
-        delete GameObj;
-        return NULL;
-    }
-    GameObj->SetRespawnTime(despwTime);
-
-    map->Add(GameObj);
-
-    GameObj->SummonLinkedTrapIfAny();
-
-    return GameObj;
-}
-
 namespace MaNGOS
 {
     class NearUsedPosDo
@@ -1789,7 +1799,7 @@ namespace MaNGOS
 
                 float x,y,z;
 
-                if( !c->isAlive() || c->hasUnitState(UNIT_STAT_NOT_MOVE | UNIT_STAT_ON_VEHICLE) ||
+                if( !c->isAlive() || c->hasUnitState(UNIT_STAT_NOT_MOVE) ||
                     !c->GetMotionMaster()->GetDestination(x,y,z) )
                 {
                     x = c->GetPositionX();

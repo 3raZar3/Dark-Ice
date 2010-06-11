@@ -800,7 +800,7 @@ void ObjectMgr::ConvertCreatureAddonAuras(CreatureDataAddon* addon, char const* 
     // replace by new structures array
     const_cast<CreatureDataAddonAura*&>(addon->auras) = new CreatureDataAddonAura[val.size()/2+1];
 
-    uint32 i=0;
+    int i=0;
     for(uint32 j = 0; j < val.size()/2; ++j)
     {
         CreatureDataAddonAura& cAura = const_cast<CreatureDataAddonAura&>(addon->auras[i]);
@@ -1321,6 +1321,106 @@ void ObjectMgr::RemoveCreatureFromGrid(uint32 guid, CreatureData const* data)
     }
 }
 
+uint32 ObjectMgr::AddGOData(uint32 entry, uint32 mapId, float x, float y, float z, float o, uint32 spawntimedelay, float rotation0, float rotation1, float rotation2, float rotation3)
+{
+    GameObjectInfo const* goinfo = GetGameObjectInfo(entry);
+    if (!goinfo)
+        return 0;
+
+    Map * map = const_cast<Map*>(sMapMgr.CreateBaseMap(mapId));
+    if(!map)
+        return 0;
+
+    uint32 guid = GenerateLowGuid(HIGHGUID_GAMEOBJECT);
+    GameObjectData& data = NewGOData(guid);
+    data.id             = entry;
+    data.mapid          = mapId;
+    data.posX           = x;
+    data.posY           = y;
+    data.posZ           = z;
+    data.orientation    = o;
+    data.rotation0      = rotation0;
+    data.rotation1      = rotation1;
+    data.rotation2      = rotation2;
+    data.rotation3      = rotation3;
+    data.spawntimesecs  = spawntimedelay;
+    data.animprogress   = 100;
+    data.spawnMask      = 1;
+    data.go_state       = GO_STATE_READY;
+    data.phaseMask      = PHASEMASK_NORMAL;
+    data.artKit         = goinfo->type == GAMEOBJECT_TYPE_CAPTURE_POINT ? 21 : 0;
+    data.dbData = false;
+
+    AddGameobjectToGrid(guid, &data);
+
+    // Spawn if necessary (loaded grids only)
+    // We use spawn coords to spawn
+    if(!map->Instanceable() && map->IsLoaded(x, y))
+    {
+        GameObject *go = new GameObject;
+        if (!go->LoadFromDB(guid, map))
+        {
+            sLog.outError("AddGOData: cannot add gameobject entry %u to map", entry);
+            delete go;
+            return 0;
+        }
+        map->Add(go);
+    }
+
+    sLog.outDebug("AddGOData: dbguid %u entry %u map %u x %f y %f z %f o %f", guid, entry, mapId, x, y, z, o);
+
+    return guid;
+}
+
+uint32 ObjectMgr::AddCreData(uint32 entry, uint32 team, uint32 mapId, float x, float y, float z, float o, uint32 spawntimedelay)
+{
+    CreatureInfo const *cInfo = GetCreatureTemplate(entry);
+    if(!cInfo)
+        return 0;
+
+    uint32 guid = GenerateLowGuid(HIGHGUID_UNIT);
+    CreatureData& data = NewOrExistCreatureData(guid);
+    data.id = entry;
+    data.mapid = mapId;
+    data.displayid = 0;
+    data.equipmentId = cInfo->equipmentId;
+    data.posX = x;
+    data.posY = y;
+    data.posZ = z;
+    data.orientation = o;
+    data.spawntimesecs = spawntimedelay;
+    data.spawndist = 0;
+    data.currentwaypoint = 0;
+    data.curhealth = 1;
+    data.curmana = 1;
+    data.is_dead = false;
+    data.movementType = cInfo->MovementType;
+    data.spawnMask = 1;
+    data.phaseMask = PHASEMASK_NORMAL;
+    data.dbData = false;
+
+    AddCreatureToGrid(guid, &data);
+
+    // Spawn if necessary (loaded grids only)
+    if(Map * map = const_cast<Map*>(sMapMgr.CreateBaseMap(mapId)))
+    {
+        // We use spawn coords to spawn
+        if(!map->Instanceable() && !map->IsRemovalGrid(x, y))
+        {
+            Creature* creature = new Creature;
+            if(!creature->LoadFromDB(guid, map))
+            {
+                sLog.outError("AddCreature: cannot add creature entry %u to map", entry);
+                delete creature;
+                return 0;
+            }
+            map->Add(creature);
+        }
+    }
+
+    return guid;
+}
+
 void ObjectMgr::LoadGameobjects()
 {
     uint32 count = 0;
@@ -1408,8 +1508,8 @@ void ObjectMgr::LoadGameobjects()
             continue;
         }
 
-        if (data.spawnMask & ~spawnMasks[data.mapid])
-            sLog.outErrorDb("Table `gameobject` have gameobject (GUID: %u Entry: %u) that have wrong spawn mask %u including not supported difficulty modes for map (Id: %u), skip", guid, data.id, data.spawnMask, data.mapid);
+        /*if (data.spawnMask & ~spawnMasks[data.mapid])
+            sLog.outErrorDb("Table `gameobject` have gameobject (GUID: %u Entry: %u) that have wrong spawn mask %u including not supported difficulty modes for map (Id: %u), skip", guid, data.id, data.spawnMask, data.mapid);*/
 
         if (data.spawntimesecs == 0 && gInfo->IsDespawnAtAction())
         {
@@ -2269,63 +2369,6 @@ void ObjectMgr::LoadItemPrototypes()
 
     for(std::set<uint32>::const_iterator itr = notFoundOutfit.begin(); itr != notFoundOutfit.end(); ++itr)
         sLog.outErrorDb("Item (Entry: %u) not exist in `item_template` but referenced in `CharStartOutfit.dbc`", *itr);
-}
-
-void ObjectMgr::LoadItemExtendedCost()
-{
-    uint32 count = 0;
-
-    QueryResult *result = WorldDatabase.Query("SELECT entry, honor, arena_points, bracket, rating FROM item_extended_cost");
-
-    if (!result)
-    {
-        barGoLink bar(1);
-
-        bar.step();
-
-        sLog.outString();
-        sLog.outErrorDb(">> Loaded 0 ItemExtendedCost. No Extended Cost from dbc will be rewritten.");
-        return;
-    }
-
-    barGoLink bar((int)result->GetRowCount());
-
-    do
-    {
-        Field *fields = result->Fetch();
-        bar.step();
-
-        uint32 Entry          = fields[0].GetUInt32();
-        int32  newHonor       = fields[1].GetUInt32();
-        int32  newArenaPoints = fields[2].GetUInt32();
-        int32  newBracket     = fields[3].GetUInt32();
-        int32  newRating      = fields[4].GetUInt32();
-
-        ItemExtendedCostEntry *pExtCost = const_cast<ItemExtendedCostEntry*>(sItemExtendedCostStore.LookupEntry(Entry));
-
-        if (!pExtCost)
-        {
-            sLog.outErrorDb("Table `item_extended_cos`: Entry %u doesn't exist`.",Entry);
-            continue;
-        }
-
-        if(newHonor >= 0)
-            pExtCost->reqhonorpoints = newHonor;
-        if(newArenaPoints >= 0)
-            pExtCost->reqarenapoints = newArenaPoints;
-        if(newBracket >= 0)
-            pExtCost->reqarenaslot = newBracket;
-        if(newRating >= 0)
-            pExtCost->reqpersonalarenarating = newRating;
- 
-
-        ++count;
-    } while (result->NextRow());
-
-    delete result;
-
-    sLog.outString();
-    sLog.outString(">> %u Extended Cost changed.", count);
 }
 
 void ObjectMgr::LoadItemRequiredTarget()
@@ -3217,8 +3260,8 @@ void ObjectMgr::LoadGuilds()
 
     //                                                    0             1          2          3           4           5           6
     QueryResult *result = CharacterDatabase.Query("SELECT guild.guildid,guild.name,leaderguid,EmblemStyle,EmblemColor,BorderStyle,BorderColor,"
-    //   7               8    9    10         11        12                                     13
-        "BackgroundColor,info,motd,createdate,BankMoney,(SELECT COUNT(guild_bank_tab.guildid), guild.friendlyGuildId FROM guild_bank_tab WHERE guild_bank_tab.guildid = guild.guildid) "
+    //   7               8    9    10         11        12
+        "BackgroundColor,info,motd,createdate,BankMoney,(SELECT COUNT(guild_bank_tab.guildid) FROM guild_bank_tab WHERE guild_bank_tab.guildid = guild.guildid) "
         "FROM guild ORDER BY guildid ASC");
 
     if( !result )
@@ -3273,10 +3316,9 @@ void ObjectMgr::LoadGuilds()
             delete newGuild;
             continue;
         }
-        //Tassadar(16.1.2010): I think that better is to load it when some guild member need this, not now
-        //newGuild->LoadGuildEventLogFromDB();
-        //newGuild->LoadGuildBankEventLogFromDB();
-        //newGuild->LoadGuildBankFromDB();
+        newGuild->LoadGuildEventLogFromDB();
+        newGuild->LoadGuildBankEventLogFromDB();
+        newGuild->LoadGuildBankFromDB();
         AddGuild(newGuild);
     } while( result->NextRow() );
 
@@ -3555,18 +3597,18 @@ void ObjectMgr::LoadQuests()
         "RewRepValueId1, RewRepValueId2, RewRepValueId3, RewRepValueId4, RewRepValueId5,"
     //   103           104           105           106           107
         "RewRepValue1, RewRepValue2, RewRepValue3, RewRepValue4, RewRepValue5,"
-    //   108               109                 110             111            112               113
-        "RewHonorAddition, RewHonorMultiplier, RewArenaPoints, RewOrReqMoney, RewMoneyMaxLevel, RewSpell,"
-    //   114           115                116               117         118     119
-        "RewSpellCast, RewMailTemplateId, RewMailDelaySecs, PointMapId, PointX, PointY,"
-    //   120       121            122            123            124            125                 126                 127
-        "PointOpt, DetailsEmote1, DetailsEmote2, DetailsEmote3, DetailsEmote4, DetailsEmoteDelay1, DetailsEmoteDelay2, DetailsEmoteDelay3,"
-    //   128                 129              130            131                132                133
-        "DetailsEmoteDelay4, IncompleteEmote, CompleteEmote, OfferRewardEmote1, OfferRewardEmote2, OfferRewardEmote3,"
-    //   134                135                     136                     137
-        "OfferRewardEmote4, OfferRewardEmoteDelay1, OfferRewardEmoteDelay2, OfferRewardEmoteDelay3,"
-    //   138                     139          140
-        "OfferRewardEmoteDelay4, StartScript, CompleteScript"
+    //   108               109                 110            111               112       113
+        "RewHonorAddition, RewHonorMultiplier, RewOrReqMoney, RewMoneyMaxLevel, RewSpell, RewSpellCast,"
+    //   114                115               116         117     118     119
+        "RewMailTemplateId, RewMailDelaySecs, PointMapId, PointX, PointY, PointOpt,"
+    //   120            121            122            123            124                 125                 126                 127
+        "DetailsEmote1, DetailsEmote2, DetailsEmote3, DetailsEmote4, DetailsEmoteDelay1, DetailsEmoteDelay2, DetailsEmoteDelay3, DetailsEmoteDelay4,"
+    //   128              129            130                131                132                133
+        "IncompleteEmote, CompleteEmote, OfferRewardEmote1, OfferRewardEmote2, OfferRewardEmote3, OfferRewardEmote4,"
+    //   134                     135                     136                     137
+        "OfferRewardEmoteDelay1, OfferRewardEmoteDelay2, OfferRewardEmoteDelay3, OfferRewardEmoteDelay4,"
+    //   138          139
+        "StartScript, CompleteScript"
         " FROM quest_template");
     if (result == NULL)
     {
@@ -5345,7 +5387,7 @@ uint32 ObjectMgr::GetNearestTaxiNode( float x, float y, float z, uint32 mapid, u
         if(!node || node->map_id != mapid || !node->MountCreatureID[team == ALLIANCE ? 1 : 0])
             continue;
 
-        uint8  field   = (uint8)((i - 1) / 32);
+        uint8 field = (uint8)((i - 1) / 32);
         uint32 submask = 1<<((i-1)%32);
 
         // skip not taxi network nodes
@@ -5648,6 +5690,53 @@ bool ObjectMgr::AddGraveYardLink(uint32 id, uint32 zoneId, uint32 team, bool inD
     }
 
     return true;
+}
+
+void ObjectMgr::RemoveGraveYardLink(uint32 id, uint32 zoneId, uint32 team, bool inDB)
+{
+    GraveYardMap::iterator graveLow  = mGraveYardMap.lower_bound(zoneId);
+    GraveYardMap::iterator graveUp   = mGraveYardMap.upper_bound(zoneId);
+    if(graveLow==graveUp)
+    {
+        //sLog.outErrorDb("Table `game_graveyard_zone` incomplete: Zone %u Team %u does not have a linked graveyard.",zoneId,team);
+        return;
+    }
+
+    bool found = false;
+
+    GraveYardMap::iterator itr;
+
+    for (itr = graveLow; itr != graveUp; ++itr)
+    {
+        GraveYardData & data = itr->second;
+
+        // skip not matching safezone id
+        if(data.safeLocId != id)
+            continue;
+
+        // skip enemy faction graveyard at same map (normal area, city, or battleground)
+        // team == 0 case can be at call from .neargrave
+        if(data.team != 0 && team != 0 && data.team != team)
+            continue;
+
+        found = true;
+        break;
+    }
+
+    // no match, return
+    if(!found)
+        return;
+
+    // remove from links
+    mGraveYardMap.erase(itr);
+
+    // remove link from DB
+    if(inDB)
+    {
+        WorldDatabase.PExecute("DELETE FROM game_graveyard_zone WHERE id = '%u' AND ghost_zone = '%u' AND faction = '%u'",id,zoneId,team);
+    }
+
+    return;
 }
 
 void ObjectMgr::LoadAreaTriggerTeleports()
@@ -6418,6 +6507,122 @@ std::string ObjectMgr::GeneratePetName(uint32 entry)
     }
 
     return *(list0.begin()+urand(0, list0.size()-1)) + *(list1.begin()+urand(0, list1.size()-1));
+}
+
+// Loads the jail conf out of the database
+void ObjectMgr::LoadJailConf(void)
+{
+    CharacterDatabase.BeginTransaction();
+    QueryResult *result = CharacterDatabase.PQuery("SELECT * FROM `jail_conf`");
+    CharacterDatabase.CommitTransaction();
+
+    if (!result)
+    {
+        sLog.outError(GetMangosStringForDBCLocale(LANG_JAIL_CONF_ERR1));
+        sLog.outError(GetMangosStringForDBCLocale(LANG_JAIL_CONF_ERR2));
+
+        m_jailconf_max_jails    = 3;
+        m_jailconf_max_duration = 672;
+        m_jailconf_min_reason   = 25;
+        m_jailconf_warn_player  = 1;
+        m_jailconf_amnestie     = 180;
+
+        m_jailconf_ally_x       = -8673.43f;
+        m_jailconf_ally_y       = 631.795f;
+        m_jailconf_ally_z       = 96.9406f;
+        m_jailconf_ally_o       = 2.1785f;
+        m_jailconf_ally_m       = 0;
+
+        m_jailconf_horde_x      = 2179.85f;
+        m_jailconf_horde_y      = -4763.96f;
+        m_jailconf_horde_z      = 54.911f;
+        m_jailconf_horde_o      = 4.44216f;
+        m_jailconf_horde_m      = 1;
+
+        m_jailconf_ban          = 0;
+        m_jailconf_radius       = 10;
+
+        return;
+    }
+    do
+    {
+        Field *fields = result->Fetch();
+        m_jail_obt = fields[1].GetString();
+        if(m_jail_obt == "m_jailconf_max_jails")
+        {
+            m_jailconf_max_jails    = fields[2].GetUInt32();
+        }
+        if(m_jail_obt == "m_jailconf_max_duration")
+        {
+            m_jailconf_max_duration = fields[2].GetUInt32();
+        }
+        if(m_jail_obt == "m_jailconf_min_reason")
+        {
+            m_jailconf_min_reason   = fields[2].GetUInt32();
+        }
+        if(m_jail_obt == "m_jailconf_warn_player")
+        {
+            m_jailconf_warn_player  = fields[2].GetUInt32();
+        }
+        if(m_jail_obt == "m_jailconf_amnestie")
+        {
+            m_jailconf_amnestie     = fields[2].GetUInt32();
+        }
+        if(m_jail_obt == "m_jailconf_ally_x")
+        {
+            m_jailconf_ally_x       = fields[3].GetFloat();
+        }
+        if(m_jail_obt == "m_jailconf_ally_y")
+        {
+            m_jailconf_ally_y       = fields[3].GetFloat();
+        }
+        if(m_jail_obt == "m_jailconf_ally_z")
+        {
+            m_jailconf_ally_z       = fields[3].GetFloat();
+        }
+        if(m_jail_obt == "m_jailconf_ally_o")
+        {
+            m_jailconf_ally_o       = fields[3].GetFloat();
+        }
+        if(m_jail_obt == "m_jailconf_ally_m")
+        {
+            m_jailconf_ally_m       = fields[2].GetUInt32();
+        }
+        if(m_jail_obt == "m_jailconf_horde_x")
+        {
+            m_jailconf_horde_x      = fields[3].GetFloat();
+        }
+        if(m_jail_obt == "m_jailconf_horde_y")
+        {
+            m_jailconf_horde_y      = fields[3].GetFloat();
+        }
+        if(m_jail_obt == "m_jailconf_horde_z")
+         {
+            m_jailconf_horde_z      = fields[3].GetFloat();
+        }
+        if(m_jail_obt == "m_jailconf_horde_o")
+        {
+            m_jailconf_horde_o      = fields[3].GetFloat();
+        }
+        if(m_jail_obt == "m_jailconf_horde_m")
+        {
+            m_jailconf_horde_m      = fields[2].GetUInt32();
+        }
+        if(m_jail_obt == "m_jailconf_ban")
+        {
+            m_jailconf_ban = fields[2].GetUInt32();
+        }
+        if(m_jail_obt == "m_jailconf_radius")
+        {
+            m_jailconf_radius = fields[2].GetUInt32();
+        }
+    }
+    while (result->NextRow());
+    delete result;
+
+    sLog.outString("");
+    sLog.outString(GetMangosStringForDBCLocale(LANG_JAIL_CONF_LOADED));
+    sLog.outString("");
 }
 
 void ObjectMgr::LoadCorpses()

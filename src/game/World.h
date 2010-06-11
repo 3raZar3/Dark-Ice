@@ -71,16 +71,16 @@ enum ShutdownExitCode
 /// Timers for different object refresh rates
 enum WorldTimers
 {
-    WUPDATE_OBJECTS     = 0,
-    WUPDATE_SESSIONS    = 1,
-    WUPDATE_AUCTIONS    = 2,
-    WUPDATE_WEATHERS    = 3,
-    WUPDATE_UPTIME      = 4,
-    WUPDATE_CORPSES     = 5,
-    WUPDATE_EVENTS      = 6,
-    WUPDATE_DELETECHARS = 7,
+    WUPDATE_OBJECTS       = 0,
+    WUPDATE_SESSIONS      = 1,
+    WUPDATE_AUCTIONS      = 2,
+    WUPDATE_WEATHERS      = 3,
+    WUPDATE_UPTIME        = 4,
+    WUPDATE_CORPSES       = 5,
+    WUPDATE_EVENTS        = 6,
+    WUPDATE_DELETECHARS   = 7,
     WUPDATE_AUTOBROADCAST = 8,
-    WUPDATE_COUNT       = 9
+    WUPDATE_COUNT         = 9
 };
 
 /// Configuration elements
@@ -179,39 +179,13 @@ enum eConfigUInt32Values
     CONFIG_UINT32_TIMERBAR_BREATH_MAX,
     CONFIG_UINT32_TIMERBAR_FIRE_GMLEVEL,
     CONFIG_UINT32_TIMERBAR_FIRE_MAX,
-    CONFIG_UINT32_MIN_LEVEL_STAT_SAVE,
-    CONFIG_UINT32_NUMTHREADS,
     CONFIG_UINT32_CHARDELETE_KEEP_DAYS,
     CONFIG_UINT32_CHARDELETE_METHOD,
     CONFIG_UINT32_CHARDELETE_MIN_LEVEL,
-    CONFIG_UINT32_RANDOM_BG_RESET_HOUR,
-    CONFIG_UINT32_HONORABLE_KILL,
-    CONFIG_UINT32_BONUS_HONOR_AB_WIN,
-    CONFIG_UINT32_BONUS_HONOR_AB_END,
-    CONFIG_UINT32_BONUS_HONOR_WSG_WIN,
-    CONFIG_UINT32_BONUS_HONOR_WSG_END,
-    CONFIG_UINT32_BONUS_HONOR_AV_WIN,
-    CONFIG_UINT32_BONUS_HONOR_AV_END,
-    CONFIG_UINT32_BONUS_HONOR_EOS_WIN,
-    CONFIG_UINT32_BONUS_HONOR_EOS_END,
-    CONFIG_UINT32_BONUS_HONOR_FLAG_WSG,
-    CONFIG_UINT32_BONUS_HONOR_FLAG_AB,
-    CONFIG_UINT32_BONUS_HONOR_FLAG_EOS,
-    CONFIG_UINT32_BONUS_HONOR_FLAG_AV,
-    CONFIG_UINT32_BONUS_HONOR_HOLIDAY,
-    CONFIG_UINT32_TEAM_BG_FACTION_BLUE,
-    CONFIG_UINT32_TEAM_BG_FACTION_RED,
-    CONFIG_UINT32_TEAM_BG_BUFF_BLUE,
-    CONFIG_UINT32_TEAM_BG_BUFF_RED,
-    CONFIG_UINT32_FACTIONED_MAP_FACTION,
-    CONFIG_UINT32_FACTIONED_MAP_TEAM,
-    CONFIG_UINT32_LOSERNOCHANGE,
-    CONFIG_UINT32_LOSERHALFCHANGE,
-	
-	    /* Start AHBot */
+
+    /* Start AHBot */
     CONFIG_UINT32_AHBOT_ACCOUNT_ID,
     CONFIG_UINT32_AHBOT_CHARACTER_ID,
-
     CONFIG_UINT32_AHBOT_ITEMS_CYCLE,
 
     CONFIG_UINT32_AHBOT_ITEM_MIN_ITEM_LEVEL,
@@ -230,7 +204,48 @@ enum eConfigUInt32Values
     CONFIG_UINT32_AHBOT_TG_MAX_SKILL_RANK,
     /* End AHBot*/
 
+    CONFIG_UINT32_MIN_LEVEL_STAT_SAVE,
+    
+    /* Honor Options for BG */
+    CONFIG_UINT32_HONORABLE_KILL,
+    CONFIG_UINT32_BONUS_HONOR_AB_WIN,
+    CONFIG_UINT32_BONUS_HONOR_AB_END,
+    CONFIG_UINT32_BONUS_HONOR_WSG_WIN,
+    CONFIG_UINT32_BONUS_HONOR_WSG_END,
+    CONFIG_UINT32_BONUS_HONOR_AV_WIN,
+    CONFIG_UINT32_BONUS_HONOR_AV_END,
+    CONFIG_UINT32_BONUS_HONOR_EOS_WIN,
+    CONFIG_UINT32_BONUS_HONOR_EOS_END,
+    CONFIG_UINT32_BONUS_HONOR_FLAG_WSG,
+    CONFIG_UINT32_BONUS_HONOR_FLAG_AB,
+    CONFIG_UINT32_BONUS_HONOR_FLAG_EOS,
+    CONFIG_UINT32_BONUS_HONOR_FLAG_AV,
+    CONFIG_UINT32_BONUS_HONOR_HOLIDAY,
+    CONFIG_UINT32_TEAM_BG_FACTION_BLUE,
+    CONFIG_UINT32_TEAM_BG_FACTION_RED,
+    CONFIG_UINT32_TEAM_BG_BUFF_BLUE,
+    CONFIG_UINT32_TEAM_BG_BUFF_RED,
+    CONFIG_UINT32_RANDOM_BG_RESET_HOUR,
+
+    /* Darkrulerz' customs */
+    CONFIG_UINT32_PVP_ID_1,
+    CONFIG_UINT32_PVP_ID_2,
+    CONFIG_UINT32_PVP_ID_3,
+    CONFIG_UINT32_PVP_ID_4,
+    CONFIG_UINT32_SANCTUARY_ID,
+    CONFIG_UINT32_ALLOWED_MOUNT1,
+    CONFIG_UINT32_ALLOWED_MOUNT2,
+    CONFIG_UINT32_ALLOWED_MOUNT3,
+    CONFIG_MIN_LEVEL_DUALSPEC,
+    /* End of Darkrulerz' customs */
+
+    CONFIG_UINT32_NUMTHREADS,
+    CONFIG_UINT32_FACTIONED_MAP_FACTION,
+    CONFIG_UINT32_FACTIONED_MAP_TEAM,
+    CONFIG_UINT32_LOSERNOCHANGE,
+    CONFIG_UINT32_LOSERHALFCHANGE,
     CONFIG_UINT32_VALUE_COUNT
+    
 };
 
 /// Configuration elements
@@ -309,7 +324,13 @@ enum eConfigFloatValues
     CONFIG_FLOAT_CREATURE_FAMILY_ASSISTANCE_RADIUS,
     CONFIG_FLOAT_GROUP_XP_DISTANCE,
     CONFIG_FLOAT_THREAT_RADIUS,
-    CONFIG_FLOAT_VALUE_COUNT
+    CONFIG_FLOAT_VALUE_COUNT,
+    
+    ///PVP Token
+    CONFIG_PVP_TOKEN_ENABLE,
+    CONFIG_PVP_TOKEN_ITEMID,
+    CONFIG_PVP_TOKEN_ITEMCOUNT,
+    CONFIG_PVP_TOKEN_RESTRICTION
 };
 
 /// Configuration elements
@@ -362,31 +383,40 @@ enum eConfigBoolValues
     CONFIG_BOOL_KICK_PLAYER_ON_BAD_PACKET,
     CONFIG_BOOL_STATS_SAVE_ONLY_ON_LOGOUT,
     CONFIG_BOOL_CLEAN_CHARACTER_DB,
-    CONFIG_BOOL_END_ARENA_IF_NOT_ENOUGH_PLAYERS,
-    CONFIG_BOOL_TEAM_BG_ALLOW_AB,
-    CONFIG_BOOL_TEAM_BG_ALLOW_AV,
-    CONFIG_BOOL_TEAM_BG_ALLOW_EOS,
-    CONFIG_BOOL_TEAM_BG_ALLOW_WSG,
-    CONFIG_BOOL_FACTIONED_MAP_ENABLED,
 
     /* Start AHBot */
     CONFIG_BOOL_AHBOT_SELLER_ENABLED,
     CONFIG_BOOL_AHBOT_BUYER_ENABLED,
-
     CONFIG_BOOL_AHBOT_ITEMS_VENDOR,
     CONFIG_BOOL_AHBOT_ITEMS_LOOT,
     CONFIG_BOOL_AHBOT_ITEMS_MISC,
-
     CONFIG_BOOL_AHBOT_BIND_NO,
     CONFIG_BOOL_AHBOT_BIND_PICKUP,
     CONFIG_BOOL_AHBOT_BIND_EQUIP,
     CONFIG_BOOL_AHBOT_BIND_USE,
     CONFIG_BOOL_AHBOT_BIND_QUEST,
-
     CONFIG_BOOL_AHBOT_BUYPRICE_SELLER,
     CONFIG_BOOL_AHBOT_BUYPRICE_BUYER,
     /* End AHBot*/
-
+    
+    /* Broadcaster*/
+    CONFIG_BOOL_BROADCAST_ENABLED,
+    
+    /* Darkrulerz' Customs*/
+    CONFIG_BOOL_ALLOW_FLYING_MOUNTS_EVERYWHERE,
+    CONFIG_BOOL_MAIL_ITEM_REFUNDABLE,
+    CONFIG_BOOL_EVERYONE_DRUNK,
+    CONFIG_BOOL_DK_NO_QUESTS_FOR_TP,
+    CONFIG_BOOL_PVP_ANNOUNCER,
+    CONFIG_BOOL_DUALSPEC_AT_CREATE,
+    CONFIG_BOOL_EXTRA_PVP,
+    CONFIG_BOOL_EXTRA_SANCTUARY,
+    CONFIG_BOOL_LIMIT_ALLOWED_MOUNTS,
+    CONFIG_BOOL_ALL_WEAPONS_MAX_SKILL,
+    CONFIG_BOOL_PLAYER_AUTO_RESS,
+    CONFIG_BOOL_ALL_WEAPONS_FOR_CLASS_MAX_SKILL,
+    /* End of Customs*/
+    
     CONFIG_BOOL_VALUE_COUNT
 };
 
@@ -572,7 +602,6 @@ class World
         time_t const& GetGameTime() const { return m_gameTime; }
         /// Uptime (in secs)
         uint32 GetUptime() const { return uint32(m_gameTime - m_startTime); }
-        /// World diff time (in ms), showed in .s info, for lag detect...
         uint32 GetDiffTime() const { return world_diff_time; }
         /// Next daily quests reset time
         time_t GetNextDailyQuestsResetTime() const { return m_NextDailyQuestReset; }
@@ -595,7 +624,10 @@ class World
         void SendZoneMessage(uint32 zone, WorldPacket *packet, WorldSession *self = 0, uint32 team = 0);
         void SendZoneText(uint32 zone, const char *text, WorldSession *self = 0, uint32 team = 0);
         void SendServerMessage(ServerMessageType type, const char *text = "", Player* player = NULL);
-
+        
+        ///PVP Announcer
+        void SendPvPAnnounce(Player* killer, Player* killed);
+        
         /// Are we in the middle of a shutdown?
         bool IsShutdowning() const { return m_ShutdownTimer > 0; }
         void ShutdownServ(uint32 time, uint32 options, uint8 exitcode);
@@ -604,8 +636,6 @@ class World
         static uint8 GetExitCode() { return m_ExitCode; }
         static void StopNow(uint8 exitcode) { m_stopEvent = true; m_ExitCode = exitcode; }
         static bool IsStopped() { return m_stopEvent; }
-        uint32 GetShutdownTimer() const { return m_ShutdownTimer; };
-        uint32 GetShutdownMask() const { return m_ShutdownMask; };
 
         void Update(uint32 diff);
 
@@ -636,7 +666,6 @@ class World
         bool IsFFAPvPRealm() { return getConfig(CONFIG_UINT32_GAME_TYPE) == REALM_TYPE_FFA_PVP; }
 
         void KickAll();
-        void ResetRealmId();
         void KickAllLess(AccountTypes sec);
         BanReturn BanAccount(BanMode mode, std::string nameOrIP, std::string duration, std::string reason, std::string author);
         bool RemoveBanAccount(BanMode mode, std::string nameOrIP);
@@ -696,7 +725,6 @@ class World
         //used Script version
         void SetScriptsVersion(char const* version) { m_ScriptsVersion = version ? version : "unknown scripting library"; }
         char const* GetScriptsVersion() { return m_ScriptsVersion.c_str(); }
-        ACE_Thread_Mutex m_spellUpdateLock;
 
     protected:
         void _UpdateGameTime();

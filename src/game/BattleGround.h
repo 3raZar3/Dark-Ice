@@ -95,7 +95,7 @@ enum BattleGroundSpells
     SPELL_HORDE_GREEN_FLAG          = 35775,
     SPELL_PREPARATION               = 44521,                // Preparation
     SPELL_RECENTLY_DROPPED_FLAG     = 42792,                // Recently Dropped Flag
-    SPELL_AURA_PLAYER_INACTIVE      = 43681,                // Inactive
+    SPELL_AURA_PLAYER_INACTIVE      = 43681,                 // Inactive
     SPELL_AURA_PVP_HEALING          = 74410                 // PvP 10% healing reduction 
 };
 
@@ -435,9 +435,8 @@ class BattleGround
         void PlaySoundToAll(uint32 SoundID);
         void CastSpellOnTeam(uint32 SpellID, uint32 TeamID);
         void RewardHonorToTeam(uint32 Honor, uint32 TeamID);
-        void RewardReputationToTeam(BattleGroundTypeId bgtype, uint32 Reputation, uint32 TeamID);
+        void RewardReputationToTeam(uint32 faction_id, uint32 Reputation, uint32 TeamID);
         void RewardMark(Player *plr,uint32 count);
-        void RewardXpToTeam(uint32 Xp, float percentOfLevel, uint32 TeamID);
         void SendRewardMarkByMail(Player *plr,uint32 mark, uint32 count);
         void RewardItem(Player *plr, uint32 item_id, uint32 count);
         void RewardQuestComplete(Player *plr);
@@ -479,7 +478,6 @@ class BattleGround
         void SetArenaTeamRatingChangeForTeam(uint32 Team, int32 RatingChange) { m_ArenaTeamRatingChanges[GetTeamIndexByTeamId(Team)] = RatingChange; }
         int32 GetArenaTeamRatingChangeForTeam(uint32 Team) const    { return m_ArenaTeamRatingChanges[GetTeamIndexByTeamId(Team)]; }
         void CheckArenaWinConditions();
-        void UpdateArenaWorldState();
 
         /* Triggers handle */
         // must be implemented in BG subclass
@@ -563,7 +561,6 @@ class BattleGround
         // door-events are automaticly added - but _ALL_ other must be in this vector
         std::map<uint8, uint8> m_ActiveEvents;
 
-        bool ArenaPlayersCount(); //End arena if some players were not ported
 
     protected:
         //this method is called, when BG cannot spawn its own spirit guide, or something is wrong, It correctly ends BattleGround
@@ -647,8 +644,6 @@ class BattleGround
         float m_TeamStartLocY[BG_TEAMS_COUNT];
         float m_TeamStartLocZ[BG_TEAMS_COUNT];
         float m_TeamStartLocO[BG_TEAMS_COUNT];
-
-        uint32 m_uiPlayersJoined;
 };
 
 // helper functions for world state list fill

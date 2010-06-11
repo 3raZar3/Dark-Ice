@@ -49,7 +49,6 @@ enum CreatureFlagsExtra
     CREATURE_FLAG_EXTRA_NO_XP_AT_KILL   = 0x00000040,       // creature kill not provide XP
     CREATURE_FLAG_EXTRA_INVISIBLE       = 0x00000080,       // creature is always invisible for player (mostly trigger creatures)
     CREATURE_FLAG_EXTRA_NOT_TAUNTABLE   = 0x00000100,       // creature is immune to taunt auras and effect attack me
-    CREATURE_FLAG_PARTIAL_XP_REWARDED   = 0x00000800,       // creature kill provide 1/8 of normal XP
 };
 
 // GCC have alternative #pragma pack(N) syntax and old gcc version not support pack(push,N), also any gcc version not support it at some platform
@@ -188,7 +187,8 @@ struct EquipmentInfo
 // from `creature` table
 struct CreatureData
 {
-    uint32 id;                                            // entry in creature_template
+    explicit CreatureData() : dbData(true) {}
+    uint32 id;                                              // entry in creature_template
     uint16 mapid;
     uint16 phaseMask;
     uint32 displayid;
@@ -205,6 +205,7 @@ struct CreatureData
     bool  is_dead;
     uint8 movementType;
     uint8 spawnMask;
+    bool dbData;
 };
 
 struct CreatureDataAddonAura
@@ -232,7 +233,7 @@ struct CreatureDataAddon
     uint32 emote;
     uint32 splineFlags;
     uint32 vehicle_id;
-    CreatureDataAddonPassengers const* passengers;          // loaded as char* "entry1 seatid1 entry2 seatid2 ... "
+    CreatureDataAddonPassengers const* passengers;          // loaded as char* "entry1 seatid1 entry2 seatid2 ... "  
     CreatureDataAddonAura const* auras;                     // loaded as char* "spell1 eff1 spell2 eff2 ... "
 };
 
@@ -650,10 +651,37 @@ class MANGOS_DLL_SPEC Creature : public Unit
 
         void SendAreaSpiritHealerQueryOpcode(Player *pl);
 
+        void IncrementReceivedDamage(Unit* pAttacker, uint32 unDamage)
+        {
+            if(!pAttacker || !unDamage)
+                return;
+
+            if(pAttacker->GetCharmerOrOwnerPlayerOrPlayerItself())
+            {
+                m_unPlayerDamageDone += unDamage;
+                return;
+            }
+            else if(pAttacker->GetTypeId() == TYPEID_UNIT)
+            {
+                //some conditions can be placed here
+                m_unUnitDamageDone += unDamage;
+                return;
+            }
+        }
+        bool AreLootAndRewardAllowed() { return (m_unPlayerDamageDone > m_unUnitDamageDone); }
+        void ResetObtainedDamage()
+        {
+            m_unPlayerDamageDone = 0;
+            m_unUnitDamageDone = 0;
+        }
+
     protected:
         bool CreateFromProto(uint32 guidlow,uint32 Entry,uint32 team, const CreatureData *data = NULL);
         bool InitEntry(uint32 entry, uint32 team=ALLIANCE, const CreatureData* data=NULL);
         void RelocationNotify();
+        
+        uint32 m_unPlayerDamageDone;
+        uint32 m_unUnitDamageDone;
 
         uint32 m_groupLootTimer;                            // (msecs)timer used for group loot
         uint32 m_groupLootId;                               // used to find group which is looting corpse
