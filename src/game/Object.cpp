@@ -269,12 +269,12 @@ void Object::BuildMovementUpdate(ByteBuffer * data, uint16 updateFlags) const
                 if (((Creature*)unit)->canFly())
                 {
                     // (ok) most seem to have this
-                    unit->m_movementInfo.AddMovementFlag(MOVEFLAG_LEVITATING);
+                    unit->m_movementInfo.AddMovementFlag(MOVEFLAG_CAN_FLY);
 
                     if (!((Creature*)unit)->hasUnitState(UNIT_STAT_MOVING))
                     {
                         // (ok) possibly some "hover" mode
-                        unit->m_movementInfo.AddMovementFlag(MOVEFLAG_ROOT);
+                        //unit->m_movementInfo.AddMovementFlag(MOVEFLAG_ROOT);
                     }
                     else
                     {
