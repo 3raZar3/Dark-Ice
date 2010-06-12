@@ -113,8 +113,8 @@ bool ChatHandler::HandleServerInfoCommand(const char* /*args*/)
     PSendSysMessage(LANG_CONNECTED_USERS, activeClientsNum, maxActiveClientsNum, queuedClientsNum, maxQueuedClientsNum);
     PSendSysMessage(LANG_UPTIME, str.c_str());
     PSendSysMessage("Diff time: %u", sWorld.GetDiffTime());
-    SendSysMessage("Hellscreamcore, The core brought to you straight from hell");
-    SendSysMessage("GIT: http://github.com/Hellscream/Core/commits");
+    SendSysMessage("Project DarkiCE Core");
+    SendSysMessage("GIT: http://github.com/Darkrulerz/Core/commits");
     SendSysMessage("A heavily modified MaNGOS core");
     return true;
 }
