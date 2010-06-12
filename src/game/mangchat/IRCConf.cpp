@@ -22,9 +22,9 @@ void IRCClient::SetCfg(char const* cfgfile)
 bool IRCClient::LoadConfig(char const* cfgfile)
 {
     if (!MCConfig.SetSource(cfgfile))
-        sLog.outString("*** MangChat: Unable to open configuration file (%s), All default options are being used.", cfgfile);
+        sLog.outString("*** Dark-Ice Chat: Unable to open configuration file (%s), All default options are being used.", cfgfile);
     else
-        sLog.outString("*** MangChat: Found the configuration file, %s", cfgfile);
+        sLog.outString("*** Dark-Ice Chat: Found the configuration file, %s", cfgfile);
 
     int ConfCnt = 0;
     sIRC._chan_count = 0;
@@ -37,9 +37,9 @@ bool IRCClient::LoadConfig(char const* cfgfile)
         ConfCnt++;
     sIRC._Mver = MCConfig.GetStringDefault("irc.mver", "Version 1.7.9");
     sIRC._Port = MCConfig.GetIntDefault("irc.port", 6667);
-    sIRC._User = MCConfig.GetStringDefault("irc.user", "MangChat");
+    sIRC._User = MCConfig.GetStringDefault("irc.user", "Dark-Ice Chat");
     sIRC._Pass = MCConfig.GetStringDefault("irc.pass", "MyDumbPass");
-    sIRC._Nick = MCConfig.GetStringDefault("irc.nick", "MangChat");
+    sIRC._Nick = MCConfig.GetStringDefault("irc.nick", "Dark-Ice Chat");
     sIRC._Auth = MCConfig.GetIntDefault("irc.auth", 0);
     sIRC._Auth_Nick = MCConfig.GetStringDefault("irc.auth.nick", "AuthNick");
     sIRC._ICC = MCConfig.GetStringDefault("irc.icc", "001");
@@ -65,8 +65,8 @@ bool IRCClient::LoadConfig(char const* cfgfile)
             sIRC._wow_chan[sIRC._chan_count] = MCConfig.GetStringDefault(ci.c_str(), t_chan.c_str());
         }
     }
-    sIRC.JoinMsg = MCConfig.GetStringDefault("irc.joinmsg", "Whhaaazzzzaaaa, MangChat $Ver Baby!!");
-    sIRC.RstMsg  = MCConfig.GetStringDefault("irc.rstmsg", "MangChat Is Restarting, I Will Be Right Back!");
+    sIRC.JoinMsg = MCConfig.GetStringDefault("irc.joinmsg", "Whhaaazzzzaaaa, Dark-Ice Chat $Ver Baby!!");
+    sIRC.RstMsg  = MCConfig.GetStringDefault("irc.rstmsg", "Dark-Ice Chat Is Restarting, I Will Be Right Back!");
     sIRC.kikmsg = MCConfig.GetStringDefault("irc.kickmsg", "Do Not Kick Me Again, Severe Actions Will Be Taken!");
     // IRC LINES
     sIRC.ILINES[WOW_IRC] = MCConfig.GetStringDefault("chat.wow_irc", "\003<WoW>[\002$Name($Level)\002\003] $Msg");

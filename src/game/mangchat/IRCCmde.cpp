@@ -1,11 +1,11 @@
 /*
- * MangChat By |Death| And Cybrax, And continued by Xeross
+ * Dark-Ice Chat By |Death| And Cybrax, And continued by Xeross
  *
  * This Program Is Free Software; You Can Redistribute It And/Or Modify It Under The Terms
  * Of The GNU General Public License
  * Written and Developed by Cybrax. cybraxvd@gmail.com
  * |Death| <death@hell360.net>, Lice <lice@yeuxverts.net>, Dj_baby & Sanaell, Tase
- * Conversion to MangChat version 1.7.2 for Mangos 7252 by Shinzon <shinzon@wowgollum.com>
+ * Conversion to Dark-Ice Chat version 1.7.2 for Mangos 7252 by Shinzon <shinzon@wowgollum.com>
  * Continued by Xeross
  * With Help And Support From The MaNGOS Project Community.
  * PLEASE RETAIN THE COPYRIGHT OF THE AUTHORS.
@@ -424,7 +424,7 @@ void IRCCmd::Help_IRC(_CDATA *CD)
                 QueryResult *result = WorldDatabase.PQuery("SELECT * FROM `IRC_Commands` WHERE `gmlevel` = 0 ORDER BY `Command`");
                 if (result)
                 {
-                    std::string output = "\002MangChat IRC Commands:\017 ";
+                    std::string output = "\002Dark-Ice Chat IRC Commands:\017 ";
                     for (uint64 i=0; i < result->GetRowCount(); i++)
                     {
                         Field *fields = result->Fetch();

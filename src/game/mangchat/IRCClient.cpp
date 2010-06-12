@@ -1,11 +1,11 @@
 /*
- * MangChat By |Death| And Cybrax, And continued by Xeross
+ * Dark-Ice Chat By |Death| And Cybrax, And continued by Xeross
  *
  * This Program Is Free Software; You Can Redistribute It And/Or Modify It Under The Terms
  * Of The GNU General Public License
  * Written and Developed by Cybrax. cybraxvd@gmail.com
  * |Death| <death@hell360.net>, Lice <lice@yeuxverts.net>, Dj_baby & Sanaell, Tase
- * Conversion to MangChat version 1.7.2 for Mangos 7252 by Shinzon <shinzon@wowgollum.com>
+ * Conversion to Dark-Ice Chat version 1.7.2 for Mangos 7252 by Shinzon <shinzon@wowgollum.com>
  * Continued by Xeross
  * Continued by 3raZar3 for project Tiamat git://github.com/3raZar3/TiamaT.git
  * With Help And Support From The MaNGOS Project Community.
@@ -36,21 +36,21 @@ IRCClient::~IRCClient(){}
 // ZThread Entry This function is called when the thread is created in Master.cpp (mangosd)
 void IRCClient::run()
 {
-    sIRC.iLog.WriteLog(" %s : ****** MaNGOS With MangChat Has Been Started ******", sIRC.iLog.GetLogDateTimeStr().c_str());
+    sIRC.iLog.WriteLog(" %s : ****** MaNGOS With Dark-Ice Chat Has Been Started ******", sIRC.iLog.GetLogDateTimeStr().c_str());
 
     // Before we begin we wait a while MaNGOS is still starting up.
     ACE_Based::Thread::Sleep(500);
-    sLog.outString("\n%s\n%s\n%s\n%s",
+    sLog.outString("\n%s\n%s\n%s\n%s\n%s\n%s\n%s",
         "***************************************",
         "**     Dark-Ice Chat IRC Client      **",
         "**     With Enhanced GM Control.     **",
-        "**      	Updated by 3raZar3	      **",
+        "**        Updated by 3raZar3         **",
         "**   http://clanice.game-host.org    **",
         "***************************************");
-    sLog.outString("****** Dark-Ice Chat: %s ********", sIRC._Mver.c_str());
+        " ** Dark-Ice Chat: %s ** ", sIRC._Mver.c_str());
     int cCount = 0;
     // Clean Up MySQL Tables
-    sLog.outString("*** MangChat: Cleaning Up Inchan Table*");
+    sLog.outString("*** Dark-Ice Chat Cleaning Up Inchan Table*");
     WorldDatabase.PExecute("DELETE FROM `IRC_Inchan`");
     sIRC._Max_Script_Inst = 0;
     // Create a loop to keep the thread running untill active is set to false

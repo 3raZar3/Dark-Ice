@@ -1,11 +1,11 @@
 /*
- * MangChat By |Death| And Cybrax, And continued by Xeross
+ * Dark-Ice Chat By |Death| And Cybrax, And continued by Xeross
  *
  * This Program Is Free Software; You Can Redistribute It And/Or Modify It Under The Terms
  * Of The GNU General Public License
  * Written and Developed by Cybrax. cybraxvd@gmail.com
  * |Death| <death@hell360.net>, Lice <lice@yeuxverts.net>, Dj_baby & Sanaell, Tase
- * Conversion to MangChat version 1.7.2 for Mangos 7252 by Shinzon <shinzon@wowgollum.com>
+ * Conversion to Dark-Ice Chat version 1.7.2 for Mangos 7252 by Shinzon <shinzon@wowgollum.com>
  * Continued by Xeross
  * With Help And Support From The MaNGOS Project Community.
  * PLEASE RETAIN THE COPYRIGHT OF THE AUTHORS.
@@ -392,7 +392,7 @@ bool IRCCmd::IsValid(std::string USER, std::string FROM, std::string CHAT, std::
             switch(ParamsValid(&CDATA, 0, sIRC.CRESTART))
             {
                 case E_OK:
-                    sIRC.Send_IRC_Channels("Reloading MangChat Config Options. (Command Disabled)");
+                    sIRC.Send_IRC_Channels("Reloading Dark-Ice Chat Config Options. (Command Disabled)");
                     //sIRC.LoadConfig();
                     break;
                 case E_AUTH:
