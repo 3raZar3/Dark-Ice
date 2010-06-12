@@ -2605,7 +2605,7 @@ void SpellMgr::LoadSpellChains()
 
         if (mSpellChains.find(spell_id) != mSpellChains.end())
         {
-            sLog.outErrorDb("Spell %u already added (talent?) and non need in `spell_chain`",spell_id);
+            sLog.outErrorDb("Spell %u already added (talent?) and not needed in `spell_chain`",spell_id);
             continue;
         }
 
