@@ -626,6 +626,22 @@ void Aura::SetModifier(AuraType t, int32 a, uint32 pt, int32 miscValue)
     m_modifier.periodictime = pt;
 }
 
+void Aura::UpdateModifierAmount(int32 amount)
+{
+    // use this method, to modify modifier.amount when aura is already applied
+    AuraType aura = m_modifier.m_auraname;
+
+    SetInUse(true);
+    if(aura < TOTAL_AURAS)
+    {
+        // maybe we can find a better way here?
+        (*this.*AuraHandler [aura])(false, true);
+        m_modifier.m_amount = amount;
+        (*this.*AuraHandler [aura])(true, true);
+    }
+    SetInUse(false);
+}
+
 void Aura::Update(uint32 diff)
 {
     if (m_duration > 0)
@@ -5639,10 +5655,28 @@ void Aura::HandleAuraModStat(bool apply, bool /*Real*/)
         // -1 or -2 is all stats ( misc < -2 checked in function beginning )
         if (m_modifier.m_miscvalue < 0 || m_modifier.m_miscvalue == i)
         {
+            // pet scaling aura workaround
+            float energyPct = 0.0f;
+            if (GetSpellProto()->AttributesEx4 & SPELL_ATTR_EX4_PET_SCALING_AURA)
+            {
+                if (m_modifier.m_miscvalue == STAT_STAMINA)
+                    energyPct = float(m_target->GetHealth())/m_target->GetMaxHealth();
+                else if (m_modifier.m_miscvalue == STAT_INTELLECT && m_target->GetMaxPower(POWER_MANA) > 0)
+                    energyPct = float(m_target->GetPower(POWER_MANA))/m_target->GetMaxPower(POWER_MANA);
+            }
+
             //m_target->ApplyStatMod(Stats(i), m_modifier.m_amount,apply);
             GetTarget()->HandleStatModifier(UnitMods(UNIT_MOD_STAT_START + i), TOTAL_VALUE, float(m_modifier.m_amount), apply);
             if(GetTarget()->GetTypeId() == TYPEID_PLAYER || ((Creature*)GetTarget())->isPet())
                 GetTarget()->ApplyStatBuffMod(Stats(i), float(m_modifier.m_amount), apply);
+
+            if (energyPct)
+            {
+                if (m_modifier.m_miscvalue == STAT_STAMINA)
+                    GetTarget()->SetHealth(GetTarget()->GetMaxHealth()*energyPct);
+                else if (m_modifier.m_miscvalue == STAT_INTELLECT)
+                    GetTarget()->SetPower(POWER_MANA,GetTarget()->GetMaxPower(POWER_MANA)*energyPct);
+            }
         }
     }
 }
