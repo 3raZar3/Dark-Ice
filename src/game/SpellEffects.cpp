@@ -2937,6 +2937,12 @@ void Spell::EffectTriggerSpell(SpellEffectIndex effIndex)
                 pet->CastSpell(pet, 28305, true);
             return;
         }
+		// Monstrous Strength 
+		case 54681:
+		{
+		    unitTarget = m_caster;
+			break;
+		}	
         // Electrical Storm Tick
         case 43657:
         {
