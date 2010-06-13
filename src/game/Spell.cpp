@@ -1654,6 +1654,9 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
 				    radius = 300;
 					break;
 				case 72754:
+				case 73708:
+				case 73709:
+				case 73710:
                     if (Unit* realCaster = GetAffectiveCaster())
                         radius = realCaster->GetFloatValue(OBJECT_FIELD_SCALE_X) * 10;
 					break;	
