@@ -6746,6 +6746,12 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                    if (m_caster->GetTypeId() != TYPEID_UNIT)
                        return;
                 }
+				case 69200:                                 // Raging Spirit
+				    if (!unitTarget)
+					    return;
+						
+					unitTarget->CastSpell(unitTarget, 69201, true);
+                    return;					
                 case 66477:                                 // Bountiful Feast
                 {
                     if (!unitTarget)
