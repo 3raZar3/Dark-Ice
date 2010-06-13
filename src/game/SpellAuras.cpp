@@ -2524,7 +2524,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                         return;
                 }
                 break;
-            }
+            }	
             case SPELLFAMILY_WARRIOR:
             {
                 // Overpower
