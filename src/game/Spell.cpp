@@ -1592,10 +1592,6 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         radius = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[effIndex]));
     else
         radius = GetSpellMaxRange(sSpellRangeStore.LookupEntry(m_spellInfo->rangeIndex));
-		
-	if (!radius && targetMode== TARGET_ALL_ENEMY_IN_AREA)
-        radius = DEFAULT_VISIBILITY_DISTANCE * 3; //Some spells have radius=0, but 100% should have huge damage area.	
-    // Resulting effect depends on spell that we want to cast
 
     uint32 EffectChainTarget = m_spellInfo->EffectChainTarget[effIndex];
 
@@ -1653,6 +1649,14 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 case 25991:                                 // Poison Bolt Volley (Pincess Huhuran)
                     unMaxTargets = 15;
                     break;
+				case 72350:                                 // Fury of Frostmourne
+				case 72351:                                 // Fury of Frostmourne
+				    radius = 300;
+					break;
+				case 72754:
+                    if (Unit* realCaster = GetAffectiveCaster())
+                        radius = realCaster->GetFloatValue(OBJECT_FIELD_SCALE_X) * 10;
+					break;	
         case 62240:                                 // Solar Flare
         case 62920:                                 // Solar Flare (h)
         {
