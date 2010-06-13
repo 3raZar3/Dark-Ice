@@ -475,7 +475,7 @@ void Spell::FillCustomTargetMap(uint32 i, UnitList &targetUnitMap)
         radius = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[i]));
     else
         radius = GetSpellMaxRange(sSpellRangeStore.LookupEntry(m_spellInfo->rangeIndex));
-    // Resulting effect depends on spell that we want to cast
+	
     switch (m_spellInfo->Id)
     {
         case 46584: // Raise Dead
@@ -1592,6 +1592,10 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         radius = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[effIndex]));
     else
         radius = GetSpellMaxRange(sSpellRangeStore.LookupEntry(m_spellInfo->rangeIndex));
+		
+	if (!radius && targetMode== TARGET_ALL_ENEMY_IN_AREA)
+        radius = DEFAULT_VISIBILITY_DISTANCE * 3; //Some spells have radius=0, but 100% should have huge damage area.	
+    // Resulting effect depends on spell that we want to cast
 
     uint32 EffectChainTarget = m_spellInfo->EffectChainTarget[effIndex];
 
