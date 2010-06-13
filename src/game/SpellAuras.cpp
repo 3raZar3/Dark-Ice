@@ -2035,8 +2035,8 @@ void Aura::TriggerSpell()
                 }
                 break;
             }
-//            case SPELLFAMILY_WARRIOR:
-//            {
+//          case SPELLFAMILY_WARRIOR:
+//          {
 //                switch(auraId)
 //                {
 //                    // Wild Magic
@@ -2047,9 +2047,9 @@ void Aura::TriggerSpell()
 //                        break;
 //                }
 //                break;
-//            }
-//            case SPELLFAMILY_PRIEST:
-//            {
+//          }
+//          case SPELLFAMILY_PRIEST:
+//          {
 //                switch(auraId)
 //                {
 //                    // Blue Beam
@@ -2060,7 +2060,7 @@ void Aura::TriggerSpell()
 //                        break;
 //                }
  //               break;
- //           }
+ //         }
             case SPELLFAMILY_HUNTER:
             {
                 switch (auraId)
@@ -7770,7 +7770,7 @@ void Aura::PeriodicTick()
 					    if(target->GetHealth() >= target->GetMaxHealth() * 0.9 )
 						{
 						    target->RemoveAurasDueToSpell(GetId());
-							return
+							return;
 						}
 						break;
 					}	
