@@ -1802,7 +1802,12 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     // Kindred Spirits
                     if( spellInfo_1->SpellIconID == 3559 && spellInfo_2->SpellIconID == 3559 )
                         return false;
-
+						
+					// Fury of Frostmourne
+                    if( spellInfo_1->SpellIconID == 2702 && spellInfo_2->SpellIconID == 2702 || 					
+                        spellInfo_2->SpellIconID == 2702 && spellInfo_1->SpellIconID == 2702 )
+						return false;
+						
                     // Solace of the Defeated Heroic & Normal versions
                     if( (spellInfo_1->Id == 67696 && spellInfo_2->Id == 67750) ||
                         (spellInfo_2->Id == 67696 && spellInfo_1->Id == 67750) )
@@ -3631,7 +3636,7 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const *spell
             groupEntry = sAreaGroupStore.LookupEntry(groupEntry->nextGroup);
         }
 		
-		if (spellInfo->AreaGroupId == 723 && area_id == 4812)
+		if (spellInfo->AreaGroupId == 723 && zone_id == 4812)
 		    found = true;
 
         if (!found)
