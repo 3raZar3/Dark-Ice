@@ -4390,7 +4390,6 @@ void Aura::HandleModStealth(bool apply, bool Real)
                     // Overkill
                     else if ((*i)->GetId() == 58426 && GetSpellProto()->SpellFamilyFlags & UI64LIT(0x0000000000400000))
                     {
-                        target->RemoveAurasDueToSpell(58428);
                         target->CastSpell(target, 58427, true);
                     }
                 }
@@ -4429,7 +4428,13 @@ void Aura::HandleModStealth(bool apply, bool Real)
                     target->CastSpell(target, 31666, true);
                 // Overkill
                 else if ((*i)->GetId() == 58426 && GetSpellProto()->SpellFamilyFlags & UI64LIT(0x0000000000400000))
-                    target->CastSpell(target, 58428, true);
+                {
+                    if (Aura* aura = target->GetAura(58427, EFFECT_INDEX_0))
+                    {
+                        aura->SetAuraMaxDuration(20*IN_MILLISECONDS);
+                        aura->RefreshAura();
+                    }
+                }
             }
         }
     }
@@ -9319,4 +9324,18 @@ void Aura::ApplyHasteToPeriodic()
         m_maxduration = periodic * ticks;
     }
     m_modifier.periodictime = periodic;
+}
+
+void Aura::SetAuraMaxDuration( int32 duration )
+{
+    m_maxduration = duration;
+    
+    // possible overwrite persistent state
+    if (duration > 0)
+    {
+        if (!(m_isPassive && m_spellProto->DurationIndex == 0))
+            m_permanent = false;
+
+        m_auraFlags |= AFLAG_DURATION;
+    }
 }
