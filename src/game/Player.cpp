@@ -17406,7 +17406,7 @@ void Player::SaveToDB()
         ss << GetUInt32Value(PLAYER__FIELD_KNOWN_TITLES + i) << " ";
     }
     ss << "',";
-    ss << uint32(GetByteValue(PLAYER_FIELD_BYTES, 2));
+    ss << uint32(GetByteValue(PLAYER_FIELD_BYTES, 2)) << ", ";
     ss << uint32(m_GMLevel);
     ss << ")";
 
