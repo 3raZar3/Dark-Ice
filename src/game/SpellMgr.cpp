@@ -3630,6 +3630,9 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const *spell
             // Try search in next group
             groupEntry = sAreaGroupStore.LookupEntry(groupEntry->nextGroup);
         }
+		
+		if (spellInfo->AreaGroupId == 723 && area_id == 4812)
+		    found = true;
 
         if (!found)
             return SPELL_FAILED_INCORRECT_AREA;
