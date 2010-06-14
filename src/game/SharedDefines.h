@@ -377,7 +377,7 @@ const uint32 ItemQualityColors[MAX_ITEM_QUALITY] = {
 #define SPELL_ATTR_EX4_UNK22                      0x00400000            // 22
 #define SPELL_ATTR_EX4_UNK23                      0x00800000            // 23
 #define SPELL_ATTR_EX4_UNK24                      0x01000000            // 24
-#define SPELL_ATTR_EX4_UNK25                      0x02000000            // 25 pet scaling auras
+#define SPELL_ATTR_EX4_PET_SCALING_AURA           0x02000000            // 25 pet scaling auras
 #define SPELL_ATTR_EX4_CAST_ONLY_IN_OUTLAND       0x04000000            // 26 Can only be used in Outland.
 #define SPELL_ATTR_EX4_UNK27                      0x08000000            // 27
 #define SPELL_ATTR_EX4_UNK28                      0x10000000            // 28
@@ -2702,6 +2702,33 @@ enum TotemSlot
 #define TOTEM_SLOT_NONE 255                                 // custom value for no slot case
 
 #define MAX_TOTEM_SLOT  4
+
+enum TradeStatus
+{
+    TRADE_STATUS_BUSY           = 0,
+    TRADE_STATUS_BEGIN_TRADE    = 1,
+    TRADE_STATUS_OPEN_WINDOW    = 2,
+    TRADE_STATUS_TRADE_CANCELED = 3,
+    TRADE_STATUS_TRADE_ACCEPT   = 4,
+    TRADE_STATUS_BUSY_2         = 5,
+    TRADE_STATUS_NO_TARGET      = 6,
+    TRADE_STATUS_BACK_TO_TRADE  = 7,
+    TRADE_STATUS_TRADE_COMPLETE = 8,
+    // 9?
+    TRADE_STATUS_TARGET_TO_FAR  = 10,
+    TRADE_STATUS_WRONG_FACTION  = 11,
+    TRADE_STATUS_CLOSE_WINDOW   = 12,
+    // 13?
+    TRADE_STATUS_IGNORE_YOU     = 14,
+    TRADE_STATUS_YOU_STUNNED    = 15,
+    TRADE_STATUS_TARGET_STUNNED = 16,
+    TRADE_STATUS_YOU_DEAD       = 17,
+    TRADE_STATUS_TARGET_DEAD    = 18,
+    TRADE_STATUS_YOU_LOGOUT     = 19,
+    TRADE_STATUS_TARGET_LOGOUT  = 20,
+    TRADE_STATUS_TRIAL_ACCOUNT  = 21,                       // Trial accounts can not perform that action
+    TRADE_STATUS_ONLY_CONJURED  = 22                        // You can only trade conjured items... (cross realm BG related).
+};
 
 // we need to stick to 1 version or half of the stuff will work for someone
 // others will not and opposite

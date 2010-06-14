@@ -312,6 +312,105 @@ bool SpellModifier::isAffectedOnSpell( SpellEntry const *spell ) const
     return false;
 }
 
+//== TradeData =================================================
+
+TradeData* TradeData::GetTraderData() const
+{
+    return m_trader->GetTradeData();
+}
+
+Item* TradeData::GetItem( TradeSlots slot ) const
+{
+    return !m_items[slot].IsEmpty() ? m_player->GetItemByGuid(m_items[slot]) : NULL;
+}
+
+bool TradeData::HasItem( ObjectGuid item_guid ) const
+{
+    for(int i = 0; i < TRADE_SLOT_COUNT; ++i)
+        if (m_items[i] == item_guid)
+            return true;
+    return false;
+}
+
+
+Item* TradeData::GetSpellCastItem() const
+{
+    return !m_spellCastItem.IsEmpty() ?  m_player->GetItemByGuid(m_spellCastItem) : NULL;
+}
+
+void TradeData::SetItem( TradeSlots slot, Item* item )
+{
+    ObjectGuid itemGuid = item ? item->GetObjectGuid() : ObjectGuid();
+
+    if (m_items[slot] == itemGuid)
+        return;
+
+    m_items[slot] = itemGuid;
+
+    SetAccepted(false);
+    GetTraderData()->SetAccepted(false);
+
+    Update();
+
+    // need remove possible trader spell applied to changed item
+    if (slot == TRADE_SLOT_NONTRADED)
+        GetTraderData()->SetSpell(0);
+
+    // need remove possible player spell applied (possible move reagent)
+    SetSpell(0);
+}
+
+void TradeData::SetSpell( uint32 spell_id, Item* castItem /*= NULL*/ )
+{
+    ObjectGuid itemGuid = castItem ? castItem->GetObjectGuid() : ObjectGuid();
+
+    if (m_spell == spell_id && m_spellCastItem == itemGuid)
+        return;
+
+    m_spell = spell_id;
+    m_spellCastItem = itemGuid;
+
+    SetAccepted(false);
+    GetTraderData()->SetAccepted(false);
+
+    Update(true);                                           // send spell info to item owner
+    Update(false);                                          // send spell info to caster self
+}
+
+void TradeData::SetMoney( uint32 money )
+{
+    if (m_money == money)
+        return;
+
+    m_money = money;
+
+    SetAccepted(false);
+    GetTraderData()->SetAccepted(false);
+
+    Update();
+}
+
+void TradeData::Update( bool for_trader /*= true*/ )
+{
+    if (for_trader)
+        m_trader->GetSession()->SendUpdateTrade(true);      // player state for trader
+    else
+        m_player->GetSession()->SendUpdateTrade(false);     // player state for player
+}
+
+void TradeData::SetAccepted(bool state, bool crosssend /*= false*/)
+{
+    m_accepted = state;
+
+    if (!state)
+    {
+        if (crosssend)
+            m_trader->GetSession()->SendTradeStatus(TRADE_STATUS_BACK_TO_TRADE);
+        else
+            m_player->GetSession()->SendTradeStatus(TRADE_STATUS_BACK_TO_TRADE);
+    }
+}
+
 //== Player ====================================================
 
 UpdateMask Player::updateVisualBits;
@@ -372,6 +471,7 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
 
     m_regenTimer = 0;
     m_weaponChangeTimer = 0;
+    m_petScalingUpdateTimer = 0;
 
     m_zoneUpdateId = 0;
     m_zoneUpdateTimer = 0;
@@ -1527,10 +1627,20 @@ void Player::Update( uint32 p_time )
     // group update
     SendUpdateToOutOfRangeGroupMembers();
 
-    Pet* pet = GetPet();
-    if(pet && !pet->IsWithinDistInMap(this, GetMap()->GetVisibilityDistance()) && (GetCharmGUID() && (pet->GetGUID() != GetCharmGUID())))
+    if (Pet* pet = GetPet())
     {
-        RemovePet(pet, PET_SAVE_NOT_IN_SLOT, true);
+        if (!pet->IsWithinDistInMap(this, GetMap()->GetVisibilityDistance()) && (GetCharmGUID() && (pet->GetGUID() != GetCharmGUID())))
+            RemovePet(pet, PET_SAVE_NOT_IN_SLOT, true);
+        else if (m_petScalingUpdateTimer)
+        {
+            if (m_petScalingUpdateTimer <= p_time)
+            {
+                pet->UpdateScalingAuras();
+                m_petScalingUpdateTimer = 0;
+            }
+            else
+                m_petScalingUpdateTimer -= p_time;
+        }
     }
 
     //we should execute delayed teleports only for alive(!) players
@@ -9563,34 +9673,34 @@ bool Player::HasItemCount( uint32 item, uint32 count, bool inBankAlso ) const
     for(int i = EQUIPMENT_SLOT_START; i < INVENTORY_SLOT_ITEM_END; ++i)
     {
         Item *pItem = GetItemByPos( INVENTORY_SLOT_BAG_0, i );
-        if( pItem && pItem->GetEntry() == item )
+        if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
         {
             tempcount += pItem->GetCount();
-            if( tempcount >= count )
+            if (tempcount >= count)
                 return true;
         }
     }
     for(int i = KEYRING_SLOT_START; i < CURRENCYTOKEN_SLOT_END; ++i)
     {
         Item *pItem = GetItemByPos( INVENTORY_SLOT_BAG_0, i );
-        if( pItem && pItem->GetEntry() == item )
+        if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
         {
             tempcount += pItem->GetCount();
-            if( tempcount >= count )
+            if (tempcount >= count)
                 return true;
         }
     }
     for(int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; ++i)
     {
-        if(Bag* pBag = (Bag*)GetItemByPos( INVENTORY_SLOT_BAG_0, i ))
+        if (Bag* pBag = (Bag*)GetItemByPos( INVENTORY_SLOT_BAG_0, i ))
         {
             for(uint32 j = 0; j < pBag->GetBagSize(); ++j)
             {
                 Item* pItem = GetItemByPos( i, j );
-                if( pItem && pItem->GetEntry() == item )
+                if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
                 {
                     tempcount += pItem->GetCount();
-                    if( tempcount >= count )
+                    if (tempcount >= count)
                         return true;
                 }
             }
@@ -9602,24 +9712,24 @@ bool Player::HasItemCount( uint32 item, uint32 count, bool inBankAlso ) const
         for(int i = BANK_SLOT_ITEM_START; i < BANK_SLOT_ITEM_END; ++i)
         {
             Item *pItem = GetItemByPos( INVENTORY_SLOT_BAG_0, i );
-            if( pItem && pItem->GetEntry() == item )
+            if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
             {
                 tempcount += pItem->GetCount();
-                if( tempcount >= count )
+                if (tempcount >= count)
                     return true;
             }
         }
         for(int i = BANK_SLOT_BAG_START; i < BANK_SLOT_BAG_END; ++i)
         {
-            if(Bag* pBag = (Bag*)GetItemByPos( INVENTORY_SLOT_BAG_0, i ))
+            if (Bag* pBag = (Bag*)GetItemByPos( INVENTORY_SLOT_BAG_0, i ))
             {
                 for(uint32 j = 0; j < pBag->GetBagSize(); ++j)
                 {
                     Item* pItem = GetItemByPos( i, j );
-                    if( pItem && pItem->GetEntry() == item )
+                    if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
                     {
                         tempcount += pItem->GetCount();
-                        if( tempcount >= count )
+                        if (tempcount >= count)
                             return true;
                     }
                 }
@@ -11802,7 +11912,7 @@ void Player::DestroyItemCount( uint32 item, uint32 count, bool update, bool uneq
     {
         if (Item* pItem = GetItemByPos( INVENTORY_SLOT_BAG_0, i ))
         {
-            if (pItem->GetEntry() == item)
+            if (pItem->GetEntry() == item && !pItem->IsInTrade())
             {
                 if (pItem->GetCount() + remcount <= count)
                 {
@@ -11830,7 +11940,7 @@ void Player::DestroyItemCount( uint32 item, uint32 count, bool update, bool uneq
     {
         if (Item* pItem = GetItemByPos( INVENTORY_SLOT_BAG_0, i ))
         {
-            if (pItem->GetEntry() == item)
+            if (pItem->GetEntry() == item && !pItem->IsInTrade())
             {
                 if (pItem->GetCount() + remcount <= count)
                 {
@@ -11863,7 +11973,7 @@ void Player::DestroyItemCount( uint32 item, uint32 count, bool update, bool uneq
             {
                 if(Item* pItem = pBag->GetItemByPos(j))
                 {
-                    if (pItem->GetEntry() == item)
+                    if (pItem->GetEntry() == item && !pItem->IsInTrade())
                     {
                         // all items in bags can be unequipped
                         if (pItem->GetCount() + remcount <= count)
@@ -11894,7 +12004,7 @@ void Player::DestroyItemCount( uint32 item, uint32 count, bool update, bool uneq
     {
         if (Item* pItem = GetItemByPos( INVENTORY_SLOT_BAG_0, i ))
         {
-            if (pItem && pItem->GetEntry() == item)
+            if (pItem && pItem->GetEntry() == item && !pItem->IsInTrade())
             {
                 if (pItem->GetCount() + remcount <= count)
                 {
@@ -12584,7 +12694,7 @@ void Player::TradeCancel(bool sendback)
 {
     if (m_trade)
     {
-        Player* trader = m_trade->m_tradeWith;
+        Player* trader = m_trade->GetTrader();
 
         // send yellow "Trade canceled" message to both traders
         if (sendback)
@@ -18563,6 +18673,17 @@ void Player::RemovePetActionBar()
     WorldPacket data(SMSG_PET_SPELLS, 8);
     data << uint64(0);
     SendDirectMessage(&data);
+}
+
+void Player::UpdatePetScalingAuras()
+{
+    Pet* pet = GetPet();
+    if (!pet)
+        return;
+
+    // pet scaling auras will be updated with delay, to minimize cpu cycles
+    if (!m_petScalingUpdateTimer)
+        m_petScalingUpdateTimer = 1000;
 }
 
 bool Player::IsAffectedBySpellmod(SpellEntry const *spellInfo, SpellModifier *mod, Spell const* spell)

@@ -63,9 +63,19 @@ int32 GetSpellMaxDuration(SpellEntry const *spellInfo)
 
 uint32 GetSpellCastTime(SpellEntry const* spellInfo, Spell const* spell)
 {
-    // some triggered spells have data only usable for client
-    if (spell && spell->IsTriggeredSpellWithRedundentData())
-        return 0;
+    if (spell)
+    {
+        // some triggered spells have data only usable for client
+        if (spell->IsTriggeredSpellWithRedundentData())
+            return 0;
+
+        // spell targeted to non-trading trade slot item instant at trade success apply
+        if (spell->GetCaster()->GetTypeId()==TYPEID_PLAYER)
+            if (TradeData* my_trade = ((Player*)(spell->GetCaster()))->GetTradeData())
+                if (Item* nonTrade = my_trade->GetTraderData()->GetItem(TRADE_SLOT_NONTRADED))
+                    if (nonTrade == spell->m_targets.getItemTarget())
+                        return 0;
+    }
 
     SpellCastTimesEntry const *spellCastTimeEntry = sSpellCastTimesStore.LookupEntry(spellInfo->CastingTimeIndex);
 
@@ -1802,7 +1812,12 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     // Kindred Spirits
                     if( spellInfo_1->SpellIconID == 3559 && spellInfo_2->SpellIconID == 3559 )
                         return false;
-
+						
+					// Fury of Frostmourne
+                    if( spellInfo_1->SpellIconID == 2702 && spellInfo_2->SpellIconID == 2702 || 					
+                        spellInfo_2->SpellIconID == 2702 && spellInfo_1->SpellIconID == 2702 )
+						return false;
+						
                     // Solace of the Defeated Heroic & Normal versions
                     if( (spellInfo_1->Id == 67696 && spellInfo_2->Id == 67750) ||
                         (spellInfo_2->Id == 67696 && spellInfo_1->Id == 67750) )
@@ -3630,6 +3645,9 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const *spell
             // Try search in next group
             groupEntry = sAreaGroupStore.LookupEntry(groupEntry->nextGroup);
         }
+		
+		if (spellInfo->AreaGroupId == 723 && zone_id == 4812)
+		    found = true;
 
         if (!found)
             return SPELL_FAILED_INCORRECT_AREA;
@@ -3744,6 +3762,8 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const *spell
             BattleGround* bg = player->GetBattleGround();
             return bg && bg->GetStatus()==STATUS_WAIT_JOIN ? SPELL_CAST_OK : SPELL_FAILED_ONLY_IN_ARENA;
         }
+		case 72293:
+		    return map_id == 631 ? SPELL_CAST_OK : SPELL_FAILED_INCORRECT_AREA;
     }
 
     return SPELL_CAST_OK;

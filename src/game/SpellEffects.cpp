@@ -412,6 +412,13 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
                     case 67485:
                         damage += uint32(0.5f * m_caster->GetTotalAttackPowerValue(BASE_ATTACK));
                         break;
+					// Defile damage depending from scale.
+					case 72754:                    
+					case 73708:                    
+					case 73709:                    
+					case 73710:
+					    damage = damage * m_caster->GetFloatValue(OBJECT_FIELD_SCALE_X);
+						break;
                 }
                 break;
             }
@@ -1824,6 +1831,19 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     m_caster->RemoveSpellsCausingAura(SPELL_AURA_MOD_FLIGHT_SPEED_MOUNTED);
                     return;
                 }
+				case 58689:                                 // Rock Shards
+				{                                           //left hand
+				    if (!unitTarget || roll_chance_i(90))   // only 10% of spikes `proc` dmg (about 1 spike per sec)
+					    return;
+						
+					m_caster->CastSpell(unitTarget, m_caster->GetMap()->IsRegularDifficulty() ? 58695 : 60883, true);
+					return;
+				}
+				case 58692:                                 // Rock Shards
+				{                                           // right hand
+				if (!unitTarget || roll_chance_i(90))   // only 10% of spikes `proc` dmg (about 1 spike per sec)
+				    return;
+				}	
                 case 59640:                                 // Underbelly Elixir
                 {
                     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -2924,6 +2944,12 @@ void Spell::EffectTriggerSpell(SpellEffectIndex effIndex)
                 pet->CastSpell(pet, 28305, true);
             return;
         }
+		// Monstrous Strength 
+		case 54681:
+		{
+		    unitTarget = m_caster;
+			break;
+		}	
         // Electrical Storm Tick
         case 43657:
         {
@@ -4246,6 +4272,14 @@ void Spell::EffectSummonSnakes(SpellEffectIndex eff_idx)
         modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_DURATION, duration);
 
     int32 amount = damage > 0 ? damage : 1;
+	
+	switch(m_spellInfo->EffectMiscValueB[eff_idx])
+	{
+	    case 2081: // engeneering dragonlings
+		case 2141: // Winterfin First Responder
+		    amount = 1;
+			break;
+	}		
 
     for(int32 count = 0; count < amount; ++count)
     {
@@ -4959,10 +4993,6 @@ void Spell::EffectEnchantItemPerm(SpellEffectIndex eff_idx)
 
     // add new enchanting if equipped
     item_owner->ApplyEnchantment(itemTarget,PERM_ENCHANTMENT_SLOT,true);
-
-    // update trade window for show enchantment for caster in trade window
-    if (m_targets.m_targetMask & TARGET_FLAG_TRADE_ITEM)
-        p_caster->GetSession()->SendUpdateTrade();
 }
 
 void Spell::EffectEnchantItemPrismatic(SpellEffectIndex eff_idx)
@@ -5021,10 +5051,6 @@ void Spell::EffectEnchantItemPrismatic(SpellEffectIndex eff_idx)
 
     // add new enchanting if equipped
     item_owner->ApplyEnchantment(itemTarget,PRISMATIC_ENCHANTMENT_SLOT,true);
-
-    // update trade window for show enchantment for caster in trade window
-    if (m_targets.m_targetMask & TARGET_FLAG_TRADE_ITEM)
-        p_caster->GetSession()->SendUpdateTrade();
 }
 
 void Spell::EffectEnchantItemTmp(SpellEffectIndex eff_idx)
@@ -5152,10 +5178,6 @@ void Spell::EffectEnchantItemTmp(SpellEffectIndex eff_idx)
 
     // add new enchanting if equipped
     item_owner->ApplyEnchantment(itemTarget, TEMP_ENCHANTMENT_SLOT, true);
-
-    // update trade window for show enchantment for caster in trade window
-    if (m_targets.m_targetMask & TARGET_FLAG_TRADE_ITEM)
-        p_caster->GetSession()->SendUpdateTrade();
 }
 
 void Spell::EffectTameCreature(SpellEffectIndex /*eff_idx*/)
@@ -6712,6 +6734,15 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
 
                     return;
                 }
+				case 58941:                                 // Rock Shards
+				{
+				    if (!unitTarget)
+					    return;
+						
+					m_originalCaster->CastSpell(unitTarget, 58689, true); // Left hand dummy visual
+                    m_originalCaster->CastSpell(unitTarget, 58692, true); // Right hand dummy visual
+					return;
+				}	
                 case 59317:                                 // Teleporting
                 {
                     if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
@@ -6746,6 +6777,12 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                    if (m_caster->GetTypeId() != TYPEID_UNIT)
                        return;
                 }
+				case 69200:                                 // Raging Spirit
+				    if (!unitTarget)
+					    return;
+						
+					unitTarget->CastSpell(unitTarget, 69201, true);
+                    return;					
                 case 66477:                                 // Bountiful Feast
                 {
                     if (!unitTarget)

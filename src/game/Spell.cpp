@@ -178,6 +178,15 @@ void SpellCastTargets::setItemTarget(Item* item)
     m_targetMask |= TARGET_FLAG_ITEM;
 }
 
+void SpellCastTargets::setTradeItemTarget(Player* caster)
+{
+    m_itemTargetGUID = ObjectGuid(uint64(TRADE_SLOT_NONTRADED));
+    m_itemTargetEntry = 0;
+    m_targetMask |= TARGET_FLAG_TRADE_ITEM;
+
+    Update(caster);
+}
+
 void SpellCastTargets::setCorpseTarget(Corpse* corpse)
 {
     m_CorpseTargetGUID = corpse->GetGUID();
@@ -191,17 +200,20 @@ void SpellCastTargets::Update(Unit* caster)
     NULL;
 
     m_itemTarget = NULL;
-    if(caster->GetTypeId() == TYPEID_PLAYER)
+    if (caster->GetTypeId() == TYPEID_PLAYER)
     {
-        if(m_targetMask & TARGET_FLAG_ITEM)
-            m_itemTarget = ((Player*)caster)->GetItemByGuid(m_itemTargetGUID);
-        else if(m_targetMask & TARGET_FLAG_TRADE_ITEM)
+        Player *player = ((Player*)caster);
+
+        if (m_targetMask & TARGET_FLAG_ITEM)
+            m_itemTarget = player->GetItemByGuid(m_itemTargetGUID);
+        else if (m_targetMask & TARGET_FLAG_TRADE_ITEM)
         {
-            Player* pTrader = ((Player*)caster)->GetTrader();
-            if(pTrader && m_itemTargetGUID.GetRawValue() < TRADE_SLOT_COUNT)
-                m_itemTarget = pTrader->GetItemByTradeSlot(uint32(m_itemTargetGUID.GetRawValue()));
+            if (TradeData* pTrade = player->GetTradeData())
+                if (m_itemTargetGUID.GetRawValue() < TRADE_SLOT_COUNT)
+                    m_itemTarget = pTrade->GetTraderData()->GetItem(TradeSlots(m_itemTargetGUID.GetRawValue()));
         }
-        if(m_itemTarget)
+
+        if (m_itemTarget)
             m_itemTargetEntry = m_itemTarget->GetEntry();
     }
 }
@@ -463,7 +475,7 @@ void Spell::FillCustomTargetMap(uint32 i, UnitList &targetUnitMap)
         radius = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[i]));
     else
         radius = GetSpellMaxRange(sSpellRangeStore.LookupEntry(m_spellInfo->rangeIndex));
-    // Resulting effect depends on spell that we want to cast
+	
     switch (m_spellInfo->Id)
     {
         case 46584: // Raise Dead
@@ -1637,6 +1649,17 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 case 25991:                                 // Poison Bolt Volley (Pincess Huhuran)
                     unMaxTargets = 15;
                     break;
+				case 72350:                                 // Fury of Frostmourne
+				case 72351:                                 // Fury of Frostmourne
+				    radius = 300;
+					break;
+				case 72754:
+				case 73708:
+				case 73709:
+				case 73710:
+                    if (Unit* realCaster = GetAffectiveCaster())
+                        radius = realCaster->GetFloatValue(OBJECT_FIELD_SCALE_X) * 10;
+					break;	
         case 62240:                                 // Solar Flare
         case 62920:                                 // Solar Flare (h)
         {
@@ -5688,6 +5711,31 @@ SpellCastResult Spell::CheckCast(bool strict)
         }
     }
 
+    // check trade slot case (last, for allow catch any another cast problems)
+    if (m_targets.m_targetMask & TARGET_FLAG_TRADE_ITEM)
+    {
+        if (m_caster->GetTypeId() != TYPEID_PLAYER)
+            return SPELL_FAILED_NOT_TRADING;
+
+        Player *pCaster = ((Player*)m_caster);
+        TradeData* my_trade = pCaster->GetTradeData();
+
+        if (!my_trade)
+            return SPELL_FAILED_NOT_TRADING;
+
+        TradeSlots slot = TradeSlots(m_targets.getItemTargetGUID());
+        if (slot != TRADE_SLOT_NONTRADED)
+            return SPELL_FAILED_ITEM_NOT_READY;
+
+        // if trade not complete then remember it in trade data
+        if (!my_trade->IsInAcceptProcess())
+        {
+            // Spell will be casted at completing the trade. Silently ignore at this place
+            my_trade->SetSpell(m_spellInfo->Id, m_CastItem);
+            return SPELL_FAILED_DONT_REPORT;
+        }
+    }
+
     // all ok
     return SPELL_CAST_OK;
 }
@@ -6106,12 +6154,19 @@ SpellCastResult Spell::CheckPower()
 
 bool Spell::IgnoreItemRequirements() const
 {
-    if (m_IsTriggeredSpell)
-        return true;
-
     /// Check if it's an enchant scroll. These have no required reagents even though their spell does.
     if (m_CastItem && m_CastItem->HasFlag(ITEM_FIELD_FLAGS, ITEM_FLAGS_ENCHANT_SCROLL))
         return true;
+
+    if (m_IsTriggeredSpell)
+    {
+        /// Not own traded item (in trader trade slot) req. reagents including triggered spell case
+        if (Item* targetItem = m_targets.getItemTarget())
+            if (targetItem->GetOwnerGUID() != m_caster->GetGUID())
+                return false;
+
+        return true;
+    }
 
     return false;
 }
