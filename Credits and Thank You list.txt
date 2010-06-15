@@ -1,39 +1,40 @@
-﻿╔══════════════════════════════════════════════════════════════╗
-║ This text document holds the list of names of those people   ║
-║ who have helped and/or worked on scripts/portions of code    ║
-║ that we are using now. Its their hard work that made this    ║
-║ core and this whole project to what it is now. Respect them  ║
-║ and thank them for it is their fault you are reading this.   ║
-╟─────┬────────────────────────────────────────────────────────╢
-║   1.│ Project Dark-iCE development team.                      ║
-║   2.│ MaNGOS development team.                               ║
-║   3.│ YTDB/Yurity/UDB development team.                      ║
-║   4.│ ScriptDev2/ScriptDevZero development team.             ║
-║   3.│ Insider42.                                             ║
-║   4.│ Xeross.                                                ║
-║   5.│ RSA.                                                   ║
-║   6.│ Janu.                                                  ║
-║   7.│ Tasssadar.                                             ║
-║   8.│ Traponinet.                                            ║
-║   9.│ Gimli.                                                 ║
-║  10.│ Laise.                                                 ║
-║  11.│ Kero99.                                                ║
-║  12.│ Ancient.                                               ║
-║  13.│ Blueboy.                                               ║
-║  14.│ Scrappydoo                                             ║
-║  15.│ Feanordev.                                             ║
-║  16.│ Sixsixnine.                                            ║
-║  17.│ Przemratajczak.                                        ║
-║  18.│ GriffonHeart.                                          ║
-║  19.│ MrLama.                                                ║
-║  20.│ Selector.                                              ║
-║  21.│ Udbuser93.                                             ║
-║  22.│ Fandor.                                                ║
-║  23.│ Darkiss.                                               ║
-╠═════╧════════╦═══════════════════════════════════════════════╣
-║              ║             You can find us at:               ║
-║ Final notes: ║    < http://projectdarkice.clanice.com/ >     ║
-║              ║ © 2010 Project Dark-iCE. All Rights Reserved. ║
-╟──────────────╨─────┬─────────────────────────────────────────╢
-║ File last updated: │  on Friday, May 28, 2010 (05/28/2010)   ║
-╚════════════════════╧═════════════════════════════════════════╝
+????????????????????????????????????????????????????????????????
+? This text document holds the list of names of those people   ?
+? who have helped and/or worked on scripts/portions of code    ?
+? that we are using now. Its their hard work that made this    ?
+? core and this whole project to what it is now. Respect them  ?
+? and thank them for it is their fault you are reading this.   ?
+????????????????????????????????????????????????????????????????
+?   1.? Project Dark-iCE development team.                      ?
+?   2.? MaNGOS development team.                               ?
+?   3.? YTDB/Yurity/UDB development team.                      ?
+?   4.? ScriptDev2/ScriptDevZero development team.             ?
+?   3.? Insider42.                                             ?
+?   4.? Xeross.                                                ?
+?   5.? RSA.                                                   ?
+?   6.? Janu.                                                  ?
+?   7.? Tasssadar.                                             ?
+?   8.? Traponinet.                                            ?
+?   9.? Gimli.                                                 ?
+?  10.? Laise.                                                 ?
+?  11.? Kero99.                                                ?
+?  12.? Ancient.                                               ?
+?  13.? Blueboy.                                               ?
+?  14.? Scrappydoo                                             ?
+?  15.? Feanordev.                                             ?
+?  16.? Sixsixnine.                                            ?
+?  17.? Przemratajczak.                                        ?
+?  18.? GriffonHeart.                                          ?
+?  19.? MrLama.                                                ?
+?  20.? Selector.                                              ?
+?  21.? Udbuser93.                                             ?
+?  22.? Fandor.                                                ?
+?  23.? Darkiss.                                               ?
+   24.  Wowka321
+????????????????????????????????????????????????????????????????
+?              ?             You can find us at:               ?
+? Final notes: ?    < http://projectdarkice.clanice.com/ >     ?
+?              ? � 2010 Project Dark-iCE. All Rights Reserved. ?
+????????????????????????????????????????????????????????????????
+? File last updated: ?  on Friday, May 28, 2010 (05/28/2010)   ?
+????????????????????????????????????????????????????????????????
