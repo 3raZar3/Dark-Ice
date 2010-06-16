@@ -12395,7 +12395,7 @@ void Player::SwapItem( uint16 src, uint16 dst )
     }
 
     // impossible merge/fill, do real swap
-    uint8 msg;
+    uint8 msg = EQUIP_ERR_OK;
 
     // check src->dest move possibility
     ItemPosCountVec sDest;
