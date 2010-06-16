@@ -467,7 +467,7 @@ WorldObject* Spell::FindCorpseUsing()
     return result;
 }
 
-void Spell::FillCustomTargetMap(uint32 i, UnitList &targetUnitMap)
+bool Spell::FillCustomTargetMap(uint32 i, UnitList &targetUnitMap)
 {
     float radius;
 
@@ -491,8 +491,8 @@ void Spell::FillCustomTargetMap(uint32 i, UnitList &targetUnitMap)
                         break;
                     default:
                         break;
-                }
-            }
+                };
+            };
             break;
         }
         case 47496: // Ghoul's explode
@@ -501,7 +501,12 @@ void Spell::FillCustomTargetMap(uint32 i, UnitList &targetUnitMap)
             break;
         }
         break;
+		
+		default:
+		    return false;
+		break;	
     }
+	return true;
 }
 
 // explicitly instantiate for use in SpellEffects.cpp
@@ -579,8 +584,7 @@ void Spell::FillTargetMap()
                         break;
                     case TARGET_AREAEFFECT_CUSTOM:
                     case TARGET_ALL_ENEMY_IN_AREA_INSTANT:
-                        FillCustomTargetMap(i,tmpUnitMap);
-                        break;
+                      if (FillCustomTargetMap(i,tmpUnitMap)) break; 
                     case TARGET_INNKEEPER_COORDINATES:
                     case TARGET_TABLE_X_Y_Z_COORDINATES:
                     case TARGET_CASTER_COORDINATES:
