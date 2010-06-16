@@ -2408,6 +2408,12 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 spellInfo_2->EffectApplyAuraName[i] == SPELL_AURA_ADD_PCT_MODIFIER )
                 isModifier = true;
         }
+		
+		//check Spells with same Icons
+		if(spellInfo_1->Id != spellInfo_2->Id &&
+		   strcmp(spellInfo_1->SpellName[sWorld.GetDefaultDbcLocale()],
+		          spellInfo_2->SpellName[sWorld.GetDefaultDbcLocale()]) != 0)
+		   isModifier = true;		  
 
         if (!isModifier)
             return true;
