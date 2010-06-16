@@ -2759,6 +2759,12 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
             }
             break;
         }
+        case SPELLFAMILY_PET:
+        {
+            if (m_spellInfo->SpellIconID == 3748 && unitTarget->GetTypeId() == TYPEID_UNIT && ((Creature*)unitTarget)->isPet())
+                ((Pet*)unitTarget)->UpdateScalingAuras();
+            break;
+        }
     }
 
     // pet auras
