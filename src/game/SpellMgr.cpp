@@ -1997,7 +1997,12 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
             // Detect Invisibility and Mana Shield (multi-family check)
             if( spellInfo_2->Id == 132 && spellInfo_1->SpellIconID == 209 && spellInfo_1->SpellVisual[0] == 968 )
                 return false;
-
+				
+			// Shadow Protection and Shadow Ward
+            if( spellInfo_2->SpellFamilyName == SPELLFAMILY_PRIEST )
+                if( spellInfo_1->SpellIconID == 207 && spellInfo_2->SpellIconID == 207)			
+                    return false;
+					
             // Combustion and Fire Protection Aura (multi-family check)
             if( spellInfo_1->Id == 11129 && spellInfo_2->SpellIconID == 33 && spellInfo_2->SpellVisual[0] == 321 )
                 return false;
@@ -2138,6 +2143,12 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 // Prayer/PW  Fortitude && Runescroll of Fortitude
                 if (spellInfo_1->SpellVisual[0] == 278 && spellInfo_2->Id == 72590)
                     return true;
+					
+				// Shadow Protection and Shadow Ward
+                if( spellInfo_2->SpellFamilyName == SPELLFAMILY_WARLOCK )
+                    if( spellInfo_1->SpellIconID == 207 && spellInfo_2->SpellIconID == 207)
+                        return false;
+						
             }
             // Weakened Soul and Last Stand (multi-family check)
             if (spellInfo_1->Id == 6788 && spellInfo_2->Id == 12976)
