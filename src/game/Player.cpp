@@ -17556,8 +17556,10 @@ void Player::SaveToDB()
 		    ps << GetUInt32Value(i) << " ";
 		}
 		ps << "')";
+		CharacterDatabase.Execute( ps.str().c_str() );
 		
         _SaveStats();
+		
     }
     // save pet (hunter pet level and experience and all type pets health/mana).
     if (Pet* pet = GetPet())
