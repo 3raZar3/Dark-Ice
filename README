@@ -36,22 +36,35 @@ MaNGOS (the Massive Network Game Object Server) is an Open Source reference
 implementation for a MMORPG server system. Please see the file COPYING for
 license details.
 
-For further information on the MaNGOS project, please visit our project web
-site at <http://getmangos.com/>
+==========================================================================================================
+::Welcome to The DARK_iCE Project::
 
-Documentation on various development related topics can be found in the doc/
-subdirectory, including Doxygen-generated API documentation.
+::DARK_iCE Core::
+http://github.com/Darkrulerz/Core
 
-The required SQL files for creating the database backend are included in the
-sql/ subdirectory. In case you are upgrading from an older MaNGOS release,
-make sure you as well take a look at the SQL files in the sql/updates/ sub-
-directory.
+::DARK_iCE DataBase::
+http://github.com/Darkrulerz/Database
 
-In order to build and install MaNGOS under Linux, follow the instructions
-described in the INSTALL file.
+::DARK_iCE Website::
+http://projectdarkice.clanice.com/index.php
 
-In case you have checked out MaNGOS from the GIT repository, please run
+::Quick_OUT_LOOK::
 
-$ autoreconf --install --force
+Us Here at DARK_iCE stride to bring you the best Core we can as this core was built from collecting/editting and writing
+Code for varoius soucres and varoius repo's around git as well as the player's input and patches
+one day we hope to have a core that is as close to blizz-like as possible
+please remember that this is our own time we use to make and build this  we do not get paid for this
+so please keep this in mind  as well as we are all still learning here 
 
-prior to building, as you may otherwise not be able to run a build.
+
+:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+      ---------::DARK-ICE Development Team::-------------
+- DarkRulerz
+- 3raZar
+- FallenAngelX
+- Singlem
+- Notagain
+- and to all those to have helped!!!!
+
+
