@@ -467,7 +467,7 @@ WorldObject* Spell::FindCorpseUsing()
     return result;
 }
 
-void Spell::FillCustomTargetMap(uint32 i, UnitList &targetUnitMap)
+bool Spell::FillCustomTargetMap(uint32 i, UnitList &targetUnitMap)
 {
     float radius;
 
@@ -491,8 +491,8 @@ void Spell::FillCustomTargetMap(uint32 i, UnitList &targetUnitMap)
                         break;
                     default:
                         break;
-                }
-            }
+                };
+            };
             break;
         }
         case 47496: // Ghoul's explode
@@ -501,7 +501,12 @@ void Spell::FillCustomTargetMap(uint32 i, UnitList &targetUnitMap)
             break;
         }
         break;
+		
+		default:
+		    return false;
+		break;	
     }
+	return true;
 }
 
 // explicitly instantiate for use in SpellEffects.cpp
@@ -579,8 +584,7 @@ void Spell::FillTargetMap()
                         break;
                     case TARGET_AREAEFFECT_CUSTOM:
                     case TARGET_ALL_ENEMY_IN_AREA_INSTANT:
-                        FillCustomTargetMap(i,tmpUnitMap);
-                        break;
+                      if (FillCustomTargetMap(i,tmpUnitMap)) break; 
                     case TARGET_INNKEEPER_COORDINATES:
                     case TARGET_TABLE_X_Y_Z_COORDINATES:
                     case TARGET_CASTER_COORDINATES:
@@ -1649,6 +1653,12 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 case 25991:                                 // Poison Bolt Volley (Pincess Huhuran)
                     unMaxTargets = 15;
                     break;
+				case 69075:                                 // Bone Storm
+				case 70834:                                 // Bone Storm
+				case 70835:                                 // Bone Storm
+				case 70836:                                 // Bone Storm
+				    radius = m_spellInfo->EffectBasePoints[effIndex] / 300;
+					break;
 				case 72350:                                 // Fury of Frostmourne
 				case 72351:                                 // Fury of Frostmourne
 				    radius = 300;
@@ -3483,9 +3493,6 @@ void Spell::update(uint32 difftime)
         {
             if(m_timer)
             {
-                if (m_targets.getUnitTarget() && !m_targets.getUnitTarget()->isVisibleForOrDetect(m_caster, m_caster, false))
-                    cancel();
-
                 if(difftime >= m_timer)
                     m_timer = 0;
                 else
@@ -4713,21 +4720,11 @@ SpellCastResult Spell::CheckCast(bool strict)
 
             // auto selection spell rank implemented in WorldSession::HandleCastSpellOpcode
             // this case can be triggered if rank not found (too low-level target for first rank)
-            if (m_caster->GetTypeId() == TYPEID_PLAYER && !IsPassiveSpell(m_spellInfo->Id) && !m_CastItem)
+            if (m_caster->GetTypeId() == TYPEID_PLAYER && !m_CastItem && !m_IsTriggeredSpell)
             {
-                for(int i = 0; i < MAX_EFFECT_INDEX; ++i)
-                {
-                    // check only spell that apply positive auras
-                    if (m_spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AURA &&
-                        IsPositiveEffect(m_spellInfo->Id, SpellEffectIndex(i)) &&
-                        // at not self target
-                        !IsCasterSourceTarget(m_spellInfo->EffectImplicitTargetA[i]) &&
-                        // and target low level
-                        target->getLevel() + 10 < m_spellInfo->spellLevel)
-                    {
-                        return SPELL_FAILED_LOWLEVEL;
-                    }
-                }
+                // spell expected to be auto-downranking in cast handle, so must be same
+                if (m_spellInfo != sSpellMgr.SelectAuraRankForLevel(m_spellInfo, target->getLevel()))
+                    return SPELL_FAILED_LOWLEVEL;
             }
         }
         else if (m_caster == target)
@@ -4908,7 +4905,7 @@ SpellCastResult Spell::CheckCast(bool strict)
 
     // not let players cast spells at mount (and let do it to creatures)
     if ((m_caster->IsMounted() || m_caster->GetVehicleGUID()) && m_caster->GetTypeId()==TYPEID_PLAYER && !m_IsTriggeredSpell &&
-        !IsPassiveSpell(m_spellInfo->Id) && !(m_spellInfo->Attributes & SPELL_ATTR_CASTABLE_WHILE_MOUNTED))
+        !IsPassiveSpell(m_spellInfo) && !(m_spellInfo->Attributes & SPELL_ATTR_CASTABLE_WHILE_MOUNTED))
     {
         if (m_caster->isInFlight())
         {
@@ -4937,7 +4934,7 @@ SpellCastResult Spell::CheckCast(bool strict)
     }
 
     // always (except passive spells) check items (focus object can be required for any type casts)
-    if (!IsPassiveSpell(m_spellInfo->Id))
+    if (!IsPassiveSpell(m_spellInfo))
     {
         SpellCastResult castResult = CheckItems();
         if(castResult != SPELL_CAST_OK)

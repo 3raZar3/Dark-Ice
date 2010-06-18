@@ -1426,6 +1426,14 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     unitTarget->CastSpell(unitTarget,46798,true,m_CastItem,NULL,m_originalCasterGUID);
                     break;
                 }
+				case 48679:                                 // Banshee's Magic Mirror
+				{
+				    if (!unitTarget || m_caster->GetTypeId() != TYPEID_PLAYER)
+					    return;
+						
+					unitTarget->CastSpell(m_caster, 48648, true);
+					return;
+				}	
                 case 49357:                                 // Brewfest Mount Transformation
                 {
                     if (m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -2759,6 +2767,12 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
             }
             break;
         }
+        case SPELLFAMILY_PET:
+        {
+            if (m_spellInfo->SpellIconID == 3748 && unitTarget->GetTypeId() == TYPEID_UNIT && ((Creature*)unitTarget)->isPet())
+                ((Pet*)unitTarget)->UpdateScalingAuras();
+            break;
+        }
     }
 
     // pet auras
@@ -2970,6 +2984,13 @@ void Spell::EffectTriggerSpell(SpellEffectIndex effIndex)
             m_caster->ModifyPower(POWER_RUNIC_POWER, 25);
             return;
         }
+		// Glyph of Mirror Image
+		case 58832:
+		{
+		    if (m_caster->HasAura(63093))
+			    m_caster->CastSpell(m_caster, 65047, true); // Mirror Image
+			break;
+		}	
     }
 
     // normal case
@@ -4169,6 +4190,8 @@ void Spell::EffectSummonType(SpellEffectIndex eff_idx)
           // Snake trap exception
                     else if (m_spellInfo->EffectMiscValueB[eff_idx] == 2301)
                         EffectSummonSnakes(eff_idx);
+					else if (prop_id == 1021)
+					    DoSummonGuardian(eff_idx, summon_prop->FactionId);
                     else
                         DoSummonWild(eff_idx, summon_prop->FactionId);
                     break;
@@ -4704,7 +4727,8 @@ void Spell::EffectAddFarsight(SpellEffectIndex eff_idx)
     dynObj->SetUInt32Value(DYNAMICOBJECT_BYTES, 0x80000002);
     m_caster->AddDynObject(dynObj);
     m_caster->GetMap()->Add(dynObj);
-    ((Player*)m_caster)->SetFarSightGUID(dynObj->GetGUID());
+
+    ((Player*)m_caster)->GetCamera().SetView(dynObj);
 }
 
 void Spell::DoSummonWild(SpellEffectIndex eff_idx, uint32 forceFaction)
@@ -6307,7 +6331,10 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
 
                     unitTarget->CastSpell(m_caster, 45626, true);
                     break;
-				}	
+				}
+                case 45204: // Clone Me!
+                    unitTarget->CastSpell(m_caster, damage, true);
+					break;	
                 case 45206:                                 // Copy Off-hand Weapon
                 {
                     if (m_caster->GetTypeId() != TYPEID_UNIT || !unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)

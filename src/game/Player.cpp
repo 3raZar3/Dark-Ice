@@ -415,7 +415,7 @@ void TradeData::SetAccepted(bool state, bool crosssend /*= false*/)
 
 UpdateMask Player::updateVisualBits;
 
-Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputationMgr(this)
+Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputationMgr(this), m_mover(this), m_camera(this)
 {
     // Jail by WarHead
     m_jail_guid     = 0;
@@ -447,6 +447,8 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
     m_objectTypeId = TYPEID_PLAYER;
 
     m_valuesCount = PLAYER_END;
+
+    m_isActiveObject = true;                                // player is always active object
 
     m_session = session;
 
@@ -630,7 +632,7 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
     m_summon_y = 0.0f;
     m_summon_z = 0.0f;
 
-    m_mover = this;
+    SetMover(this);
     m_mover_in_queve = NULL;
 
     m_miniPet = 0;
@@ -2429,7 +2431,7 @@ Creature* Player::GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask)
     if (GetGUID() == guid.GetRawValue())
         return ((Creature*)this);
     // not in interactive state
-    if (hasUnitState(UNIT_STAT_CAN_NOT_REACT))
+    if (hasUnitState(UNIT_STAT_CAN_NOT_REACT_OR_LOST_CONTROL))
         return NULL;
 
     // needed by Aura 292
@@ -2487,7 +2489,7 @@ GameObject* Player::GetGameObjectIfCanInteractWith(ObjectGuid guid, uint32 gameo
         return NULL;
 
     // not in interactive state
-    if (hasUnitState(UNIT_STAT_CAN_NOT_REACT))
+    if (hasUnitState(UNIT_STAT_CAN_NOT_REACT_OR_LOST_CONTROL))
         return NULL;
 
     if (GameObject *go = GetMap()->GetGameObject(guid))
@@ -2606,7 +2608,8 @@ void Player::SetGameMaster(bool on)
         getHostileRefManager().setOnlineOfflineState(true);
     }
 
-    UpdateVisibilityForPlayer();
+    m_camera.UpdateVisibilityForOwner();
+    UpdateObjectVisibility();
 }
 
 void Player::SetGMVisible(bool on)
@@ -3269,7 +3272,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
 
             if(active)
             {
-                if (IsPassiveSpell(spell_id) && IsNeedCastPassiveSpellAtLearn(spellInfo))
+                if (IsPassiveSpell(spellInfo) && IsNeedCastPassiveSpellAtLearn(spellInfo))
                     CastSpell (this, spell_id, true);
             }
             else if(IsInWorld())
@@ -3460,7 +3463,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
         CastSpell(this, spell_id, true);
     }
     // also cast passive spells (including all talents without SPELL_EFFECT_LEARN_SPELL) with additional checks
-    else if (IsPassiveSpell(spell_id))
+    else if (IsPassiveSpell(spellInfo))
     {
         if (IsNeedCastPassiveSpellAtLearn(spellInfo))
             CastSpell(this, spell_id, true);
@@ -4699,8 +4702,10 @@ void Player::ResurrectPlayer(float restore_percent, bool applySickness)
     UpdateZone(newzone,newarea);
     sOutdoorPvPMgr.HandlePlayerResurrects(this, newzone);
 
-    // update visibility
-    UpdateVisibilityForPlayer();
+    // update visibility of world around viewpoint
+    m_camera.UpdateVisibilityForOwner();
+    // update visibility of player for nearby cameras
+    UpdateObjectVisibility();
 
     if(!applySickness)
         return;
@@ -6291,29 +6296,21 @@ void Player::SaveRecallPosition()
 
 void Player::SendMessageToSet(WorldPacket *data, bool self)
 {
-    Map * _map = IsInWorld() ? GetMap() : sMapMgr.FindMap(GetMapId(), GetInstanceId());
-    if(_map)
-    {
-        _map->MessageBroadcast(this, data, self);
-        return;
-    }
+    if (Map * _map = IsInWorld() ? GetMap() : sMapMgr.FindMap(GetMapId(), GetInstanceId()))
+        _map->MessageBroadcast(this, data, false);
 
     //if player is not in world and map in not created/already destroyed
     //no need to create one, just send packet for itself!
-    if(self)
+    if (self)
         GetSession()->SendPacket(data);
 }
 
 void Player::SendMessageToSetInRange(WorldPacket *data, float dist, bool self)
 {
-    Map * _map = IsInWorld() ? GetMap() : sMapMgr.FindMap(GetMapId(), GetInstanceId());
-    if(_map)
-    {
-        _map->MessageDistBroadcast(this, data, dist, self);
-        return;
-    }
+    if (Map * _map = IsInWorld() ? GetMap() : sMapMgr.FindMap(GetMapId(), GetInstanceId()))
+        _map->MessageDistBroadcast(this, data, dist, false);
 
-    if(self)
+    if (self)
         GetSession()->SendPacket(data);
 }
 
@@ -6326,7 +6323,7 @@ void Player::SendMessageToSetInRange(WorldPacket *data, float dist, bool self, b
         return;
     }
 
-    if(self)
+    if (self)
         GetSession()->SendPacket(data);
 }
 
@@ -7492,6 +7489,9 @@ void Player::_ApplyItemBonuses(ItemPrototype const *proto, uint8 slot, bool appl
             case ITEM_MOD_BLOCK_VALUE:
                 HandleBaseModValue(SHIELD_BLOCK_VALUE, FLAT_MOD, float(val), apply);
                 break;
+			case ITEM_MOD_SPELL_PENETRATION:
+                ApplyModInt32Value(PLAYER_FIELD_MOD_TARGET_RESISTANCE, int32(-val), apply);
+                break;				
             // depricated item mods
             case ITEM_MOD_FERAL_ATTACK_POWER:
             case ITEM_MOD_SPELL_HEALING_DONE:
@@ -15966,7 +15966,8 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
     SetCreatorGUID(0);
 
     // reset some aura modifiers before aura apply
-    SetFarSightGUID(0);
+
+    SetUInt64Value(PLAYER_FARSIGHT, 0);
     SetUInt32Value(PLAYER_TRACK_CREATURES, 0 );
     SetUInt32Value(PLAYER_TRACK_RESOURCES, 0 );
 
@@ -17559,8 +17560,19 @@ void Player::SaveToDB()
     // check if stats should only be saved on logout
     // save stats can be out of transaction
     if (m_session->isLogingOut() || !sWorld.getConfig(CONFIG_BOOL_STATS_SAVE_ONLY_ON_LOGOUT))
+	{
+	    std::ostringstream ps;
+		ps << "REPLACE INTO armory_character_stats (guid,data) VALUES ('" << GetGUIDLow() << "', '";
+		for(uint16 i = 0; i < m_valuesCount; ++i )
+		{
+		    ps << GetUInt32Value(i) << " ";
+		}
+		ps << "')";
+		CharacterDatabase.Execute( ps.str().c_str() );
+		
         _SaveStats();
-
+		
+    }
     // save pet (hunter pet level and experience and all type pets health/mana).
     if (Pet* pet = GetPet())
         pet->SavePetToDB(PET_SAVE_AS_CURRENT);
@@ -18415,7 +18427,7 @@ void Player::RemoveMiniPet()
     }
 }
 
-Pet* Player::GetMiniPet()
+Pet* Player::GetMiniPet() const
 {
     if (!m_miniPet)
         return NULL;
@@ -18879,7 +18891,7 @@ void Player::HandleStealthedUnitsDetection()
     MaNGOS::UnitListSearcher<MaNGOS::AnyStealthedCheck > searcher(this,stealthedUnits, u_check);
     Cell::VisitAllObjects(this, searcher, MAX_PLAYER_STEALTH_DETECT_RANGE);
 
-    WorldObject const* viewPoint = GetViewPoint();
+    WorldObject const* viewPoint = GetCamera().GetBody();
 
     for (std::list<Unit*>::const_iterator i = stealthedUnits.begin(); i != stealthedUnits.end(); ++i)
     {
@@ -19991,17 +20003,6 @@ void Player::ReportedAfkBy(Player* reporter)
     }
 }
 
-WorldObject const* Player::GetViewPoint() const
-{
-    if(uint64 far_sight = GetFarSight())
-    {
-        WorldObject const* viewPoint = GetMap()->GetWorldObject(far_sight);
-        return viewPoint ? viewPoint : this;                // always expected not NULL
-    }
-    else
-        return this;
-}
-
 bool Player::IsVisibleInGridForPlayer( Player* pl ) const
 {
     // gamemaster in GM mode see all, including ghosts
@@ -20312,7 +20313,7 @@ void Player::SendInitialPacketsBeforeAddToMap()
     if(HasAuraType(SPELL_AURA_MOD_FLIGHT_SPEED_MOUNTED) || HasAuraType(SPELL_AURA_FLY) || isInFlight())
         m_movementInfo.AddMovementFlag(MOVEFLAG_FLYING);
 
-    m_mover = this;
+    SetMover(this);
     m_mover_in_queve = NULL;
 }
 
@@ -21659,7 +21660,7 @@ void Player::SendEnterVehicle(Vehicle *vehicle, VehicleSeatEntry const *veSeat)
     vehicle->setFaction((GetTeam() == ALLIANCE) ? vehicle->GetCreatureInfo()->faction_A : vehicle->GetCreatureInfo()->faction_H);
 
     SetCharm(NULL);
-    SetFarSightGUID(0);
+    m_camera.ResetView();
 
     SetClientControl(vehicle, 0);
     SetMover(NULL);
@@ -22111,6 +22112,23 @@ void Player::UpdateAchievementCriteria( AchievementCriteriaTypes type, uint32 mi
     GetAchievementMgr().UpdateAchievementCriteria(type, miscvalue1,miscvalue2,unit,time);
 }
 
+PlayerTalent const* Player::GetKnownTalentById(int32 talentId) const
+{
+    PlayerTalentMap::const_iterator itr = m_talents[m_activeSpec].find(talentId);
+    if (itr != m_talents[m_activeSpec].end() && itr->second.state != PLAYERSPELL_REMOVED)
+        return &itr->second;
+    else
+        return NULL;
+}
+
+SpellEntry const* Player::GetKnownTalentRankById(int32 talentId) const
+{
+    if (PlayerTalent const* talent = GetKnownTalentById(talentId))
+        return sSpellStore.LookupEntry(talent->m_talentEntry->RankID[talent->currentRank]);
+    else
+        return NULL;
+}
+
 void Player::LearnTalent(uint32 talentId, uint32 talentRank)
 {
     uint32 CurTalentPoints = GetFreeTalentPoints();
@@ -22137,9 +22155,8 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank)
 
     // find current max talent rank
     uint32 curtalent_maxrank = 0;
-    PlayerTalentMap::iterator itr = m_talents[m_activeSpec].find(talentId);
-    if (itr != m_talents[m_activeSpec].end() && itr->second.state != PLAYERSPELL_REMOVED)
-        curtalent_maxrank = itr->second.currentRank + 1;
+    if (PlayerTalent const* talent = GetKnownTalentById(talentId))
+        curtalent_maxrank = talent->currentRank + 1;
 
     // we already have same or higher talent rank learned
     if(curtalent_maxrank >= (talentRank + 1))
@@ -22823,17 +22840,16 @@ void Player::ActivateSpec(uint8 specNum)
 
         // learn talent spells if they not in new spec (old spec copy)
         // and if they have different rank
-        PlayerTalentMap::iterator specIter = m_talents[m_activeSpec].find(tempIter->first);
-        if (specIter != m_talents[m_activeSpec].end() && specIter->second.state != PLAYERSPELL_REMOVED)
+        if (PlayerTalent const* cur_talent = GetKnownTalentById(tempIter->first))
         {
-            if ((*specIter).second.currentRank != talent.currentRank)
+            if (cur_talent->currentRank != talent.currentRank)
                 learnSpell(talentSpellId, false);
         }
         else
             learnSpell(talentSpellId, false);
 
         // sync states - original state is changed in addSpell that learnSpell calls
-        specIter = m_talents[m_activeSpec].find(tempIter->first);
+        PlayerTalentMap::iterator specIter = m_talents[m_activeSpec].find(tempIter->first);
         if (specIter != m_talents[m_activeSpec].end())
             (*specIter).second.state = talent.state;
         else
@@ -22854,11 +22870,20 @@ void Player::ActivateSpec(uint8 specNum)
 
     // recheck action buttons (not checked at loading/spec copy)
     ActionButtonList const& currentActionButtonList = m_actionButtons[m_activeSpec];
-    for(ActionButtonList::const_iterator itr = currentActionButtonList.begin(); itr != currentActionButtonList.end(); ++itr)
+    for(ActionButtonList::const_iterator itr = currentActionButtonList.begin(); itr != currentActionButtonList.end(); )
+    {
         if (itr->second.uState != ACTIONBUTTON_DELETED)
+        {
             // remove broken without any output (it can be not correct because talents not copied at spec creating)
             if (!IsActionButtonDataValid(itr->first,itr->second.GetAction(),itr->second.GetType(), this, false))
+            {
                 removeActionButton(m_activeSpec,itr->first);
+                itr = currentActionButtonList.begin();
+                continue;
+            }
+        }
+        ++itr;
+    }
 
     ResummonPetTemporaryUnSummonedIfAny();
 
@@ -22949,38 +22974,6 @@ void Player::BuildTeleportAckMsg( WorldPacket *data, float x, float y, float z, 
 bool Player::HasMovementFlag( MovementFlags f ) const
 {
     return m_movementInfo.HasMovementFlag(f);
-}
-
-void Player::SetFarSightGUID( uint64 guid )
-{
-    if(GetFarSight() == guid)
-        return;
-
-    SetUInt64Value(PLAYER_FARSIGHT, guid);
-
-    // need triggering load grids around new view point
-    UpdateVisibilityForPlayer();
-}
-
-void Player::UpdateVisibilityForPlayer()
-{
-    WorldObject const* viewPoint = GetViewPoint();
-    Map* m = GetMap();
-
-    CellPair p(MaNGOS::ComputeCellPair(GetPositionX(), GetPositionY()));
-    Cell cell(p);
-
-    m->UpdateObjectVisibility(this, cell, p);
-
-    if (this != viewPoint)
-    {
-        CellPair pView(MaNGOS::ComputeCellPair(viewPoint->GetPositionX(), viewPoint->GetPositionY()));
-        Cell cellView(pView);
-
-        m->UpdateObjectsVisibilityFor(this, cellView, pView);
-    }
-    else
-        m->UpdateObjectsVisibilityFor(this, cell, p);
 }
 
 void Player::ResetTimeSync()

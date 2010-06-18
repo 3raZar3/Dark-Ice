@@ -300,6 +300,11 @@ bool IsPassiveSpell(uint32 spellId)
     SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
     if (!spellInfo)
         return false;
+    return IsPassiveSpell(spellInfo);
+}
+
+bool IsPassiveSpell(SpellEntry const *spellInfo)
+{
     return (spellInfo->Attributes & SPELL_ATTR_PASSIVE) != 0;
 }
 
@@ -1669,7 +1674,7 @@ bool SpellMgr::IsRankSpellDueToSpell(SpellEntry const *spellInfo_1,uint32 spellI
 
 bool SpellMgr::canStackSpellRanks(SpellEntry const *spellInfo)
 {
-    if(IsPassiveSpell(spellInfo->Id))                       // ranked passive spell
+    if(IsPassiveSpell(spellInfo))                           // ranked passive spell
         return false;
     if(spellInfo->powerType != POWER_MANA && spellInfo->powerType != POWER_HEALTH)
         return false;
@@ -1997,7 +2002,12 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
             // Detect Invisibility and Mana Shield (multi-family check)
             if( spellInfo_2->Id == 132 && spellInfo_1->SpellIconID == 209 && spellInfo_1->SpellVisual[0] == 968 )
                 return false;
-
+				
+			// Shadow Protection and Shadow Ward
+            if( spellInfo_2->SpellFamilyName == SPELLFAMILY_PRIEST )
+                if( spellInfo_1->SpellIconID == 207 && spellInfo_2->SpellIconID == 207)			
+                    return false;
+					
             // Combustion and Fire Protection Aura (multi-family check)
             if( spellInfo_1->Id == 11129 && spellInfo_2->SpellIconID == 33 && spellInfo_2->SpellVisual[0] == 321 )
                 return false;
@@ -2138,6 +2148,12 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 // Prayer/PW  Fortitude && Runescroll of Fortitude
                 if (spellInfo_1->SpellVisual[0] == 278 && spellInfo_2->Id == 72590)
                     return true;
+					
+				// Shadow Protection and Shadow Ward
+                if( spellInfo_2->SpellFamilyName == SPELLFAMILY_WARLOCK )
+                    if( spellInfo_1->SpellIconID == 207 && spellInfo_2->SpellIconID == 207)
+                        return false;
+						
             }
             // Weakened Soul and Last Stand (multi-family check)
             if (spellInfo_1->Id == 6788 && spellInfo_2->Id == 12976)
@@ -2408,6 +2424,12 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 spellInfo_2->EffectApplyAuraName[i] == SPELL_AURA_ADD_PCT_MODIFIER )
                 isModifier = true;
         }
+		
+		//check Spells with same Icons
+		if(spellInfo_1->Id != spellInfo_2->Id &&
+		   strcmp(spellInfo_1->SpellName[sWorld.GetDefaultDbcLocale()],
+		          spellInfo_2->SpellName[sWorld.GetDefaultDbcLocale()]) != 0)
+		   isModifier = true;		  
 
         if (!isModifier)
             return true;
@@ -2505,37 +2527,44 @@ bool SpellMgr::IsSkillBonusSpell(uint32 spellId) const
     return false;
 }
 
-SpellEntry const* SpellMgr::SelectAuraRankForPlayerLevel(SpellEntry const* spellInfo, uint32 playerLevel) const
+SpellEntry const* SpellMgr::SelectAuraRankForLevel(SpellEntry const* spellInfo, uint32 level) const
 {
-    // ignore passive spells
-    if(IsPassiveSpell(spellInfo->Id))
+    // fast case
+    if (level + 10 >= spellInfo->spellLevel)
+        return spellInfo;
+
+    // ignore selection for passive spells
+    if (IsPassiveSpell(spellInfo))
         return spellInfo;
 
     bool needRankSelection = false;
     for(int i = 0; i < MAX_EFFECT_INDEX; ++i)
     {
-        if (IsPositiveEffect(spellInfo->Id, SpellEffectIndex(i)) && (
-            spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AURA ||
+        // for simple aura in check apply to any non caster based targets, in rank search mode to any explicit targets
+        if (((spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AURA && 
+            (IsExplicitPositiveTarget(spellInfo->EffectImplicitTargetA[i]) ||
+            IsAreaEffectPossitiveTarget(Targets(spellInfo->EffectImplicitTargetA[i])))) ||
             spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AREA_AURA_PARTY ||
-            spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AREA_AURA_RAID))
+            spellInfo->Effect[i] == SPELL_EFFECT_APPLY_AREA_AURA_RAID) &&
+            IsPositiveEffect(spellInfo->Id, SpellEffectIndex(i)))
         {
             needRankSelection = true;
             break;
         }
     }
 
-    // not required
-    if(!needRankSelection)
+    // not required (rank check more slow so check it here)
+    if (!needRankSelection || GetSpellRank(spellInfo->Id) == 0)
         return spellInfo;
 
     for(uint32 nextSpellId = spellInfo->Id; nextSpellId != 0; nextSpellId = GetPrevSpellInChain(nextSpellId))
     {
         SpellEntry const *nextSpellInfo = sSpellStore.LookupEntry(nextSpellId);
-        if(!nextSpellInfo)
+        if (!nextSpellInfo)
             break;
 
         // if found appropriate level
-        if(playerLevel + 10 >= nextSpellInfo->spellLevel)
+        if (level + 10 >= spellInfo->spellLevel)
             return nextSpellInfo;
 
         // one rank less then
@@ -2882,7 +2911,7 @@ void SpellMgr::LoadSpellLearnSpells()
                 // talent or passive spells or skill-step spells auto-casted and not need dependent learning,
                 // pet teaching spells don't must be dependent learning (casted)
                 // other required explicit dependent learning
-                dbc_node.autoLearned = entry->EffectImplicitTargetA[i]==TARGET_PET || GetTalentSpellCost(spell) > 0 || IsPassiveSpell(spell) || IsSpellHaveEffect(entry,SPELL_EFFECT_SKILL_STEP);
+                dbc_node.autoLearned = entry->EffectImplicitTargetA[i]==TARGET_PET || GetTalentSpellCost(spell) > 0 || IsPassiveSpell(entry) || IsSpellHaveEffect(entry,SPELL_EFFECT_SKILL_STEP);
 
                 SpellLearnSpellMapBounds db_node_bounds = GetSpellLearnSpellMapBounds(spell);
 

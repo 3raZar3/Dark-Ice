@@ -424,7 +424,7 @@ class Spell
 
         typedef std::list<Unit*> UnitList;
         void FillTargetMap();
-        void FillCustomTargetMap(uint32 i, UnitList &targetUnitMap); 
+        bool FillCustomTargetMap(uint32 i, UnitList &targetUnitMap); 
         void SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList &targetUnitMap);
 
         void FillAreaTargets(UnitList &targetUnitMap, float x, float y, float radius, SpellNotifyPushType pushType, SpellTargets spellTargets, WorldObject* originalCaster = NULL);
@@ -828,6 +828,7 @@ namespace MaNGOS
         template<> inline void Visit(CorpseMapType & ) {}
         template<> inline void Visit(GameObjectMapType & ) {}
         template<> inline void Visit(DynamicObjectMapType & ) {}
+        template<> inline void Visit(CameraMapType & ) {}
         #endif
     };
 
@@ -835,6 +836,7 @@ namespace MaNGOS
     template<> inline void SpellNotifierCreatureAndPlayer::Visit(CorpseMapType& ) {}
     template<> inline void SpellNotifierCreatureAndPlayer::Visit(GameObjectMapType& ) {}
     template<> inline void SpellNotifierCreatureAndPlayer::Visit(DynamicObjectMapType& ) {}
+    template<> inline void SpellNotifierCreatureAndPlayer::Visit(CameraMapType& ) {}
     #endif
 }
 

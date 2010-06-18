@@ -19,10 +19,12 @@
 #include "Common.h"
 #include "Log.h"
 #include "Vehicle.h"
+#include "Player.h"
 #include "Unit.h"
 #include "Util.h"
 #include "WorldPacket.h"
 #include "InstanceData.h"
+#include "GridDefines.h"
 
 Vehicle::Vehicle() : Creature(CREATURE_SUBTYPE_VEHICLE), m_vehicleId(0), m_vehicleInfo(NULL), m_spawnduration(0),
                      despawn(false), m_creation_time(0), m_VehicleData(NULL)
@@ -483,9 +485,7 @@ void Vehicle::AddPassenger(Unit *unit, int8 seatId, bool force)
             seat->second.flags = SEAT_VEHICLE_FREE;
     }
     else
-    {
         seat->second.flags = SEAT_FULL;
-    }
 
     if(unit->GetTypeId() == TYPEID_PLAYER)
     {
@@ -535,7 +535,7 @@ void Vehicle::AddPassenger(Unit *unit, int8 seatId, bool force)
             if(((Player*)unit)->GetGroup())
                 ((Player*)unit)->SetGroupUpdateFlag(GROUP_UPDATE_VEHICLE);
 
-            ((Player*)unit)->SetFarSightGUID(GetGUID());
+			((Player*)unit)->GetCamera().SetView((Vehicle*)this);
 
             BuildVehicleActionBar((Player*)unit);
         }
@@ -593,7 +593,7 @@ void Vehicle::RemovePassenger(Unit *unit)
             // restore player control
             if(unit->GetTypeId() == TYPEID_PLAYER)
             {
-                ((Player*)unit)->SetFarSightGUID(NULL);
+				((Player*)unit)->GetCamera().ResetView();
 
                 if(seat->second.vs_flags & SF_CAN_CAST)
                 {

@@ -387,7 +387,7 @@ m_isRemovedOnShapeLost(true), m_in_use(0), m_deleted(false)
 
     m_currentBasePoints = currentBasePoints ? *currentBasePoints : m_spellProto->CalculateSimpleValue(eff);
 
-    m_isPassive = IsPassiveSpell(GetId());
+    m_isPassive = IsPassiveSpell(GetSpellProto());
     m_positive = IsPositiveEffect(GetId(), m_effIndex);
 
     m_isSingleTargetAura = IsSingleTargetSpell(m_spellProto);
@@ -677,7 +677,7 @@ void Aura::Update(uint32 diff)
         Unit* caster = GetCaster();
         if(!caster)
         {
-            m_target->RemoveAura(GetId(), GetEffIndex());
+            m_target->RemoveAurasByCasterSpell(GetId(), GetEffIndex(), GetCasterGUID());
             return;
         }
 
@@ -692,7 +692,7 @@ void Aura::Update(uint32 diff)
 
             if(!caster->IsWithinDistInMap(m_target, max_range))
             {
-                m_target->RemoveAura(GetId(), GetEffIndex());
+                m_target->RemoveAurasByCasterSpell(GetId(), GetEffIndex(), GetCasterGUID());
                 return;
             }
         }
@@ -857,7 +857,7 @@ void AreaAura::Update(uint32 diff)
                 if(!apply)
                     continue;
 
-                if(SpellEntry const *actualSpellInfo = sSpellMgr.SelectAuraRankForPlayerLevel(GetSpellProto(), (*tIter)->getLevel()))
+                if(SpellEntry const *actualSpellInfo = sSpellMgr.SelectAuraRankForLevel(GetSpellProto(), (*tIter)->getLevel()))
                 {
                     int32 actualBasePoints = m_currentBasePoints;
                     // recalculate basepoints for lower rank (all AreaAura spell not use custom basepoints?)
@@ -2662,7 +2662,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
             (GetSpellProto()->EffectApplyAuraName[EFFECT_INDEX_0] == 1 || GetSpellProto()->EffectApplyAuraName[EFFECT_INDEX_0] == 128)))
         {
             // spells with SpellEffect=72 and aura=4: 6196, 6197, 21171, 21425
-            ((Player*)target)->SetFarSightGUID(0);
+            ((Player*)target)->GetCamera().ResetView();
             WorldPacket data(SMSG_CLEAR_FAR_SIGHT_IMMEDIATE, 0);
             ((Player*)target)->GetSession()->SendPacket(&data);
             return;
@@ -2787,8 +2787,6 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
 
             return;
         }
-        // Arcane Missiles
-        if (m_spellProto->SpellFamilyName == SPELLFAMILY_MAGE && (m_spellProto->SpellFamilyFlags & UI64LIT(0x0000000000000800)))
 
         // Vampiric Touch
         if ((GetSpellProto()->SpellFamilyFlags & UI64LIT(0x40000000000)) && m_removeMode==AURA_REMOVE_BY_DISPEL)
@@ -3889,7 +3887,11 @@ void Aura::HandleBindSight(bool apply, bool /*Real*/)
     if(!caster || caster->GetTypeId() != TYPEID_PLAYER)
         return;
 
-    ((Player*)caster)->SetFarSightGUID(apply ? GetTarget()->GetGUID() : 0);
+    Camera& camera = ((Player*)caster)->GetCamera();
+    if (apply)
+        camera.SetView(m_target);
+    else
+        camera.ResetView();
 }
 
 void Aura::HandleFarSight(bool apply, bool /*Real*/)
@@ -3898,7 +3900,11 @@ void Aura::HandleFarSight(bool apply, bool /*Real*/)
     if(!caster || caster->GetTypeId() != TYPEID_PLAYER)
         return;
 
-    ((Player*)caster)->SetFarSightGUID(apply ? GetTarget()->GetGUID() : 0);
+    Camera& camera = ((Player*)caster)->GetCamera();
+    if (apply)
+        camera.SetView(GetTarget());
+    else
+        camera.ResetView();
 }
 
 void Aura::HandleAuraTrackCreatures(bool apply, bool /*Real*/)
@@ -3953,10 +3959,12 @@ void Aura::HandleModPossess(bool apply, bool Real)
         return;
 
     Player* p_caster = (Player*)caster;
-
+    Camera& camera = p_caster->GetCamera();
 
     if( apply )
     {
+        target->addUnitState(UNIT_STAT_CONTROLLED);
+
         target->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
 
         target->SetCharmerGUID(p_caster->GetGUID());
@@ -3964,18 +3972,26 @@ void Aura::HandleModPossess(bool apply, bool Real)
 
         p_caster->SetCharm(target);
 
-        p_caster->SetFarSightGUID(target->GetGUID());
+        camera.SetView(target);
         p_caster->SetClientControl(target, 1);
         p_caster->SetMover(target);
 
-        target->CombatStop();
+        target->CombatStop(true);
         target->DeleteThreatList();
+        target->getHostileRefManager().deleteReferences();
+
+        if(CharmInfo *charmInfo = target->InitCharmInfo(target))
+        {
+            charmInfo->InitPossessCreateSpells();
+            charmInfo->SetReactState(REACT_PASSIVE);
+            charmInfo->SetCommandState(COMMAND_STAY);
+        }
+
+        p_caster->PossessSpellInitialize();
 
         if(target->GetTypeId() == TYPEID_UNIT)
         {
-            target->StopMoving();
-            target->GetMotionMaster()->Clear();
-            target->GetMotionMaster()->MoveIdle();
+            ((Creature*)target)->AIM_Initialize();
         }
         else if(target->GetTypeId() == TYPEID_PLAYER && !target->GetVehicleGUID())
         {
@@ -3992,7 +4008,7 @@ void Aura::HandleModPossess(bool apply, bool Real)
         p_caster->InterruptSpell(CURRENT_CHANNELED_SPELL);  // the spell is not automatically canceled when interrupted, do it now
         p_caster->SetCharm(NULL);
 
-        p_caster->SetFarSightGUID(0);
+        camera.ResetView();
         p_caster->SetClientControl(target, 0);
         p_caster->SetMover(NULL);
 
@@ -4002,11 +4018,17 @@ void Aura::HandleModPossess(bool apply, bool Real)
         if(m_removeMode == AURA_REMOVE_BY_DELETE)
             return;
 
+        target->clearUnitState(UNIT_STAT_CONTROLLED);
+
+        target->CombatStop(true);
+        target->DeleteThreatList();
+        target->getHostileRefManager().deleteReferences();
+
         target->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
 
         target->SetCharmerGUID(0);
 
-        if(target->GetTypeId() == TYPEID_PLAYER && !target->GetVehicleGUID())
+        if(target->GetTypeId() == TYPEID_PLAYER)
         {
             ((Player*)target)->setFactionForRace(target->getRace());
             ((Player*)target)->SetClientControl(target, 1);
@@ -4041,13 +4063,19 @@ void Aura::HandleModPossessPet(bool apply, bool Real)
         return;
 
     Player* p_caster = (Player*)caster;
+    Camera& camera = p_caster->GetCamera();
 
     if(apply)
+    {
         pet->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+        camera.SetView(pet);
+    }
     else
+    {
         pet->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+        camera.ResetView();
+    }
 
-    p_caster->SetFarSightGUID(apply ? pet->GetGUID() : 0);
     p_caster->SetCharm(apply ? pet : NULL);
     p_caster->SetClientControl(pet, apply ? 1 : 0);
     ((Player*)caster)->SetMover(apply ? pet : NULL);
@@ -4104,8 +4132,9 @@ void Aura::HandleModCharm(bool apply, bool Real)
         target->CastStop(target == caster ? GetId() : 0);
         caster->SetCharm(target);
 
-        target->CombatStop();
+        target->CombatStop(true);
         target->DeleteThreatList();
+        target->getHostileRefManager().deleteReferences();
 
         if(target->GetTypeId() == TYPEID_UNIT)
         {
@@ -4179,6 +4208,10 @@ void Aura::HandleModCharm(bool apply, bool Real)
 
         if(caster->GetTypeId() == TYPEID_PLAYER)
             ((Player*)caster)->RemovePetActionBar();
+
+        target->CombatStop(true);
+        target->DeleteThreatList();
+        target->getHostileRefManager().deleteReferences();
 
         if(target->GetTypeId() == TYPEID_UNIT)
         {
@@ -4536,7 +4569,7 @@ void Aura::HandleInvisibilityDetect(bool apply, bool Real)
             target->m_detectInvisibilityMask |= (1 << m_modifier.m_miscvalue);
     }
     if(Real && target->GetTypeId()==TYPEID_PLAYER)
-        ((Player*)target)->UpdateVisibilityForPlayer();
+        ((Player*)target)->GetCamera().UpdateVisibilityForOwner();
 }
 
 void Aura::HandleAuraModRoot(bool apply, bool Real)
@@ -5108,6 +5141,10 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
                 if (m_removeMode == AURA_REMOVE_BY_DEFAULT && GetEffIndex() + 1 < MAX_EFFECT_INDEX)
                     target->CastSpell(target, GetSpellProto()->CalculateSimpleValue(SpellEffectIndex(GetEffIndex()+1)), true);
                 return;
+            case 43648:                                     // Electrical Storm - remove cloud around caster
+                if (m_target->HasAura(45213))
+                    m_target->RemoveAurasDueToSpell(45213);
+                return;
             case 46221:                                     // Animal Blood
                 if (m_removeMode == AURA_REMOVE_BY_DEFAULT && m_target->IsInWater())
                 {
@@ -5116,10 +5153,6 @@ void Aura::HandlePeriodicTriggerSpell(bool apply, bool /*Real*/)
                     if (m_target->GetMap()->getLiquidStatus(m_target->GetPositionX(), m_target->GetPositionY(), m_target->GetPositionZ(), MAP_ALL_LIQUIDS, &liquid_status))
                         m_target->CastSpell(m_target->GetPositionX(), m_target->GetPositionY(), liquid_status.level, 63471, true, NULL, this);
                 }
-                return;
-            case 43648:                                     // Electrical Storm - remove cloud around caster
-                if (m_target->HasAura(45213))
-                    m_target->RemoveAurasDueToSpell(45213);
                 return;
             case 51912:                                     // Ultra-Advanced Proto-Typical Shortening Blaster
                 if (m_removeMode == AURA_REMOVE_BY_EXPIRE)
@@ -5158,13 +5191,6 @@ void Aura::HandlePeriodicEnergize(bool apply, bool Real)
     {
         switch (GetId())
         {
-            case 54833:                                     // Glyph of Innervate (value%/2 of casters base mana)
-            {
-                if (Unit* caster = GetCaster())
-                    m_modifier.m_amount = int32(caster->GetCreateMana() * GetBasePoints() / (200 * GetAuraMaxTicks()));
-                break;
-
-            }
             case 29166:                                     // Innervate (value% of casters base mana)
             {
                 if (Unit* caster = GetCaster())
@@ -5178,29 +5204,40 @@ void Aura::HandlePeriodicEnergize(bool apply, bool Real)
                 break;
             }
             case 48391:                                     // Owlkin Frenzy 2% base mana
+            {
                 m_modifier.m_amount = target->GetCreateMana() * 2 / 100;
                 break;
+            }
+            case 54833:                                     // Glyph of Innervate (value%/2 of casters base mana)
+            {
+                if (Unit* caster = GetCaster())
+                    m_modifier.m_amount = int32(caster->GetCreateMana() * GetBasePoints() / (200 * GetAuraMaxTicks()));
+                break;
+            }
             case 57669:                                     // Replenishment (0.2% from max)
             case 61782:                                     // Infinite Replenishment
+            {
                 m_modifier.m_amount = target->GetMaxPower(POWER_MANA) * 2 / 1000;
                 break;
+            }
             default:
                 break;
         }
     }
-    if (!apply && !loading)
+    else if (!apply && !loading)
     {
         switch (GetId())
         {
             case 5229:                                      // Druid Bear Enrage
+            {
                 if (m_target->HasAura(51185))               // King of the Jungle self Enrage bonus with infinity duration
                     m_target->RemoveAurasDueToSpell(51185);
                 break;
+            }
             default:
                 break;
         }
     }
-
     m_isPeriodic = apply;
 }
 
@@ -6582,6 +6619,8 @@ void Aura::HandleShapeshiftBoosts(bool apply)
             {
                 Unit::AuraList const& ShapeShifterAuras = target->GetAurasByType(SPELL_AURA_DUMMY);
                 for(Unit::AuraList::const_iterator i = ShapeShifterAuras.begin(); i != ShapeShifterAuras.end(); ++i)
+                // if we get a crash here, it should've been:
+                // for(Unit::AuraList::const_iterator i = ShapeShifterAuras.begin(); i != ShapeShifterAuras.end(); i++)
                 {
                     if ((*i)->GetSpellProto()->SpellIconID == 2851)
                     {
@@ -6609,6 +6648,8 @@ void Aura::HandleShapeshiftBoosts(bool apply)
             {
                 Unit::AuraList const& dummyAuras = target->GetAurasByType(SPELL_AURA_DUMMY);
                 for(Unit::AuraList::const_iterator i = dummyAuras.begin(); i != dummyAuras.end(); ++i)
+                // if we get a crash here, it should've been:
+                // for(Unit::AuraList::const_iterator i = dummyAuras.begin(); i != dummyAuras.end(); i++)
                 {
                     if ((*i)->GetSpellProto()->SpellFamilyName==SPELLFAMILY_DRUID &&
                         (*i)->GetSpellProto()->SpellIconID == 2855)
