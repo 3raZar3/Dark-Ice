@@ -2318,24 +2318,24 @@ class MANGOS_DLL_SPEC Player : public Unit
         uint32 EnvironmentalDamage(EnviromentalDamage type, uint32 damage);
         
         // Jail by WarHead
-       // ---------------
-       // Char datas...
+        // ---------------
+        // Char datas...
         bool m_jail_warning;
-         bool m_jail_amnestie;
-         bool m_jail_isjailed;           // Is this player jailed?
-         std::string m_jail_char;        // Name of jailed char
-         uint32 m_jail_guid;             // guid of the jailed char
-         uint32 m_jail_release;          // When is the player a free man/woman?
-         std::string m_jail_reason;      // Why was the char jailed?
-         uint32 m_jail_times;			// How often was the player jailed?
-         uint32 m_jail_amnestietime;
+        bool m_jail_amnestie;
+        bool m_jail_isjailed;           // Is this player jailed?
+        std::string m_jail_char;        // Name of jailed char
+        uint32 m_jail_guid;             // guid of the jailed char
+        uint32 m_jail_release;          // When is the player a free man/woman?
+        std::string m_jail_reason;      // Why was the char jailed?
+        uint32 m_jail_times;			// How often was the player jailed?
+        uint32 m_jail_amnestietime;
         uint32 m_jail_gmacc;            // Used GM acc
-         std::string m_jail_gmchar;      // Used GM char
-         std::string m_jail_lasttime;    // Last jail time
-         uint32 m_jail_duration;         // Duration of the jail
+        std::string m_jail_gmchar;      // Used GM char
+        std::string m_jail_lasttime;    // Last jail time
+        uint32 m_jail_duration;         // Duration of the jail
         // Load / save functions...
-         void _LoadJail(void);           // Loads the jail datas
-         void _SaveJail(void);           // Saves the jail datas
+        void _LoadJail(void);           // Loads the jail datas
+        void _SaveJail(void);           // Saves the jail datas
 
         /*********************************************************/
         /***               FLOOD FILTER SYSTEM                 ***/
@@ -2535,6 +2535,8 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SetPlayerbotMgr(PlayerbotMgr* mgr) { assert(!m_playerbotAI && !m_playerbotMgr); m_playerbotMgr=mgr; }
         PlayerbotMgr* GetPlayerbotMgr() { return m_playerbotMgr; }
         void SetBotDeathTimer() { m_deathTimer = 0; }
+
+		Camera m_camera;
 
     protected:
 
@@ -2803,8 +2805,6 @@ class MANGOS_DLL_SPEC Player : public Unit
             if(operation < DELAYED_END)
                 m_DelayedOperations |= operation;
         }
-
-        Camera m_camera;
 
         GridReference<Player> m_gridRef;
         MapReference m_mapRef;
