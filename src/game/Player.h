@@ -1138,8 +1138,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         Creature* GetNPCIfCanInteractWith(ObjectGuid guid, uint32 npcflagmask);
         GameObject* GetGameObjectIfCanInteractWith(ObjectGuid guid, uint32 gameobject_type = MAX_GAMEOBJECT_TYPE) const;
 
-        void UpdateVisibilityForPlayer();
-
         bool ToggleAFK();
         bool ToggleDND();
         bool isAFK() const { return HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_AFK); }
@@ -1201,7 +1199,7 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         void RemovePet(Pet* pet, PetSaveMode mode, bool returnreagent = false);
         void RemoveMiniPet();
-        Pet* GetMiniPet();
+        Pet* GetMiniPet() const;
         void SetMiniPet(Pet* pet) { m_miniPet = pet->GetGUID(); }
 
         template<typename Func>
@@ -1774,6 +1772,9 @@ class MANGOS_DLL_SPEC Player : public Unit
         PlayerSpellMap      & GetSpellMap()       { return m_spells; }
 
         SpellCooldowns const& GetSpellCooldownMap() const { return m_spellCooldowns; }
+
+        PlayerTalent const* GetKnownTalentById(int32 talentId) const;
+        SpellEntry const* GetKnownTalentRankById(int32 talentId) const;
 
         void AddSpellMod(SpellModifier* mod, bool apply);
         bool IsAffectedBySpellmod(SpellEntry const *spellInfo, SpellModifier *mod, Spell const* spell = NULL);
@@ -2376,12 +2377,13 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         void SetClientControl(Unit* target, uint8 allowMove);
         void SetMover(Unit* target) { m_mover = target ? target : this; }
+        Unit* GetMover() const { return m_mover; }
+        bool IsSelfMover() const { return m_mover == this; }// normal case for player not controlling other unit
 
         // vehicle system
         void SendEnterVehicle(Vehicle *vehicle, VehicleSeatEntry const *veSeat);
 
-        uint64 GetFarSight() const { return GetUInt64Value(PLAYER_FARSIGHT); }
-        void SetFarSightGUID(uint64 guid);
+        ObjectGuid const& GetFarSightGuid() const { return GetGuidValue(PLAYER_FARSIGHT); }
 
         // Transports
         Transport * GetTransport() const { return m_transport; }
@@ -2416,7 +2418,6 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         bool HaveAtClient(WorldObject const* u) { return u==this || m_clientGUIDs.find(u->GetGUID())!=m_clientGUIDs.end(); }
 
-        WorldObject const* GetViewPoint() const;
         bool IsVisibleInGridForPlayer(Player* pl) const;
         bool IsVisibleGloballyFor(Player* pl) const;
 
@@ -2427,6 +2428,8 @@ class MANGOS_DLL_SPEC Player : public Unit
 
         // Stealth detection system
         void HandleStealthedUnitsDetection();
+
+        Camera& GetCamera() { return m_camera; }
 
         uint8 m_forced_speed_changes[MAX_MOVE_TYPE];
 
@@ -2522,7 +2525,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         bool HasTitle(CharTitlesEntry const* title) { return HasTitle(title->bit_index); }
         void SetTitle(CharTitlesEntry const* title, bool lost = false);
 
-        bool isActiveObject() const { return true; }
         bool canSeeSpellClickOn(Creature const* creature) const;
 
         // Playerbot mod:
@@ -2802,6 +2804,8 @@ class MANGOS_DLL_SPEC Player : public Unit
                 m_DelayedOperations |= operation;
         }
 
+        Camera m_camera;
+
         GridReference<Player> m_gridRef;
         MapReference m_mapRef;
 
@@ -2924,7 +2928,7 @@ template<typename Func>
 bool Player::CheckAllControlledUnits(Func const& func, bool withTotems, bool withGuardians, bool withCharms, bool withMiniPet) const
 {
     if (withMiniPet)
-        if(Unit* mini = GetMiniPet())
+        if(Unit const* mini = GetMiniPet())
             if (func(mini))
                 return true;
 

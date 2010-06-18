@@ -361,7 +361,7 @@ void WorldSession::HandleMoveTeleportAck(WorldPacket& recv_data)
     DEBUG_LOG("Guid: %s", guid.GetString().c_str());
     DEBUG_LOG("Flags %u, time %u", flags, time/IN_MILLISECONDS);
 
-    Unit *mover = _player->m_mover;
+    Unit *mover = _player->GetMover();
     Player *plMover = mover->GetTypeId() == TYPEID_PLAYER ? (Player*)mover : NULL;
 
     if(!plMover || !plMover->IsBeingTeleportedNear())
@@ -408,7 +408,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
     DEBUG_LOG("WORLD: Recvd %s (%u, 0x%X) opcode", LookupOpcodeName(opcode), opcode, opcode);
     recv_data.hexlike();
 
-    Unit *mover = _player->m_mover;
+    Unit *mover = _player->GetMover();
     Player *plMover = mover->GetTypeId() == TYPEID_PLAYER ? (Player*)mover : NULL;
 
     // ignore, waiting processing in WorldSession::HandleMoveWorldportAckOpcode and WorldSession::HandleMoveTeleportAck
@@ -687,7 +687,7 @@ void WorldSession::HandleMovementOpcodes( WorldPacket & recv_data )
                 // TODO: discard movement packets after the player is rooted
                 if(plMover->isAlive())
                 {
-                    plMover->EnvironmentalDamage(DAMAGE_FALL_TO_VOID, GetPlayer()->GetMaxHealth());
+                    plMover->EnvironmentalDamage(DAMAGE_FALL_TO_VOID, plMover->GetMaxHealth());
                     // pl can be alive if GM/etc
                     if(!plMover->isAlive())
                     {
@@ -801,7 +801,8 @@ void WorldSession::HandleSetActiveMoverOpcode(WorldPacket &recv_data)
 
     /*if(_player->m_mover->GetGUID() != guid)
     {
-        sLog.outError("HandleSetActiveMoverOpcode: incorrect mover guid: mover is " I64FMT " and should be " I64FMT, _player->m_mover->GetGUID(), guid);
+        sLog.outError("HandleSetActiveMoverOpcode: incorrect mover guid: mover is %s and should be %s",
+            _player->GetMover()->GetObjectGuid().GetString().c_str(), guid.GetString().c_str());
         return;
     }*/
 }

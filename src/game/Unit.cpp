@@ -395,12 +395,7 @@ void Unit::SendMonsterMove(float NewPosX, float NewPosY, float NewPosZ, SplineTy
             break;
     }
 
-    data << uint32(flags);
-
-    // enable me if things goes wrong or looks ugly, it is however an old hack
-    // if(flags & SPLINEFLAG_WALKMODE)
-        // moveTime *= 1.05f;
-
+    data << uint32(flags);                                  // splineflags
     data << uint32(moveTime);                               // Time in between points
     data << uint32(1);                                      // 1 single waypoint
     data << NewPosX << NewPosY << NewPosZ;                  // the single waypoint Point B
@@ -4269,7 +4264,7 @@ bool Unit::RemoveNoStackAurasDueToAura(Aura *Aur)
     SpellEffectIndex effIndex = Aur->GetEffIndex();
 
     // passive spell special case (only non stackable with ranks)
-    if(IsPassiveSpell(spellId))
+    if(IsPassiveSpell(spellProto))
     {
         if(IsPassiveSpellStackableWithRanks(spellProto))
             return true;
@@ -4292,7 +4287,7 @@ bool Unit::RemoveNoStackAurasDueToAura(Aura *Aur)
         uint32 i_spellId = i_spellProto->Id;
 
         // early checks that spellId is passive non stackable spell
-        if(IsPassiveSpell(i_spellId))
+        if(IsPassiveSpell(i_spellProto))
         {
             // passive non-stackable spells not stackable only for same caster
             if(Aur->GetCasterGUID()!=i->second->GetCasterGUID())
@@ -6501,26 +6496,23 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     // triggered_spell_id in spell data
                     break;
                 }
-                // Item - Priest T10 Healer 4P Bonus
-                case 70799:
-                {
-                    if (GetTypeId() != TYPEID_PLAYER)
-                        return false;
-                    
-                    // Circle of Healing
-                    ((Player*)this)->RemoveSpellCategoryCooldown(1204, true);
-
-                    // Penance
-                    ((Player*)this)->RemoveSpellCategoryCooldown(1230, true);
-
-                    return true;
-                }
                 // Glyph of Prayer of Healing
                 case 55680:
                 {
                     basepoints[0] = int32(damage * 20 / 100 / 2);   // divided in two ticks
                     triggered_spell_id = 56161;
                     break;
+                }
+                // Item - Priest T10 Healer 4P Bonus
+                case 70799:
+                {
+                    if (GetTypeId() != TYPEID_PLAYER)
+                        return false;
+                    // Circle of Healing
+                    ((Player*)this)->RemoveSpellCategoryCooldown(1204, true);
+                    // Penance
+                    ((Player*)this)->RemoveSpellCategoryCooldown(1230, true);
+                    return true;
                 }
             }
             break;
@@ -9488,7 +9480,7 @@ void Unit::CombatStopWithPets(bool includingCast)
 struct IsAttackingPlayerHelper
 {
     explicit IsAttackingPlayerHelper() {}
-    bool operator()(Unit* unit) const { return unit->isAttackingPlayer(); }
+    bool operator()(Unit const* unit) const { return unit->isAttackingPlayer(); }
 };
 
 bool Unit::isAttackingPlayer() const
@@ -9554,7 +9546,7 @@ void Unit::ModifyAuraState(AuraState flag, bool apply)
                 {
                     if(itr->second.state == PLAYERSPELL_REMOVED) continue;
                     SpellEntry const *spellInfo = sSpellStore.LookupEntry(itr->first);
-                    if (!spellInfo || !IsPassiveSpell(itr->first)) continue;
+                    if (!spellInfo || !IsPassiveSpell(spellInfo)) continue;
                     if (spellInfo->CasterAuraState == flag)
                         CastSpell(this, itr->first, true, NULL);
                 }
@@ -9897,19 +9889,16 @@ int32 Unit::SpellBonusWithCoeffs(SpellEntry const *spellProto, int32 total, int3
         // apply ap bonus at done part calculation only (it flat total mod so common with taken)
         if (donePart && bonus->ap_bonus)
         {
-            float total_bonus = bonus->ap_bonus;
+            float ap_bonus = bonus->ap_bonus;
 
-            if (GetTypeId() == TYPEID_PLAYER && ((Player*)this)->getClass() == CLASS_DEATH_KNIGHT)
+            // Impurity
+            if (GetTypeId() == TYPEID_PLAYER && spellProto->SpellFamilyName == SPELLFAMILY_DEATHKNIGHT)
             {
-                uint32 impurity_id[5] = {49220,49633,49635,49636,49638};
-                for (int i = 0; i < 5; ++i)
-                    if (((Player*)this)->HasSpell(impurity_id[i]))
-                    {
-                        total_bonus += total_bonus * (sSpellStore.LookupEntry(impurity_id[i])->EffectBasePoints[EFFECT_INDEX_0] + 1) / 100.0f;
-                        break;
-                    }
+                if (SpellEntry const* spell = ((Player*)this)->GetKnownTalentRankById(2005))
+                    ap_bonus += ((spell->CalculateSimpleValue(EFFECT_INDEX_0) * ap_bonus) / 100.0f);
             }
-            total += int32(total_bonus * (GetTotalAttackPowerValue(BASE_ATTACK) + ap_benefit));
+
+            total += int32(ap_bonus * (GetTotalAttackPowerValue(BASE_ATTACK) + ap_benefit));
         }
     }
     // Default calculation
@@ -11810,10 +11799,6 @@ bool Unit::isVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
             return false;
     }
 
-    // always seen by far sight caster
-    if (u->GetTypeId()==TYPEID_PLAYER && ((Player*)u)->GetFarSight()==GetGUID())
-        return true;
-
     // different visible distance checks
     if (u->isInFlight())                                    // what see player in flight
     {
@@ -12051,12 +12036,41 @@ void Unit::SetVisibility(UnitVisibility x)
 
     if(IsInWorld())
     {
+        // some auras requires visible target
+        if(m_Visibility == VISIBILITY_GROUP_NO_DETECT || m_Visibility == VISIBILITY_OFF)
+        {   
+            static const AuraType auratypes[] = {SPELL_AURA_BIND_SIGHT, SPELL_AURA_FAR_SIGHT, SPELL_AURA_NONE};
+            for (AuraType const* type = &auratypes[0]; *type != SPELL_AURA_NONE; ++type)
+            {
+                AuraList& alist = m_modAuras[*type];
+                if(alist.empty())
+                    continue;
+
+                for (AuraList::iterator it = alist.begin(); it != alist.end();)
+                {
+                    Aura* aura = (*it);
+                    Unit* owner = aura->GetCaster();
+
+                    if (!owner || !isVisibleForOrDetect(owner,this,false))
+                    {
+                        alist.erase(it);
+                        RemoveAura(aura);
+                        it = alist.begin();
+                    }
+                    else
+                        ++it;
+                }
+            }
+        }
+
         Map *m = GetMap();
 
         if(GetTypeId()==TYPEID_PLAYER)
             m->PlayerRelocation((Player*)this,GetPositionX(),GetPositionY(),GetPositionZ(),GetOrientation());
         else
             m->CreatureRelocation((Creature*)this,GetPositionX(),GetPositionY(),GetPositionZ(),GetOrientation());
+
+        GetViewPoint().Event_ViewPointVisibilityChanged();
     }
 }
 
@@ -13391,6 +13405,7 @@ void Unit::RemoveFromWorld()
         RemoveAllGameObjects();
         RemoveAllDynObjects();
         CleanupDeletedAuras();
+        GetViewPoint().Event_RemovedFromWorld();
     }
 
     Object::RemoveFromWorld();
@@ -14095,9 +14110,13 @@ void Unit::StopMoving()
 {
     clearUnitState(UNIT_STAT_MOVING);
 
+    // not need send any packets if not in world
+    if (!IsInWorld())
+        return;
+
     // send explicit stop packet
     // player expected for correct work SPLINEFLAG_WALKMODE
-    SendMonsterMove(GetPositionX(), GetPositionY(), GetPositionZ(), SPLINETYPE_NORMAL, GetTypeId() == TYPEID_PLAYER ? SPLINEFLAG_WALKMODE : SPLINEFLAG_NONE, 0);
+    SendMonsterMove(GetPositionX(), GetPositionY(), GetPositionZ(), SPLINETYPE_STOP, GetTypeId() == TYPEID_PLAYER ? SPLINEFLAG_WALKMODE : SPLINEFLAG_NONE, 0);
 
     // update position and orientation for near players
     WorldPacket data;
