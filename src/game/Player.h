@@ -2536,8 +2536,6 @@ class MANGOS_DLL_SPEC Player : public Unit
         PlayerbotMgr* GetPlayerbotMgr() { return m_playerbotMgr; }
         void SetBotDeathTimer() { m_deathTimer = 0; }
 
-		Camera m_camera;
-
     protected:
 
         uint32 m_contestedPvPTimer;
@@ -2806,7 +2804,9 @@ class MANGOS_DLL_SPEC Player : public Unit
                 m_DelayedOperations |= operation;
         }
 
-        GridReference<Player> m_gridRef;
+        Camera m_camera;
+
+		GridReference<Player> m_gridRef;
         MapReference m_mapRef;
 
          // Playerbot mod:
