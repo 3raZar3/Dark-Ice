@@ -1090,6 +1090,35 @@ void Spell::DoAllEffectOnTarget(TargetInfo *target)
         m_damage += target->damage;
     }
 
+    // Recheck immune (only for delayed spells)
+    if (m_spellInfo->speed && (
+        unit->IsImmunedToDamage(GetSpellSchoolMask(m_spellInfo)) ||
+        unit->IsImmunedToSpell(m_spellInfo)))
+    {
+        caster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_IMMUNE);
+        missInfo = SPELL_MISS_IMMUNE;
+        return;
+    }
+
+    // recheck deflect for delayed spells on target with Deterrence,
+    if (m_spellInfo->speed && unit->HasAura(19263))
+    {
+        caster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_DEFLECT);
+        missInfo = SPELL_MISS_DEFLECT;
+        return;
+    }
+    
+    // recheck for visibility of target
+    if ((m_spellInfo->speed > 0.0f || 
+        (m_spellInfo->EffectImplicitTargetA[0] == TARGET_CHAIN_DAMAGE &&
+        GetSpellCastTime(m_spellInfo, this) > 0)) 
+         && !unit->isVisibleForOrDetect(caster, caster, false))
+    {
+        caster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_EVADE);
+        missInfo = SPELL_MISS_EVADE;
+        return;
+    }
+
     if (missInfo==SPELL_MISS_NONE)                          // In case spell hit target, do all effect on that target
         DoSpellHitOnUnit(unit, mask);
     else
