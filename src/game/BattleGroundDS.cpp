@@ -16,13 +16,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "Object.h"
 #include "Player.h"
 #include "BattleGround.h"
 #include "BattleGroundDS.h"
+#include "Language.h"
+#include "Object.h"
 #include "ObjectMgr.h"
 #include "WorldPacket.h"
-#include "Language.h"
 
 BattleGroundDS::BattleGroundDS()
 {
@@ -195,11 +195,6 @@ void BattleGroundDS::HandleAreaTrigger(Player *Source, uint32 Trigger)
             Source->GetSession()->SendAreaTriggerMessage("Warning: Unhandled AreaTrigger in Battleground: %u", Trigger);
             break;
     }
-}
-bool BattleGroundDS::HandlePlayerUnderMap(Player *player)
-{
-    player->TeleportTo(GetMapId(), 1299.046f, 784.825f, 9.338f, 2.422f, false);
-    return true;
 }
 
 void BattleGroundDS::FillInitialWorldStates(WorldPacket &data, uint32& count)
