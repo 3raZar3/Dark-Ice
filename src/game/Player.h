@@ -372,12 +372,14 @@ struct RuneInfo
     uint8  BaseRune;
     uint8  CurrentRune;
     uint16 Cooldown;                                        // msec
+    uint32 ConvertedBy;
 };
 
 struct Runes
 {
     RuneInfo runes[MAX_RUNES];
     uint8 runeState;                                        // mask of available runes
+    uint8 needConvert;                                      // mask of runes that need to be converted
 
     void SetRuneState(uint8 index, bool set = true)
     {
@@ -385,6 +387,17 @@ struct Runes
             runeState |= (1 << index);                      // usable
         else
             runeState &= ~(1 << index);                     // on cooldown
+    }
+
+    bool IsRuneNeedsConvert(uint8 index)
+    {
+        if (!needConvert)
+            return false;
+
+        if (needConvert & (1 << index))
+            return true;
+        else
+            return false;
     }
 };
 
@@ -1146,7 +1159,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         std::string afkMsg;
         std::string dndMsg;
 
-        uint32 GetBarberShopCost(uint8 newhairstyle, uint8 newhaircolor, uint8 newfacialhair);
+        uint32 GetBarberShopCost(uint8 newhairstyle, uint8 newhaircolor, uint8 newfacialhair, uint8 newskintone);
 
         PlayerSocial *GetSocial() { return m_social; }
 
@@ -2513,7 +2526,20 @@ class MANGOS_DLL_SPEC Player : public Unit
         void SetBaseRune(uint8 index, RuneType baseRune) { m_runes->runes[index].BaseRune = baseRune; }
         void SetCurrentRune(uint8 index, RuneType currentRune) { m_runes->runes[index].CurrentRune = currentRune; }
         void SetRuneCooldown(uint8 index, uint16 cooldown) { m_runes->runes[index].Cooldown = cooldown; m_runes->SetRuneState(index, (cooldown == 0) ? true : false); }
-        void ConvertRune(uint8 index, RuneType newType);
+        void ConvertRune(uint8 index, RuneType newType, uint32 spellid = 0);
+        void SetConvertedBy(uint8 index, uint32 spellid) { m_runes->runes[index].ConvertedBy = spellid; }
+        void ClearConvertedBy(uint8 index) { m_runes->runes[index].ConvertedBy = 0; }
+        bool IsRuneConvertedBy(uint8 index, uint32 spellid) { return m_runes->runes[index].ConvertedBy == spellid; }
+        void SetNeedConvertRune(uint8 index, bool convert, uint32 spellid = 0)
+        {
+            if (convert)
+                m_runes->needConvert |= (1 << index);                      // need convert
+            else
+                m_runes->needConvert &= ~(1 << index);                     // removed from convert
+
+            if (spellid != 0)
+                SetConvertedBy(index, spellid);
+        }
         void ResyncRunes(uint8 count);
         void AddRunePower(uint8 index);
         void InitRunes();
@@ -2793,14 +2819,24 @@ class MANGOS_DLL_SPEC Player : public Unit
         int32 CalculateReputationGain(uint32 creatureOrQuestLevel, int32 rep, int32 faction, bool for_quest);
         void AdjustQuestReqItemCount( Quest const* pQuest, QuestStatusData& questStatusData );
 
-        bool IsCanDelayTeleport() const { return m_bCanDelayTeleport; }
         void SetCanDelayTeleport(bool setting) { m_bCanDelayTeleport = setting; }
-        bool IsHasDelayedTeleport() const { return m_bHasDelayedTeleport; }
-        void SetDelayedTeleportFlag(bool setting) { m_bHasDelayedTeleport = setting; }
+        bool IsHasDelayedTeleport() const
+        {
+            // we should not execute delayed teleports for now dead players but has been alive at teleport
+            // because we don't want player's ghost teleported from graveyard
+            return m_bHasDelayedTeleport && (isAlive() || !m_bHasBeenAliveAtDelayedTeleport);
+        }
+
+        bool SetDelayedTeleportFlagIfCan()
+        {
+            m_bHasDelayedTeleport = m_bCanDelayTeleport;
+            m_bHasBeenAliveAtDelayedTeleport = isAlive();
+            return m_bHasDelayedTeleport;
+        }
 
         void ScheduleDelayedOperation(uint32 operation)
         {
-            if(operation < DELAYED_END)
+            if (operation < DELAYED_END)
                 m_DelayedOperations |= operation;
         }
 
@@ -2837,6 +2873,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         uint32 m_DelayedOperations;
         bool m_bCanDelayTeleport;
         bool m_bHasDelayedTeleport;
+        bool m_bHasBeenAliveAtDelayedTeleport;
 
         uint32 m_DetectInvTimer;
 

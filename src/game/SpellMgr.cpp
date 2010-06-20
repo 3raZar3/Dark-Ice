@@ -489,7 +489,7 @@ SpellSpecific GetSpellSpecific(uint32 spellId)
     }
 
     // Tracking spells
-    if(IsSpellHaveAura(spellInfo, SPELL_AURA_TRACK_CREATURES) || IsSpellHaveAura(spellInfo, SPELL_AURA_TRACK_RESOURCES))
+    if(IsSpellHaveAura(spellInfo, SPELL_AURA_TRACK_CREATURES) || IsSpellHaveAura(spellInfo, SPELL_AURA_TRACK_RESOURCES) || IsSpellHaveAura(spellInfo, SPELL_AURA_TRACK_STEALTHED))
         return SPELL_TRACKER;
 
     // elixirs can have different families, but potion most ofc.
@@ -2183,6 +2183,11 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 //  Innervate and Glyph of Innervate and some other spells
                 if (spellInfo_1->SpellIconID == 62 && spellInfo_2->SpellIconID == 62)
                     return false;
+
+                // Lacerate and Moonfire
+                if((spellInfo_1->SpellIconID == 225 && spellInfo_2->SpellIconID == 2246) ||
+                   (spellInfo_2->SpellIconID == 225 && spellInfo_1->SpellIconID == 2246))
+                   return false;
 
                 // Wrath of Elune and Nature's Grace
                 if( spellInfo_1->Id == 16886 && spellInfo_2->Id == 46833 || spellInfo_2->Id == 16886 && spellInfo_1->Id == 46833 )

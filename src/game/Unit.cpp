@@ -1284,8 +1284,7 @@ void Unit::CalculateSpellDamage(SpellNonMeleeDamage *damageInfo, int32 damage, S
             {
                 damageInfo->HitInfo|= SPELL_HIT_TYPE_CRIT;
                 damage = SpellCriticalDamageBonus(spellInfo, damage, pVictim);
-                // Resilience - reduce crit damage, is not ignored in any way
-                // uint32 redunction_affected_damage = CalcNotIgnoreDamageRedunction(damage,damageSchoolMask);
+                // Resilience - reduce crit damage
                 if (attackType != RANGED_ATTACK)
                     damage -= pVictim->GetMeleeCritDamageReduction(damage);
                 else
@@ -1305,8 +1304,7 @@ void Unit::CalculateSpellDamage(SpellNonMeleeDamage *damageInfo, int32 damage, S
             {
                 damageInfo->HitInfo|= SPELL_HIT_TYPE_CRIT;
                 damage = SpellCriticalDamageBonus(spellInfo, damage, pVictim);
-                // Resilience - reduce crit damage, is not ignored in any way
-                // uint32 redunction_affected_damage = CalcNotIgnoreDamageRedunction(damage,damageSchoolMask);
+                // Resilience - reduce crit damage
                 damage -= pVictim->GetSpellCritDamageReduction(damage);
             }
         }
@@ -1316,7 +1314,7 @@ void Unit::CalculateSpellDamage(SpellNonMeleeDamage *damageInfo, int32 damage, S
     // only from players
     if (GetTypeId() == TYPEID_PLAYER)
     {
-        // uint32 redunction_affected_damage = CalcNotIgnoreDamageRedunction(damage,damageSchoolMask);
+        uint32 redunction_affected_damage = CalcNotIgnoreDamageRedunction(damage,damageSchoolMask);
         damage -= pVictim->GetSpellDamageReduction(damage);
     }
 
@@ -1519,8 +1517,7 @@ void Unit::CalculateMeleeDamage(Unit *pVictim, uint32 damage, CalcDamageInfo *da
             if (mod!=0)
                 damageInfo->damage = int32((damageInfo->damage) * float((100.0f + mod)/100.0f));
 
-            // Resilience - reduce crit damage, is not ignored in any way
-            // uint32 redunction_affected_damage = CalcNotIgnoreDamageRedunction(damageInfo->damage,damageInfo->damageSchoolMask);
+            // Resilience - reduce crit damage
             uint32 resilienceReduction;
             if (attackType != RANGED_ATTACK)
                 resilienceReduction = pVictim->GetMeleeCritDamageReduction(damageInfo->damage);
@@ -1639,7 +1636,6 @@ void Unit::CalculateMeleeDamage(Unit *pVictim, uint32 damage, CalcDamageInfo *da
     // only from players
     if (GetTypeId() == TYPEID_PLAYER)
     {
-        // uint32 redunction_affected_damage = CalcNotIgnoreDamageRedunction(damageInfo->damage,damageInfo->damageSchoolMask);
         uint32 resilienceReduction;
         if (attackType != RANGED_ATTACK)
             resilienceReduction = pVictim->GetMeleeDamageReduction(damageInfo->damage);
@@ -4775,7 +4771,20 @@ void Unit::RemoveAura(AuraMap::iterator &i, AuraRemoveMode mode)
     DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Aura %u now is remove mode %d",Aur->GetModifier()->m_auraname, mode);
 
     // some auras also need to apply modifier (on caster) on remove
-    if (mode != AURA_REMOVE_BY_DELETE || Aur->GetModifier()->m_auraname == SPELL_AURA_MOD_POSSESS)
+    if (mode == AURA_REMOVE_BY_DELETE)
+    {
+        switch (Aur->GetModifier()->m_auraname)
+        {
+            // need properly undo any auras with player-caster mover set (or will crash at next caster move packet)
+            case SPELL_AURA_MOD_POSSESS:
+            case SPELL_AURA_MOD_POSSESS_PET:
+            case SPELL_AURA_CONTROL_VEHICLE:
+                Aur->ApplyModifier(false,true);
+                break;
+            default: break;
+        }
+    }
+    else
         Aur->ApplyModifier(false,true);
 
     if (Aur->_RemoveAura())
@@ -7805,6 +7814,62 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                         return false;
                 }
                 break;
+            }
+            // Blood of the North and Reaping
+            if (dummySpell->SpellIconID == 3041 || dummySpell->SpellIconID == 22)
+            {
+                if(GetTypeId()!=TYPEID_PLAYER)
+                    return false;
+                
+                Player *player = (Player*)this;
+                for (uint32 i = 0; i < MAX_RUNES; ++i)
+                {
+                    if (player->GetCurrentRune(i) == RUNE_BLOOD)
+                    {
+                        if(!player->GetRuneCooldown(i))
+                            player->ConvertRune(i, RUNE_DEATH, dummySpell->Id);
+                        else
+                        {
+                            // search for another rune that might be available
+                            for (uint32 iter = i; iter < MAX_RUNES; ++iter)
+                            {
+                                if(player->GetCurrentRune(iter) == RUNE_BLOOD && !player->GetRuneCooldown(iter))
+                                {
+                                    player->ConvertRune(iter, RUNE_DEATH, dummySpell->Id);
+                                    triggeredByAura->SetAuraPeriodicTimer(0);
+                                    return true;
+                                }
+                            }
+                            player->SetNeedConvertRune(i, true, dummySpell->Id);
+                        }
+                        triggeredByAura->SetAuraPeriodicTimer(0);
+                        return true;
+                    }
+                }
+                return false;
+            }
+            // Death Rune Mastery
+            if (dummySpell->SpellIconID == 2622)
+            {
+                if(GetTypeId()!=TYPEID_PLAYER)
+                    return false;
+                
+                Player *player = (Player*)this;
+                for (uint32 i = 0; i < MAX_RUNES; ++i)
+                {
+                    RuneType currRune = player->GetCurrentRune(i);
+                    if (currRune == RUNE_UNHOLY || currRune == RUNE_FROST)
+                    {
+                        uint16 cd = player->GetRuneCooldown(i);
+                        if(!cd)
+                            player->ConvertRune(i, RUNE_DEATH, dummySpell->Id);
+                        else // there is a cd
+                            player->SetNeedConvertRune(i, true, dummySpell->Id);
+                        // no break because it converts all
+                    }
+                }
+                triggeredByAura->SetAuraPeriodicTimer(0);
+                return true;
             }
             // Runic Power Back on Snare/Root
             if (dummySpell->Id == 61257)
@@ -13892,6 +13957,7 @@ void Unit::ProcDamageAndSpellFor( bool isVictim, Unit * pTarget, uint32 procFlag
             case SPELL_AURA_OBS_MOD_MANA:
             case SPELL_AURA_MOD_STUN:
             case SPELL_AURA_ADD_PCT_MODIFIER:
+            case SPELL_AURA_PERIODIC_DUMMY:
             case SPELL_AURA_DUMMY:
             {
                 DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "ProcDamageAndSpell: casting spell id %u (triggered by %s dummy aura of spell %u)", spellInfo->Id,(isVictim?"a victim's":"an attacker's"), triggeredByAura->GetId());
@@ -14150,7 +14216,7 @@ void Unit::SetFeared(bool apply, uint64 const& casterGUID, uint32 spellID, uint3
     {
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING);
 
-        GetMotionMaster()->Clear(false, true);
+        GetMotionMaster()->Clear(false);
 
         if( GetTypeId() != TYPEID_PLAYER && isAlive() )
         {
@@ -14189,7 +14255,7 @@ void Unit::SetConfused(bool apply, uint64 const& casterGUID, uint32 spellID)
     {
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED);
 
-        GetMotionMaster()->Clear(false, true);
+        GetMotionMaster()->Clear(false);
 
         if (GetTypeId() != TYPEID_PLAYER && isAlive())
         {
@@ -15101,10 +15167,10 @@ float Unit::GetCombatRatingReduction(CombatRating cr) const
         return ((Player const*)this)->GetRatingBonusValue(cr);
     else if (((Creature const*)this)->isPet())
     {
-        // Player's pet have 0.4 resilience  from owner
+        // Player's pet get 100% resilience from owner
         if (Unit* owner = GetOwner())
             if(owner->GetTypeId() == TYPEID_PLAYER)
-                return ((Player*)owner)->GetRatingBonusValue(cr) * 0.4f;
+                return ((Player*)owner)->GetRatingBonusValue(cr);
     }
 
     return 0.0f;
