@@ -81,9 +81,7 @@ void BattleGroundRV::AddPlayer(Player *plr)
     BattleGroundRVScore* sc = new BattleGroundRVScore;
 
     m_PlayerScores[plr->GetGUID()] = sc;
-
-    UpdateWorldState(0xe11, GetAlivePlayersCountByTeam(ALLIANCE));
-    UpdateWorldState(0xe10, GetAlivePlayersCountByTeam(HORDE));
+    UpdateArenaWorldState();
 }
 
 void BattleGroundRV::RemovePlayer(Player * /*plr*/, uint64 /*guid*/)
@@ -91,9 +89,7 @@ void BattleGroundRV::RemovePlayer(Player * /*plr*/, uint64 /*guid*/)
     if (GetStatus() == STATUS_WAIT_LEAVE)
         return;
 
-    UpdateWorldState(0xe11, GetAlivePlayersCountByTeam(ALLIANCE));
-    UpdateWorldState(0xe10, GetAlivePlayersCountByTeam(HORDE));
-
+    UpdateArenaWorldState();
     CheckArenaWinConditions();
 }
 
@@ -109,10 +105,7 @@ void BattleGroundRV::HandleKillPlayer(Player* player, Player* killer)
     }
 
     BattleGround::HandleKillPlayer(player, killer);
-
-    UpdateWorldState(0xe11, GetAlivePlayersCountByTeam(ALLIANCE));
-    UpdateWorldState(0xe10, GetAlivePlayersCountByTeam(HORDE));
-
+    UpdateArenaWorldState();
     CheckArenaWinConditions();
 }
 
@@ -141,18 +134,18 @@ void BattleGroundRV::HandleAreaTrigger(Player * Source, uint32 Trigger)
     }
 }
 
-void BattleGroundRV::FillInitialWorldStates(WorldPacket &data, uint32& count)
-{
-    FillInitialWorldState(data, count, 0xe11, GetAlivePlayersCountByTeam(ALLIANCE));
-    FillInitialWorldState(data, count, 0xe10, GetAlivePlayersCountByTeam(HORDE));
-    FillInitialWorldState(data, count, 0xe1a, 1);
-}
-
 void BattleGroundRV::Reset()
 {
     //call parent's class reset
     BattleGround::Reset();
     m_uiTeleport = 22000;
+}
+
+void BattleGroundRV::FillInitialWorldStates(WorldPacket &data, uint32& count)
+{
+    FillInitialWorldState(data, count, 0xe11, GetAlivePlayersCountByTeam(ALLIANCE));
+    FillInitialWorldState(data, count, 0xe10, GetAlivePlayersCountByTeam(HORDE));
+    FillInitialWorldState(data, count, 0xe1a, 1);
 }
 
 bool BattleGroundRV::SetupBattleGround()
