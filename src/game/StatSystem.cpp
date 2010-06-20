@@ -1013,13 +1013,13 @@ void Pet::UpdateAttackPowerAndDamage(bool ranged)
     {
         if(getPetType() == HUNTER_PET)                      //hunter pets benefit from owner's attack power
         {
-            bonusAP = owner->GetTotalAttackPowerValue(RANGED_ATTACK) * 0.22f;
+            //bonusAP = owner->GetTotalAttackPowerValue(RANGED_ATTACK) * 0.22f;
             SetBonusDamage( int32(owner->GetTotalAttackPowerValue(RANGED_ATTACK) * 0.1287f));
         }
         //ghouls benefit from deathknight's attack power
         else if(getPetType() == SUMMON_PET && owner->getClass() == CLASS_DEATH_KNIGHT)
         {
-            bonusAP = owner->GetTotalAttackPowerValue(BASE_ATTACK) * 0.82f;
+            //bonusAP = owner->GetTotalAttackPowerValue(BASE_ATTACK) * 0.82f;
             SetBonusDamage( int32(owner->GetTotalAttackPowerValue(BASE_ATTACK) * 0.8287f));
         }
         //demons benefit from warlocks shadow or fire damage
@@ -1031,7 +1031,7 @@ void Pet::UpdateAttackPowerAndDamage(bool ranged)
             if(maximum < 0)
                 maximum = 0;
             SetBonusDamage( int32(maximum * 0.15f));
-            bonusAP = maximum * 0.57f;
+            //bonusAP = maximum * 0.57f;
         }
         //water elementals benefit from mage's frost damage
         else if(getPetType() == SUMMON_PET && owner->getClass() == CLASS_MAGE)
