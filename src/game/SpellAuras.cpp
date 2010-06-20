@@ -7782,6 +7782,9 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
                         // +75% from spell power
                         DoneActualBenefit = caster->SpellBaseHealingBonusDone(GetSpellSchoolMask(spellProto)) * 0.75f;
                     }
+					case SPELLFAMILY_GENERIC:
+					if (GetId()==70845)
+					    DoneActualBenefit = caster->GetMaxHealth() * 0.2f;	
                     break;
                 default:
                     break;
