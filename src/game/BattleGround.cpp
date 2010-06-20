@@ -539,7 +539,7 @@ void BattleGround::Update(uint32 diff)
             else
                 winner = 0;
             EndBattleGround(winner);
-            m_ArenaEnded = true
+            m_ArenaEnded = true;
         }
     }
 
