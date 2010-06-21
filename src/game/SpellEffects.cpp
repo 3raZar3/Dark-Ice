@@ -1382,7 +1382,7 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 
                     if (const SpellEntry *pSpell = sSpellStore.LookupEntry(spellId))
                     {
-                        unitTarget->CastSpell(m_caster, spellId, true);
+                        m_caster->CastSpell(m_caster, spellId, true);
 
                         Creature* creatureTarget = (Creature*)unitTarget;
 
