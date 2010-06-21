@@ -11,7 +11,7 @@
  * PLEASE RETAIN THE COPYRIGHT OF THE AUTHORS.
  */
 #include "IRCLog.h"
-#include "Config/ConfigEnv.h"
+#include "Config/Config.h"
 #include "IRCClient.h"
 #include <stdarg.h>
 

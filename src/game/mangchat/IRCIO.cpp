@@ -17,7 +17,7 @@
 #include "../ObjectMgr.h"
 #include "../WorldPacket.h"
 #include "../ChannelMgr.h"
-#include "../Config/ConfigEnv.h"
+#include "../Config/Config.h"
 #include "../Channel.h"
 #include "../World.h"
 

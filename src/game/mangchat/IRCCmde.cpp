@@ -24,7 +24,7 @@
 #include "../Language.h"
 #include "../SpellAuras.h"
 #include "SystemConfig.h"
-#include "../Config/ConfigEnv.h"
+#include "../Config/Config.h"
 #include "../GMTicketMgr.h"
 
 #define Send_Player(p, m)           sIRC.Send_WoW_Player(p, m)
