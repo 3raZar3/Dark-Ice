@@ -5165,6 +5165,9 @@ void Aura::HandleAuraProcTriggerSpell(bool apply, bool Real)
             case 28200:                                     // Ascendance (Talisman of Ascendance trinket)
                 SetAuraCharges(6);
                 break;
+			case 50421:                                     // Scent of Blood (Proc)
+                SetAuraCharges(1);
+				break;
             default: break;
         }
     }
