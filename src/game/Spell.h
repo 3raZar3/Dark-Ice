@@ -23,6 +23,9 @@
 #include "SharedDefines.h"
 #include "DBCEnums.h"
 #include "ObjectGuid.h"
+#include "LootMgr.h"
+#include "Unit.h"
+#include "Player.h"
 
 #include "../../dep/tbb/include/tbb/concurrent_vector.h"
 #include <memory>
@@ -30,9 +33,9 @@
 #define MAX_SPELL_ID	100000
 
 class WorldSession;
-class Unit;
+class WorldPacket;
 class DynamicObj;
-class Player;
+class Item;
 class GameObject;
 class Group;
 class Aura;
@@ -516,6 +519,7 @@ class Spell
         void ClearCastItem();
 
         static void SelectMountByAreaAndSkill(Unit* target, uint32 spellId75, uint32 spellId150, uint32 spellId225, uint32 spellId300, uint32 spellIdSpecial);
+        bool isCausingAura(AuraType aura);
     protected:
 
         void SendLoot(uint64 guid, LootType loottype);

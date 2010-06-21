@@ -475,11 +475,12 @@ bool Spell::FillCustomTargetMap(uint32 i, UnitList &targetUnitMap)
         radius = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[i]));
     else
         radius = GetSpellMaxRange(sSpellRangeStore.LookupEntry(m_spellInfo->rangeIndex));
-	
+
+    // Resulting effect depends on spell that we want to cast
     switch (m_spellInfo->Id)
     {
         case 46584: // Raise Dead
-        {
+            {
             WorldObject* result = FindCorpseUsing <MaNGOS::RaiseDeadObjectCheck>  ();
 
             if(result)
@@ -494,19 +495,21 @@ bool Spell::FillCustomTargetMap(uint32 i, UnitList &targetUnitMap)
                 };
             };
             break;
-        }
-        case 47496: // Ghoul's explode
-        {
-            FillAreaTargets(targetUnitMap,m_targets.m_destX, m_targets.m_destY,radius,PUSH_DEST_CENTER,SPELL_TARGETS_AOE_DAMAGE);
-            break;
-        }
+            }
         break;
-		
-		default:
-		    return false;
-		break;	
+
+        case 47496: // Ghoul's explode
+            {
+                FillAreaTargets(targetUnitMap,m_targets.m_destX, m_targets.m_destY,radius,PUSH_DEST_CENTER,SPELL_TARGETS_AOE_DAMAGE);
+                break;
+            }
+        break;
+
+        default:
+            return false;
+        break;
     }
-	return true;
+    return true;
 }
 
 // explicitly instantiate for use in SpellEffects.cpp
@@ -584,7 +587,7 @@ void Spell::FillTargetMap()
                         break;
                     case TARGET_AREAEFFECT_CUSTOM:
                     case TARGET_ALL_ENEMY_IN_AREA_INSTANT:
-                      if (FillCustomTargetMap(i,tmpUnitMap)) break; 
+                        if (FillCustomTargetMap(i,tmpUnitMap)) break;
                     case TARGET_INNKEEPER_COORDINATES:
                     case TARGET_TABLE_X_Y_Z_COORDINATES:
                     case TARGET_CASTER_COORDINATES:
@@ -666,7 +669,7 @@ void Spell::FillTargetMap()
                         break;
                     case TARGET_RANDOM_NEARBY_DEST: 
                         SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetA[i], tmpUnitMap);
-                        break;
+                    break;
                     // most A/B target pairs is self->negative and not expect adding caster to target list
                     default:
                         SetTargetMap(SpellEffectIndex(i), m_spellInfo->EffectImplicitTargetB[i], tmpUnitMap);
@@ -1090,6 +1093,35 @@ void Spell::DoAllEffectOnTarget(TargetInfo *target)
         m_damage += target->damage;
     }
 
+    // Recheck immune (only for delayed spells)
+    if (m_spellInfo->speed && (
+        unit->IsImmunedToDamage(GetSpellSchoolMask(m_spellInfo)) ||
+        unit->IsImmunedToSpell(m_spellInfo)))
+    {
+        caster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_IMMUNE);
+        missInfo = SPELL_MISS_IMMUNE;
+        return;
+    }
+
+    // recheck deflect for delayed spells on target with Deterrence,
+    if (m_spellInfo->speed && unit->HasAura(19263))
+    {
+        caster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_DEFLECT);
+        missInfo = SPELL_MISS_DEFLECT;
+        return;
+    }
+    
+    // recheck for visibility of target
+    if ((m_spellInfo->speed > 0.0f || 
+        (m_spellInfo->EffectImplicitTargetA[0] == TARGET_CHAIN_DAMAGE &&
+        GetSpellCastTime(m_spellInfo, this) > 0)) 
+         && !unit->isVisibleForOrDetect(caster, caster, false))
+    {
+        caster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_EVADE);
+        missInfo = SPELL_MISS_EVADE;
+        return;
+    }
+
     if (missInfo==SPELL_MISS_NONE)                          // In case spell hit target, do all effect on that target
         DoSpellHitOnUnit(unit, mask);
     else
@@ -1315,9 +1347,14 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
                 return;
             }
 
-            // not break stealth by cast targeting
-            if ((!(m_spellInfo->AttributesEx & SPELL_ATTR_EX_NOT_BREAK_STEALTH) && m_spellInfo->Id != 51690 && m_spellInfo->Id != 53198 && m_spellInfo->Id != 3600 && m_spellInfo->Id != 53055 && m_spellInfo->Id != 44416 && m_spellInfo->Id != 32835 ) || (m_spellInfo->SpellFamilyName == SPELLFAMILY_ROGUE && m_spellInfo->SpellFamilyFlags == SPELLFAMILYFLAG_ROGUE_SAP))
-                unit->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
+            // not break stealth by cast targeting and some exceptions for spells which should break/not break stealth
+            if (!(m_spellInfo->AttributesEx & SPELL_ATTR_EX_NOT_BREAK_STEALTH) || m_spellInfo->SpellFamilyFlags & SPELLFAMILYFLAG_ROGUE_SAP || isCausingAura(SPELL_AURA_DETECT_STEALTH))
+            {
+                if (!(m_spellInfo->Id == 39897 || m_spellInfo->Id == 32592 || m_spellInfo->Id == 32375|| m_spellInfo->Id == 1725 ||
+                    m_spellInfo->Id == 1038 || (m_spellInfo->SpellFamilyFlags2 & UI64LIT(0x00000100)) || m_spellInfo->Id == 3600 ||
+                    m_spellInfo->Effect[EFFECT_INDEX_0] == SPELL_EFFECT_THREAT))
+                    unit->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
+            }
 
             // can cause back attack (if detected), stealth removed at Spell::cast if spell break it
             if (!(m_spellInfo->AttributesEx & SPELL_ATTR_EX_NO_INITIAL_AGGRO) && !IsPositiveSpell(m_spellInfo->Id) &&
@@ -1657,7 +1694,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
 				case 70834:                                 // Bone Storm
 				case 70835:                                 // Bone Storm
 				case 70836:                                 // Bone Storm
-				    radius = m_spellInfo->EffectBasePoints[effIndex] / 300;
+				    radius = ATTACK_DISTANCE + 1;
 					break;
 				case 72350:                                 // Fury of Frostmourne
 				case 72351:                                 // Fury of Frostmourne
@@ -1732,22 +1769,23 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
         }
         case TARGET_RANDOM_NEARBY_DEST:
         {
-            // Get a random point IN the CIRCEL around current M_TARGETS COORDINATES(!).
-            if (radius > 0)
+            radius *= sqrtf(rand_norm_f()); // Get a random point in circle. Use sqrt(rand) to correct distribution when converting polar to Cartesian coordinates.
+            float angle = 2.0f * M_PI_F * rand_norm_f();
+            float dest_x = m_targets.m_destX + cos(angle) * radius;
+            float dest_y = m_targets.m_destY + sin(angle) * radius;
+            float dest_z = m_caster->GetPositionZ();
+            m_caster->UpdateGroundPositionZ(dest_x, dest_y, dest_z);
+            m_targets.setDestination(dest_x, dest_y, dest_z);
+
+            if (radius > 0.0f)
             {
-                // Use sqrt(rand) to correct distribution when converting polar to Cartesian coordinates.
-                radius *= sqrtf(rand_norm_f());
-                float angle = 2.0f * M_PI_F * rand_norm_f();
-                float dest_x = m_targets.m_destX + cos(angle) * radius;
-                float dest_y = m_targets.m_destY + sin(angle) * radius;
-                float dest_z = m_caster->GetPositionZ();
-                m_caster->UpdateGroundPositionZ(dest_x, dest_y, dest_z);
-                m_targets.setDestination(dest_x, dest_y, dest_z);
+                // caster included here?
+                FillAreaTargets(targetUnitMap, dest_x, dest_y, radius, PUSH_DEST_CENTER, SPELL_TARGETS_AOE_DAMAGE);
             }
+            else if (IsPositiveSpell(m_spellInfo->Id))
+                    targetUnitMap.push_back(m_caster);
             // This targetMode is often used as 'last' implicitTarget for positive spells, that just require coordinates
             // and no unitTarget (e.g. summon effects). As MaNGOS always needs a unitTarget we add just the caster here.
-            if (IsPositiveSpell(m_spellInfo->Id))
-                targetUnitMap.push_back(m_caster);
 
             break;
         }
@@ -2109,6 +2147,13 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                     // target amount stored in parent spell dummy effect but hard to access
                     FillRaidOrPartyManaPriorityTargets(targetUnitMap, m_caster, m_caster, radius, 3, true, false, true);
                     break;
+				case 71447:                                 // Bloodbolt Splash 10N
+				case 71481:                                 // Bloodbolt Splash 25N
+				case 71482:                                 // Bloodbolt Splash 10H
+				case 71483:                                 // Bloodbolt Splash 25H
+				    FillAreaTargets(targetUnitMap, m_targets.m_destX, m_targets.m_destY, radius, PUSH_SELF_CENTER, SPELL_TARGETS_FRIENDLY);
+					targetUnitMap.remove(m_caster);
+					break;
                 case 45662:
                     // encapsulate hack, to aoivd other hacks in spellbonusdmg-, crit-, etc. calc.
                     FillAreaTargets(targetUnitMap, m_targets.m_destX, m_targets.m_destY, radius, PUSH_SELF_CENTER, SPELL_TARGETS_HOSTILE);
@@ -3493,6 +3538,9 @@ void Spell::update(uint32 difftime)
         {
             if(m_timer)
             {
+                if (m_targets.getUnitTarget() && m_targets.getUnitTarget()->isAlive() && !m_targets.getUnitTarget()->isVisibleForOrDetect(m_caster, m_caster, false))
+                    cancel();
+
                 if(difftime >= m_timer)
                     m_timer = 0;
                 else
@@ -4444,7 +4492,10 @@ SpellCastResult Spell::CheckOrTakeRunePower(bool take)
                 --runeCost[rune];
 
                 if (take)
+                {
                     plr->ConvertRune(i, plr->GetBaseRune(i));
+                    plr->ClearConvertedBy(i);
+                }
             }
         }
 
@@ -7277,4 +7328,17 @@ void Spell::ClearCastItem()
         m_targets.setItemTarget(NULL);
 
     m_CastItem = NULL;
+}
+bool Spell::isCausingAura(AuraType aura)
+{
+    bool found = false;
+    for(uint8 i = 0; i < MAX_EFFECT_INDEX; ++i)
+    {
+        if(m_spellInfo->EffectApplyAuraName[i] == aura)
+        {
+            found = true;
+            break;
+        }
+    }
+    return found;
 }

@@ -1280,7 +1280,7 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket *data, BattleGround *bg)
     if(type)                                                // arena
     {
         // Rating Changes and Arena Team names seems to be correct for 3.3
-        for(int i = 0; i < BG_TEAMS_COUNT; ++i)
+        for(int i = 1; i <= BG_TEAMS_COUNT; ++i)
         {
             *data << uint32(-(bg->m_ArenaTeamRatingChanges[(bg->GetWinner()+i)%BG_TEAMS_COUNT]));
             *data << uint32(0);                             // seems it should be 0 since 3.0
@@ -1305,7 +1305,7 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket *data, BattleGround *bg)
     else
     {
         *data << uint8(1);                                  // bg ended
-        *data << uint8(0);                                  // ???
+        *data << uint8(bg->GetWinner());                    // ???
     }
 
     *data << (int32)(bg->GetPlayerScoresSize());
@@ -1493,7 +1493,7 @@ BattleGround * BattleGroundMgr::CreateNewBattleGround(BattleGroundTypeId bgTypeI
     if (bg_template->isArena())
     {
         BattleGroundTypeId arenas[] = {BATTLEGROUND_NA, BATTLEGROUND_BE, BATTLEGROUND_RL, BATTLEGROUND_DS, BATTLEGROUND_RV};
-        uint32 arena_num = urand(0,4);
+        uint32 arena_num = isRated ? urand(0, 2) : urand(3, 4);
         bgTypeId = arenas[arena_num];
         bg_template = GetBattleGroundTemplate(bgTypeId);
         if (!bg_template)

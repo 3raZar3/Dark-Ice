@@ -818,8 +818,9 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
                 {
                     // [1 + 0.25 * SPH + 0.16 * AP]
                     float ap = m_caster->GetTotalAttackPowerValue(BASE_ATTACK);
-                    int32 holy = m_caster->SpellBaseDamageBonusDone(GetSpellSchoolMask(m_spellInfo)) +
-                                 unitTarget->SpellBaseDamageBonusTaken(GetSpellSchoolMask(m_spellInfo));
+                    int32 holy = m_caster->SpellBaseDamageBonusDone(GetSpellSchoolMask(m_spellInfo));
+                    if (holy < 0)
+                        holy = 0;
                     damage += int32(ap * 0.16f) + int32(holy * 25 / 100);
                 }
                 break;
@@ -1381,7 +1382,7 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 
                     if (const SpellEntry *pSpell = sSpellStore.LookupEntry(spellId))
                     {
-                        unitTarget->CastSpell(m_caster, spellId, true);
+                        m_caster->CastSpell(m_caster, spellId, true);
 
                         Creature* creatureTarget = (Creature*)unitTarget;
 
@@ -2738,6 +2739,48 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 }
                 return;
             }
+            // Death Grip
+            else if (m_spellInfo->Id == 49576)
+            {
+                if (m_caster->GetTypeId() != TYPEID_PLAYER)
+                    return;
+                // We can have a summoned pet/guardian only in 2 cases:
+                // 1. It was summoned from corpse in EffectScriptEffect.
+                if (getState() == SPELL_STATE_FINISHED)
+                    return;
+                // 2. Cooldown of Raise Dead is finished and we want to repeat the cast with active pet.
+                if (((Player*)m_caster)->GetPet())
+                {
+                    ((Player*)m_caster)->RemoveSpellCooldown(m_spellInfo->Id,true);
+                    SendCastResult(SPELL_FAILED_ALREADY_HAVE_SUMMON);
+                    return;
+                }
+                // We will get here ONLY if we have no corpse.
+                bool allow_cast = false;
+                // We do not need any reagent if we have Glyph of Raise Dead.
+                if (m_caster->HasAura(60200))
+                    allow_cast = true;
+                else
+                    // We need Corpse Dust to cast a spell.
+                    if (((Player*)m_caster)->HasItemCount(37201,1))
+                    {
+                        ((Player*)m_caster)->DestroyItemCount(37201,1,true);
+                        allow_cast = true;
+                    }
+                if (allow_cast)
+                {
+                    if (m_caster->HasSpell(52143))
+                        m_caster->CastSpell(m_caster,52150,true);
+                    else
+                        m_caster->CastSpell(m_caster,46585,true);
+                }
+                else
+                {
+                    ((Player*)m_caster)->RemoveSpellCooldown(m_spellInfo->Id,true);
+                    SendCastResult(SPELL_FAILED_CANT_DO_THAT_RIGHT_NOW);
+                }
+                return;
+            }
             switch(m_spellInfo->Id)
             {
                 // Death Grip
@@ -3818,6 +3861,10 @@ void Spell::EffectEnergize(SpellEffectIndex eff_idx)
     int level_diff = 0;
     switch (m_spellInfo->Id)
     {
+	    case 2687:                                          // Bloodrage
+		    if (m_caster->HasAura(70844))
+			    m_caster->CastSpell(m_caster,70845,true);
+			break;	
         case 9512:                                          // Restore Energy
             level_diff = m_caster->getLevel() - 40;
             level_multiplier = 2;
@@ -5378,7 +5425,7 @@ void Spell::EffectSummonPet(SpellEffectIndex eff_idx)
             else
                 ++itr;
         }
-        
+
         // Summoned creature is ghoul.
         if (NewSummon->GetEntry() == 26125)
             // He must have energy bar instead of mana
@@ -6846,8 +6893,73 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     m_caster->CastSpell(unitTarget, 72588, true);
                     return;
                 }
+				case 71446:                                 // Twilight Bloodbolt 10N
+				{
+				    
                 case 62678: // Summon Allies of Nature
                 {
+				    if (!unitTarget)
+					    return;
+					
+					unitTarget->CastSpell(unitTarget, 71447, true);
+					return;
+				}
+				case 71478:                                 // Twilight Bloodbolt 25N
+				{
+				    if (!unitTarget)
+					    return;
+					
+					unitTarget->CastSpell(unitTarget, 71481, true);
+					return;
+				}
+				case 71479:                                 // Twilight Bloodbolt 10H
+				{
+				    if (!unitTarget)
+					    return;
+						
+					unitTarget->CastSpell(unitTarget, 71482, true);
+					return;
+				}
+				case 71480:                                 // Twilight Bloodbolt 25H
+				{
+				    if (!unitTarget)
+					    return;
+						
+					unitTarget->CastSpell(unitTarget, 71483, true);
+					return;
+				}
+				case 71899:                                 // Bloodbolt Whirl 10N
+				{
+				    if (!unitTarget)
+					    return;
+						
+					m_caster->CastSpell(unitTarget, 71446, true);
+					return;
+				}
+				case 71900:                                 // Bloodbolt Whirl 25N
+				{
+				    if (!unitTarget)
+					    return;
+						
+					m_caster->CastSpell(unitTarget, 71478, true);
+					return;
+				}
+				case 71901:                                 // Bloodbolt Whirl 10H
+				{
+				    if (!unitTarget)
+					    return;
+						
+					m_caster->CastSpell(unitTarget, 71479, true);
+					return;
+				}
+				case 71902:                                 // Bloodbolt Whirl 25H
+				{
+				    if (!unitTarget)
+					    return;
+						
+					m_caster->CastSpell(unitTarget, 71480, true);
+					return;
+				}	
                     uint32 spellId = 0;
                     switch(urand(0,2))
                     {
@@ -7270,7 +7382,7 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
 
                     break;
                 }
-                case 46584:		 // Raise dead
+                case 46584:           // Raise dead
                 {
                     // We will get here ONLY when we have a corpse of humanoid that gives honor or XP.
                     // If we have active pet, then we should not cast the spell again.
@@ -7288,10 +7400,10 @@ void Spell::EffectScriptEffect(SpellEffectIndex eff_idx)
                     else
                         // Summon ghoul as a guardian
                      m_caster->CastSpell(unitTarget->GetPositionX(),unitTarget->GetPositionY(),unitTarget->GetPositionZ(),46585,true);
-                    ((Creature*)unitTarget)->setDeathState(ALIVE);
+                        ((Creature*)unitTarget)->setDeathState(ALIVE);
                     // Used to prevent further EffectDummy execution
                     finish();
-                    return;//break;	
+                    return;            //break;
                 }
             }
             break;
@@ -8232,11 +8344,7 @@ void Spell::EffectPlayerPull(SpellEffectIndex eff_idx)
     if(!unitTarget)
         return;
 
-    float dist = unitTarget->GetDistance2d(m_caster);
-    if (damage && dist > damage)
-        dist = float(damage);
-
-    unitTarget->KnockBackFrom(m_caster,-dist,float(m_spellInfo->EffectMiscValue[eff_idx])/30);
+    unitTarget->KnockBackFrom(m_caster, -unitTarget->GetDistance2d(m_caster), float(m_spellInfo->EffectMiscValue[eff_idx])/30);
 }
 
 void Spell::EffectDispelMechanic(SpellEffectIndex eff_idx)

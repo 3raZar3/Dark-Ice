@@ -294,11 +294,16 @@ void Unit::Update( uint32 p_time )
     // WARNING! Order of execution here is important, do not change.
     // Spells must be processed with event system BEFORE they go to _UpdateSpells.
     // Or else we may have some SPELL_STATE_FINISHED spells stalled in pointers, that is bad.
-    #pragma omp critical(UpdateThreadSafety)
-    {
+    sWorld.m_spellUpdateLock.acquire();
     m_Events.Update( p_time );
-    _UpdateSpells( p_time );
+    // End this if unit is despawned
+    if(!IsInWorld())
+    {
+        sWorld.m_spellUpdateLock.release();
+        return;
     }
+    _UpdateSpells( p_time );
+    sWorld.m_spellUpdateLock.release();
 
     CleanupDeletedAuras();
 
@@ -430,11 +435,6 @@ void Unit::SendMonsterMoveWithSpeed(float x, float y, float z, uint32 transitTim
 
 void Unit::BuildHeartBeatMsg(WorldPacket *data) const
 {
-    //Hack for flying creatures, but it works!
-    if(GetTypeId()!=TYPEID_PLAYER && ((Creature*)this)->canFly() &&
-        !m_movementInfo.HasMovementFlag(MOVEFLAG_FLYING))
-        ((Unit*)this)->m_movementInfo.AddMovementFlag(MOVEFLAG_FLYING);
-
     data->Initialize(MSG_MOVE_HEARTBEAT);
     *data << GetPackGUID();
     ((Unit*)this)->m_movementInfo.Write(*data);
@@ -570,16 +570,18 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
     // root type spells do not dispel the root effect
     if (!spellProto || !(spellProto->Mechanic == MECHANIC_ROOT || IsSpellHaveAura(spellProto,SPELL_AURA_MOD_ROOT)))
         pVictim->RemoveSpellbyDamageTaken(SPELL_AURA_MOD_ROOT, damage);
-		
-	WeaponAttackType attType = GetWeaponAttackType(spellProto);
+        
+    WeaponAttackType attType = GetWeaponAttackType(spellProto);
 
-	// on weapon hit casts, proc from melee damage implemented in DealMeleeDamage() (sent with spellProto == NULL, which determines possible double proc) 
+    // on weapon hit casts, proc from melee damage implemented in DealMeleeDamage() (sent with spellProto == NULL, which determines possible double proc) 
     if(GetTypeId() == TYPEID_PLAYER &&
-	   spellProto &&
-	   (spellProto->DmgClass == SPELL_DAMAGE_CLASS_MELEE ||
-	   spellProto->DmgClass == SPELL_DAMAGE_CLASS_RANGED))
-	    ((Player*)this)->CastItemCombatSpell(pVictim, attType);
-		
+       spellProto &&
+       (spellProto->DmgClass == SPELL_DAMAGE_CLASS_MELEE ||
+       spellProto->DmgClass == SPELL_DAMAGE_CLASS_RANGED) &&
+       damagetype == SPELL_DIRECT_DAMAGE &&
+       !(spellProto->AuraInterruptFlags & AURA_INTERRUPT_FLAG_DAMAGE))
+        ((Player*)this)->CastItemCombatSpell(pVictim, attType);
+        
     // no xp,health if type 8 /critters/
     if(pVictim->GetTypeId() != TYPEID_PLAYER && pVictim->GetCreatureType() == CREATURE_TYPE_CRITTER)
     {
@@ -1283,11 +1285,10 @@ void Unit::CalculateSpellDamage(SpellNonMeleeDamage *damageInfo, int32 damage, S
                 damageInfo->HitInfo|= SPELL_HIT_TYPE_CRIT;
                 damage = SpellCriticalDamageBonus(spellInfo, damage, pVictim);
                 // Resilience - reduce crit damage
-                uint32 redunction_affected_damage = CalcNotIgnoreDamageRedunction(damage,damageSchoolMask);
                 if (attackType != RANGED_ATTACK)
-                    damage -= pVictim->GetMeleeCritDamageReduction(redunction_affected_damage);
+                    damage -= pVictim->GetMeleeCritDamageReduction(damage);
                 else
-                    damage -= pVictim->GetRangedCritDamageReduction(redunction_affected_damage);
+                    damage -= pVictim->GetRangedCritDamageReduction(damage);
             }
         }
         break;
@@ -1304,8 +1305,7 @@ void Unit::CalculateSpellDamage(SpellNonMeleeDamage *damageInfo, int32 damage, S
                 damageInfo->HitInfo|= SPELL_HIT_TYPE_CRIT;
                 damage = SpellCriticalDamageBonus(spellInfo, damage, pVictim);
                 // Resilience - reduce crit damage
-                uint32 redunction_affected_damage = CalcNotIgnoreDamageRedunction(damage,damageSchoolMask);
-                damage -= pVictim->GetSpellCritDamageReduction(redunction_affected_damage);
+                damage -= pVictim->GetSpellCritDamageReduction(damage);
             }
         }
         break;
@@ -1315,7 +1315,7 @@ void Unit::CalculateSpellDamage(SpellNonMeleeDamage *damageInfo, int32 damage, S
     if (GetTypeId() == TYPEID_PLAYER)
     {
         uint32 redunction_affected_damage = CalcNotIgnoreDamageRedunction(damage,damageSchoolMask);
-        damage -= pVictim->GetSpellDamageReduction(redunction_affected_damage);
+        damage -= pVictim->GetSpellDamageReduction(damage);
     }
 
     // damage mitigation
@@ -1518,12 +1518,11 @@ void Unit::CalculateMeleeDamage(Unit *pVictim, uint32 damage, CalcDamageInfo *da
                 damageInfo->damage = int32((damageInfo->damage) * float((100.0f + mod)/100.0f));
 
             // Resilience - reduce crit damage
-            uint32 redunction_affected_damage = CalcNotIgnoreDamageRedunction(damageInfo->damage,damageInfo->damageSchoolMask);
             uint32 resilienceReduction;
             if (attackType != RANGED_ATTACK)
-                resilienceReduction = pVictim->GetMeleeCritDamageReduction(redunction_affected_damage);
+                resilienceReduction = pVictim->GetMeleeCritDamageReduction(damageInfo->damage);
             else
-                resilienceReduction = pVictim->GetRangedCritDamageReduction(redunction_affected_damage);
+                resilienceReduction = pVictim->GetRangedCritDamageReduction(damageInfo->damage);
 
             damageInfo->damage      -= resilienceReduction;
             damageInfo->cleanDamage += resilienceReduction;
@@ -1637,12 +1636,11 @@ void Unit::CalculateMeleeDamage(Unit *pVictim, uint32 damage, CalcDamageInfo *da
     // only from players
     if (GetTypeId() == TYPEID_PLAYER)
     {
-        uint32 redunction_affected_damage = CalcNotIgnoreDamageRedunction(damageInfo->damage,damageInfo->damageSchoolMask);
         uint32 resilienceReduction;
         if (attackType != RANGED_ATTACK)
-            resilienceReduction = pVictim->GetMeleeDamageReduction(redunction_affected_damage);
+            resilienceReduction = pVictim->GetMeleeDamageReduction(damageInfo->damage);
         else
-            resilienceReduction = pVictim->GetRangedDamageReduction(redunction_affected_damage);
+            resilienceReduction = pVictim->GetRangedDamageReduction(damageInfo->damage);
         damageInfo->damage      -= resilienceReduction;
         damageInfo->cleanDamage += resilienceReduction;
     }
@@ -4773,7 +4771,20 @@ void Unit::RemoveAura(AuraMap::iterator &i, AuraRemoveMode mode)
     DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Aura %u now is remove mode %d",Aur->GetModifier()->m_auraname, mode);
 
     // some auras also need to apply modifier (on caster) on remove
-    if (mode != AURA_REMOVE_BY_DELETE || Aur->GetModifier()->m_auraname == SPELL_AURA_MOD_POSSESS)
+    if (mode == AURA_REMOVE_BY_DELETE)
+    {
+        switch (Aur->GetModifier()->m_auraname)
+        {
+            // need properly undo any auras with player-caster mover set (or will crash at next caster move packet)
+            case SPELL_AURA_MOD_POSSESS:
+            case SPELL_AURA_MOD_POSSESS_PET:
+            case SPELL_AURA_CONTROL_VEHICLE:
+                Aur->ApplyModifier(false,true);
+                break;
+            default: break;
+        }
+    }
+    else
         Aur->ApplyModifier(false,true);
 
     if (Aur->_RemoveAura())
@@ -5392,7 +5403,7 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
     // some dummy spells have trigger spell in spell data already (from 3.0.3)
     uint32 triggered_spell_id = dummySpell->EffectApplyAuraName[effIndex] == SPELL_AURA_DUMMY ? dummySpell->EffectTriggerSpell[effIndex] : 0;
     Unit* target = pVictim;
-	Unit* caster = this;
+    Unit* caster = this;
     int32  basepoints[MAX_EFFECT_INDEX] = {0, 0, 0};
 
     switch(dummySpell->SpellFamilyName)
@@ -5814,140 +5825,140 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
 
                     break;
                 }
-				// Deathbringer's Will (Item - Icecrown 25 Normal Melee Trinket)
-				//=====================================================
-				// 71492 Speed of the Vrykul: +600 haste rating (Death Knight, Druid, Paladin, Rogue, Warrior, Shaman)
-				// 71485 Agility of the Vrykul: +600 agility (Druid, Hunter, Rogue, Shaman)
-				// 71486 Power of the Taunka: +1200 attack power (Hunter, Rogue, Shaman)
-				// 71484 Strength of the Taunka: +600 strength (Death Knight, Druid, Paladin, Warrior)
-				// 71491 Aim of the Iron Dwarves: +600 critical strike rating (Death Knight, Hunter, Paladin, Warrior)
-				case 71519:
-				{
-				    if(GetTypeId() != TYPEID_PLAYER)
-					    return false;
-						
-					// Select class defined buff
-					switch (getClass())
-					{
-					    case CLASS_PALADIN:
-						{
-						    uint32 RandomSpell[]={71492,71484,71491};
-							triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
-							break;
-						}
-						case CLASS_DRUID:
-						{
-						    uint32 RandomSpell[]={71492,71485,71484};
-							triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
-							break;
-						}
-						case CLASS_ROGUE:
-						{
-						    uint32 RandomSpell[]={71492,71485,71486};
-							triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
-							break;
-						}
-						case CLASS_WARRIOR:
-						{
-						    uint32 RandomSpell[]={71492,71484,71491};
-							triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
-							break;
-						}
-						case CLASS_SHAMAN:
-						{
-						    uint32 RandomSpell[]={71485,71486,71492};
-							triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
-							break;
-						}
-						case CLASS_HUNTER:
-						{
-						    uint32 RandomSpell[]={71485,71486,71491};
-							triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
-							break;
-						}
-						case CLASS_DEATH_KNIGHT:
-						{
-						    uint32 RandomSpell[]={71484,71492,71491};
-							triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
-							break;
-						}
-						default:
-						    return false;
-					}
-					break;
-				}
-				// Deathbringer's Will (Item - Icecrown 25 Heroic Melee Trinket)
-				// 71560 Speed of the Vrykul: +700 haste rating (Death Knight, Druid, Paladin, Rogue, Warrior, Shaman)
-				// 71556 Agility of the Vrykul: +700 agility (Druid, Hunter, Rogue, Shaman)
-				// 71558 Power of the Taunka: +1400 attack power (Hunter, Rogue, Shaman)
-				// 71561 Strength of the Taunka: +700 strength (Death Knight, Druid, Paladin, Warrior)
-				// 71559 Aim of the Iron Dwarves: +700 critical strike rating (Death Knight, Hunter, Paladin, Warrior)
-				case 71562:
-				{
-				    if(GetTypeId() != TYPEID_PLAYER)
-					    return false;
-						
-					// Select class defined buff
-					switch (getClass())
-					{
-					    case CLASS_PALADIN:
-						{
-						    uint32 RandomSpell[]={71560,71561,71559};
-							triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
-							break;
-						}
-						case CLASS_DRUID:
-						{
-						    uint32 RandomSpell[]={71560,71556,71561};
-							triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
-							break;
-						}
-						case CLASS_ROGUE:
-						{
-						    uint32 RandomSpell[]={71560,71556,71558,};
-							triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
-							break;
-						}
-						case CLASS_WARRIOR:
-						{
-						    uint32 RandomSpell[]={71560,71561,71559,};
-							triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
-							break;
-						}
-						case CLASS_SHAMAN:
-						{
-						    uint32 RandomSpell[]={71556,71558,71560};
-							triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
-							break;
-						}
-						case CLASS_HUNTER:
-						{
-						    uint32 RandomSpell[]={71556,71558,71559};
-							triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
-							break;
-						}
-						case CLASS_DEATH_KNIGHT:
-						{
-						    uint32 RandomSpell[]={71561,71560,71559};
-							triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
-							break;
-						}
+                // Deathbringer's Will (Item - Icecrown 25 Normal Melee Trinket)
+                //=====================================================
+                // 71492 Speed of the Vrykul: +600 haste rating (Death Knight, Druid, Paladin, Rogue, Warrior, Shaman)
+                // 71485 Agility of the Vrykul: +600 agility (Druid, Hunter, Rogue, Shaman)
+                // 71486 Power of the Taunka: +1200 attack power (Hunter, Rogue, Shaman)
+                // 71484 Strength of the Taunka: +600 strength (Death Knight, Druid, Paladin, Warrior)
+                // 71491 Aim of the Iron Dwarves: +600 critical strike rating (Death Knight, Hunter, Paladin, Warrior)
+                case 71519:
+                {
+                    if(GetTypeId() != TYPEID_PLAYER)
+                        return false;
+                        
+                    // Select class defined buff
+                    switch (getClass())
+                    {
+                        case CLASS_PALADIN:
+                        {
+                            uint32 RandomSpell[]={71492,71484,71491};
+                            triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
+                            break;
+                        }
+                        case CLASS_DRUID:
+                        {
+                            uint32 RandomSpell[]={71492,71485,71484};
+                            triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
+                            break;
+                        }
+                        case CLASS_ROGUE:
+                        {
+                            uint32 RandomSpell[]={71492,71485,71486};
+                            triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
+                            break;
+                        }
+                        case CLASS_WARRIOR:
+                        {
+                            uint32 RandomSpell[]={71492,71484,71491};
+                            triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
+                            break;
+                        }
+                        case CLASS_SHAMAN:
+                        {
+                            uint32 RandomSpell[]={71485,71486,71492};
+                            triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
+                            break;
+                        }
+                        case CLASS_HUNTER:
+                        {
+                            uint32 RandomSpell[]={71485,71486,71491};
+                            triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
+                            break;
+                        }
+                        case CLASS_DEATH_KNIGHT:
+                        {
+                            uint32 RandomSpell[]={71484,71492,71491};
+                            triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
+                            break;
+                        }
                         default:
-						    return false;
-					}
-				}	
-				// Petrified Bark
-				case 62933:
-				case 62337:
-				{
-				    if(procSpell->DmgClass != SPELL_DAMAGE_CLASS_MELEE)
-					    return false;
-						
-					caster = pVictim;
+                            return false;
+                    }
+                    break;
+                }
+                // Deathbringer's Will (Item - Icecrown 25 Heroic Melee Trinket)
+                // 71560 Speed of the Vrykul: +700 haste rating (Death Knight, Druid, Paladin, Rogue, Warrior, Shaman)
+                // 71556 Agility of the Vrykul: +700 agility (Druid, Hunter, Rogue, Shaman)
+                // 71558 Power of the Taunka: +1400 attack power (Hunter, Rogue, Shaman)
+                // 71561 Strength of the Taunka: +700 strength (Death Knight, Druid, Paladin, Warrior)
+                // 71559 Aim of the Iron Dwarves: +700 critical strike rating (Death Knight, Hunter, Paladin, Warrior)
+                case 71562:
+                {
+                    if(GetTypeId() != TYPEID_PLAYER)
+                        return false;
+                        
+                    // Select class defined buff
+                    switch (getClass())
+                    {
+                        case CLASS_PALADIN:
+                        {
+                            uint32 RandomSpell[]={71560,71561,71559};
+                            triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
+                            break;
+                        }
+                        case CLASS_DRUID:
+                        {
+                            uint32 RandomSpell[]={71560,71556,71561};
+                            triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
+                            break;
+                        }
+                        case CLASS_ROGUE:
+                        {
+                            uint32 RandomSpell[]={71560,71556,71558,};
+                            triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
+                            break;
+                        }
+                        case CLASS_WARRIOR:
+                        {
+                            uint32 RandomSpell[]={71560,71561,71559,};
+                            triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
+                            break;
+                        }
+                        case CLASS_SHAMAN:
+                        {
+                            uint32 RandomSpell[]={71556,71558,71560};
+                            triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
+                            break;
+                        }
+                        case CLASS_HUNTER:
+                        {
+                            uint32 RandomSpell[]={71556,71558,71559};
+                            triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
+                            break;
+                        }
+                        case CLASS_DEATH_KNIGHT:
+                        {
+                            uint32 RandomSpell[]={71561,71560,71559};
+                            triggered_spell_id = RandomSpell[ irand(0, sizeof(RandomSpell)/sizeof(uint32) - 1) ];
+                            break;
+                        }
+                        default:
+                            return false;
+                    }
+                }	
+                // Petrified Bark
+                case 62933:
+                case 62337:
+                {
+                    if(procSpell->DmgClass != SPELL_DAMAGE_CLASS_MELEE)
+                        return false;
+                        
+                    caster = pVictim;
                     triggered_spell_id = 62379;
-					basepoints[EFFECT_INDEX_0] = damage;
-					break;
-				}	
+                    basepoints[EFFECT_INDEX_0] = damage;
+                    break;
+                }	
             }
             break;
         }
@@ -7699,19 +7710,26 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 target->CastSpell(target, 61607, true, NULL, triggeredByAura);
                 return true;
             }
-            // Unholy Blight
-            if (dummySpell->Id == 49194)
-            {
-                basepoints[0] = triggerAmount * damage / 1000;
-                triggered_spell_id = 50536;
-                break;
-            }
             // Vendetta
             if (dummySpell->SpellFamilyFlags & UI64LIT(0x0000000000010000))
             {
                 basepoints[0] = triggerAmount * GetMaxHealth() / 100;
                 triggered_spell_id = 50181;
                 target = this;
+                break;
+            }
+            // Unholy Blight
+            if (dummySpell->Id == 49194)
+            {
+                basepoints[0] = damage * triggerAmount / 100;
+
+                // Glyph of Unholy Blight
+                if (Aura *aura = GetDummyAura(63332))
+                    basepoints[0] += basepoints[0] * aura->GetModifier()->m_amount / 100;
+
+                // Split between 10 ticks
+                basepoints[0] /= 10;
+                triggered_spell_id = 50536;
                 break;
             }
             // Necrosis
@@ -7803,6 +7821,62 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                         return false;
                 }
                 break;
+            }
+            // Blood of the North and Reaping
+            if (dummySpell->SpellIconID == 3041 || dummySpell->SpellIconID == 22)
+            {
+                if(GetTypeId()!=TYPEID_PLAYER)
+                    return false;
+                
+                Player *player = (Player*)this;
+                for (uint32 i = 0; i < MAX_RUNES; ++i)
+                {
+                    if (player->GetCurrentRune(i) == RUNE_BLOOD)
+                    {
+                        if(!player->GetRuneCooldown(i))
+                            player->ConvertRune(i, RUNE_DEATH, dummySpell->Id);
+                        else
+                        {
+                            // search for another rune that might be available
+                            for (uint32 iter = i; iter < MAX_RUNES; ++iter)
+                            {
+                                if(player->GetCurrentRune(iter) == RUNE_BLOOD && !player->GetRuneCooldown(iter))
+                                {
+                                    player->ConvertRune(iter, RUNE_DEATH, dummySpell->Id);
+                                    triggeredByAura->SetAuraPeriodicTimer(0);
+                                    return true;
+                                }
+                            }
+                            player->SetNeedConvertRune(i, true, dummySpell->Id);
+                        }
+                        triggeredByAura->SetAuraPeriodicTimer(0);
+                        return true;
+                    }
+                }
+                return false;
+            }
+            // Death Rune Mastery
+            if (dummySpell->SpellIconID == 2622)
+            {
+                if(GetTypeId()!=TYPEID_PLAYER)
+                    return false;
+                
+                Player *player = (Player*)this;
+                for (uint32 i = 0; i < MAX_RUNES; ++i)
+                {
+                    RuneType currRune = player->GetCurrentRune(i);
+                    if (currRune == RUNE_UNHOLY || currRune == RUNE_FROST)
+                    {
+                        uint16 cd = player->GetRuneCooldown(i);
+                        if(!cd)
+                            player->ConvertRune(i, RUNE_DEATH, dummySpell->Id);
+                        else // there is a cd
+                            player->SetNeedConvertRune(i, true, dummySpell->Id);
+                        // no break because it converts all
+                    }
+                }
+                triggeredByAura->SetAuraPeriodicTimer(0);
+                return true;
             }
             // Runic Power Back on Snare/Root
             if (dummySpell->Id == 61257)
@@ -7899,29 +7973,29 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
             {
                 if (procSpell && procSpell->Dispel == DISPEL_DISEASE)
                     return false;
-		}
-	    case SPELLFAMILY_PET:
-	    {
-		   // improved cower
-		    if (dummySpell->SpellIconID == 958 && procSpell->SpellIconID == 958)
-		    {
-		       triggered_spell_id = dummySpell->Id == 53180 ? 54200 : 54201;
-			   target = this;
-			   break;
-		    }
-		    // guard dog
-		    if (dummySpell->SpellIconID == 201 && procSpell->SpellIconID == 201)
-		    {
-		       triggered_spell_id = 54445;
-			   target = this;
-			   break;
-		    }
+        }
+        case SPELLFAMILY_PET:
+        {
+           // improved cower
+            if (dummySpell->SpellIconID == 958 && procSpell->SpellIconID == 958)
+            {
+               triggered_spell_id = dummySpell->Id == 53180 ? 54200 : 54201;
+               target = this;
+               break;
+            }
+            // guard dog
+            if (dummySpell->SpellIconID == 201 && procSpell->SpellIconID == 201)
+            {
+               triggered_spell_id = 54445;
+               target = this;
+               break;
+            }
             // silverback
-			if (dummySpell->SpellIconID == 1582 && procSpell->SpellIconID == 201)
-			{
-			    triggered_spell_id = dummySpell->Id == 62764 ? 62800 : 62801;
-				target = this;
-				break;		
+            if (dummySpell->SpellIconID == 1582 && procSpell->SpellIconID == 201)
+            {
+                triggered_spell_id = dummySpell->Id == 62764 ? 62800 : 62801;
+                target = this;
+                break;		
             }
             break;
         }
@@ -8087,7 +8161,23 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
                 //case 48876: break;                        // Beast's Mark
                 //    trigger_spell_id = 48877; break;
                 //case 49059: break;                        // Horde, Hate Monster (Spar Buddy) (>30% Health)
-                //case 50051: break;                        // Ethereal Pet Aura
+                case 49509:                                 // Scent of Blood Rank 2 (!!HACK!!)
+				{
+				    // cast the spell multiple times, to get the stack
+					if (triggeredByAura->GetEffIndex() != EFFECT_INDEX_0)
+					    return false;
+					CastSpell(target,trigger_spell_id,true,castItem,triggeredByAura);
+                    // no break!!
+				}
+				case 49508:                                 // Scent of Blood Rank 1 (!!HACK!!)
+				{
+				    // cast the spell multiple times, to get the stack
+					if (triggeredByAura->GetEffIndex() != EFFECT_INDEX_0)
+					    return false;
+					CastSpell(target,trigger_spell_id,true,castItem,triggeredByAura);
+					break;
+				}	
+			   //case 50051: break;                        // Ethereal Pet Aura
                 //case 50689: break;                        // Blood Presence (Rank 1)
                 //case 50844: break;                        // Blood Mirror
                 //case 52856: break;                        // Charge
@@ -8140,11 +8230,11 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
                     if (GetStat(STAT_AGILITY)  > stat) { trigger_spell_id = 67772;                               }
                     break;
                 }
-				// Mark of the Fallen Champion (boss spell)
-				case 72293:
-				    CastSpell(pVictim, trigger_spell_id, true, NULL, NULL, pVictim->GetGUID());
-					return true;
-				break;	
+                // Mark of the Fallen Champion (boss spell)
+                case 72293:
+                    CastSpell(pVictim, trigger_spell_id, true, NULL, NULL, pVictim->GetGUID());
+                    return true;
+                break;	
             }
             break;
         case SPELLFAMILY_MAGE:
@@ -9688,8 +9778,8 @@ void Unit::AddGuardian( Pet* pet )
 void Unit::RemoveGuardian( Pet* pet )
 {
     m_guardianPets.erase(pet->GetGUID());
-    
-       if(GetTypeId() == TYPEID_PLAYER)
+
+    if(GetTypeId() == TYPEID_PLAYER)
     {
         SpellEntry const *spellInfo = sSpellStore.LookupEntry(pet->GetUInt32Value(UNIT_CREATED_BY_SPELL));
         if (spellInfo && spellInfo->Attributes & SPELL_ATTR_DISABLED_WHILE_ACTIVE)
@@ -10150,10 +10240,10 @@ uint32 Unit::SpellDamageBonusDone(Unit *pVictim, SpellEntry const *spellProto, u
         case SPELLFAMILY_WARLOCK:
         {
             // Drain Soul
-            if (spellProto->SpellFamilyFlags & UI64LIT(0x0000000000004000))
+            if (spellProto->SpellFamilyFlags & UI64LIT(0x0000000000004000))	
             {
-                if (pVictim->GetHealth() * 100 / pVictim->GetMaxHealth() <= 25)
-                  DoneTotalMod *= 4;
+                if (pVictim->GetHealth() * 100 / pVictim->GetMaxHealth() <= 25) 	  	
+                    DoneTotalMod *= 4;
             }
             break;
         }
@@ -10226,13 +10316,6 @@ uint32 Unit::SpellDamageBonusDone(Unit *pVictim, SpellEntry const *spellProto, u
                         break;
                     }
                 }
-            }
-            // Glyph of Unholy Blight
-            if (spellProto->Id == 50536)
-            {
-                if (Aura *glyphAura = GetDummyAura(63332))
-                    DoneTotalMod *= (glyphAura->GetModifier()->m_amount + 100.0f)/ 100.0f;
-                break;
             }
             break;
         }
@@ -10426,12 +10509,12 @@ bool Unit::IsSpellCrit(Unit *pVictim, SpellEntry const *spellProto, SpellSchoolM
     // not critting spell
     if((spellProto->AttributesEx2 & SPELL_ATTR_EX2_CANT_CRIT))
         return false;
-		
-	// Creatures cant crit with spells
+        
+    // Creatures cant crit with spells
     if(GetTypeId() == TYPEID_UNIT && (((Creature*)this)->GetSubtype() == CREATURE_SUBTYPE_GENERIC // If its normal creature
-	    || (((Creature*)this)->GetSubtype() == CREATURE_SUBTYPE_TEMPORARY_SUMMON && !((Creature*)this)->GetOwnerGUID()))  // or temporary summon without owner, hope this is correct
-	    && spellProto->DmgClass == SPELL_DAMAGE_CLASS_MAGIC) // Also affect only magic
-		return false;
+        || (((Creature*)this)->GetSubtype() == CREATURE_SUBTYPE_TEMPORARY_SUMMON && !((Creature*)this)->GetOwnerGUID()))  // or temporary summon without owner, hope this is correct
+        && spellProto->DmgClass == SPELL_DAMAGE_CLASS_MAGIC) // Also affect only magic
+        return false;
 
     float crit_chance = 0.0f;
     switch(spellProto->DmgClass)
@@ -11988,6 +12071,10 @@ bool Unit::isVisibleForOrDetect(Unit const* u, WorldObject const* viewPoint, boo
     //If a mob or player is stunned he will not be able to detect stealth
     if (u->hasUnitState(UNIT_STAT_STUNNED) && (u != this))
         return false;
+
+    // currently used for Shadow Sight(34709)
+    if(u->HasAuraType(SPELL_AURA_DETECT_STEALTH))
+        return true;
 
     // set max ditance
     float visibleDistance = (u->GetTypeId() == TYPEID_PLAYER) ? MAX_PLAYER_STEALTH_DETECT_RANGE : ((Creature const*)u)->GetAttackDistance(this);
@@ -13886,6 +13973,7 @@ void Unit::ProcDamageAndSpellFor( bool isVictim, Unit * pTarget, uint32 procFlag
             case SPELL_AURA_OBS_MOD_MANA:
             case SPELL_AURA_MOD_STUN:
             case SPELL_AURA_ADD_PCT_MODIFIER:
+            case SPELL_AURA_PERIODIC_DUMMY:
             case SPELL_AURA_DUMMY:
             {
                 DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "ProcDamageAndSpell: casting spell id %u (triggered by %s dummy aura of spell %u)", spellInfo->Id,(isVictim?"a victim's":"an attacker's"), triggeredByAura->GetId());
@@ -14144,7 +14232,7 @@ void Unit::SetFeared(bool apply, uint64 const& casterGUID, uint32 spellID, uint3
     {
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING);
 
-        GetMotionMaster()->Clear(false, true);
+        GetMotionMaster()->Clear(false);
 
         if( GetTypeId() != TYPEID_PLAYER && isAlive() )
         {
@@ -14183,7 +14271,7 @@ void Unit::SetConfused(bool apply, uint64 const& casterGUID, uint32 spellID)
     {
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED);
 
-        GetMotionMaster()->Clear(false, true);
+        GetMotionMaster()->Clear(false);
 
         if (GetTypeId() != TYPEID_PLAYER && isAlive())
         {
@@ -15095,10 +15183,10 @@ float Unit::GetCombatRatingReduction(CombatRating cr) const
         return ((Player const*)this)->GetRatingBonusValue(cr);
     else if (((Creature const*)this)->isPet())
     {
-        // Player's pet have 0.4 resilience  from owner
+        // Player's pet get 100% resilience from owner
         if (Unit* owner = GetOwner())
             if(owner->GetTypeId() == TYPEID_PLAYER)
-                return ((Player*)owner)->GetRatingBonusValue(cr) * 0.4f;
+                return ((Player*)owner)->GetRatingBonusValue(cr);
     }
 
     return 0.0f;

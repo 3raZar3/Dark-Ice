@@ -111,6 +111,7 @@ enum BattleGroundTimeIntervals
     RESPAWN_IMMEDIATELY             = 0,                    // secs
     BUFF_RESPAWN_TIME               = 180,                  // secs
     ARENA_SPAWN_BUFF_OBJECTS        = 90000,                // ms - 90sec after start
+    ARENA_TIME_LIMIT                = 2820000,              // ms - 47 minutes after start
 };
 
 enum BattleGroundStartTimeIntervals
@@ -478,6 +479,7 @@ class BattleGround
         void SetArenaTeamRatingChangeForTeam(uint32 Team, int32 RatingChange) { m_ArenaTeamRatingChanges[GetTeamIndexByTeamId(Team)] = RatingChange; }
         int32 GetArenaTeamRatingChangeForTeam(uint32 Team) const    { return m_ArenaTeamRatingChanges[GetTeamIndexByTeamId(Team)]; }
         void CheckArenaWinConditions();
+        void UpdateArenaWorldState();
 
         /* Triggers handle */
         // must be implemented in BG subclass
@@ -561,6 +563,8 @@ class BattleGround
         // door-events are automaticly added - but _ALL_ other must be in this vector
         std::map<uint8, uint8> m_ActiveEvents;
 
+        bool ArenaPlayersCount(); //End arena if some players were not ported
+        uint32 GetDamageDoneForTeam(uint32 TeamID);
 
     protected:
         //this method is called, when BG cannot spawn its own spirit guide, or something is wrong, It correctly ends BattleGround
@@ -606,6 +610,7 @@ class BattleGround
         bool   m_IsRated;                                   // is this battle rated?
         bool   m_PrematureCountDown;
         uint32 m_PrematureCountDownTimer;
+        bool   m_ArenaEnded;
         char const *m_Name;
 
         /* Player lists */

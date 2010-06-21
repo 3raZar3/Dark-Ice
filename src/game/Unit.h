@@ -230,7 +230,7 @@ enum UnitRename
     UNIT_CAN_BE_ABANDONED   = 0x02,
 };
 
-#define CREATURE_MAX_SPELLS     4
+#define CREATURE_MAX_SPELLS     6
 
 enum Swing
 {
@@ -1305,10 +1305,9 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         uint32 GetSpellCritDamageReduction(uint32 damage) const { return GetCombatRatingDamageReduction(CR_CRIT_TAKEN_SPELL, 2.2f, 33.0f, damage); }
 
         // player or player's pet resilience (-1%), cap 100%
-        // values below increased from 1.0 to 2.0 to match 3.3.3 resillience
         uint32 GetMeleeDamageReduction(uint32 damage) const { return GetCombatRatingDamageReduction(CR_CRIT_TAKEN_MELEE, 2.0f, 100.0f, damage); }
         uint32 GetRangedDamageReduction(uint32 damage) const { return GetCombatRatingDamageReduction(CR_CRIT_TAKEN_MELEE, 2.0f, 100.0f, damage); }
-        uint32 GetSpellDamageReduction(uint32 damage) const { return GetCombatRatingDamageReduction(CR_CRIT_TAKEN_MELEE, 2.0f, 100.0f, damage); } 
+        uint32 GetSpellDamageReduction(uint32 damage) const { return GetCombatRatingDamageReduction(CR_CRIT_TAKEN_MELEE, 2.0f, 100.0f, damage); }
 
         float  MeleeSpellMissChance(Unit *pVictim, WeaponAttackType attType, int32 skillDiff, SpellEntry const *spell);
         SpellMissInfo MeleeSpellHitResult(Unit *pVictim, SpellEntry const *spell, bool canMiss = true);
@@ -1498,7 +1497,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         void RemoveGuardians();
         Pet* FindGuardianWithEntry(uint32 entry);
         GuardianPetList const& GetGuardians() const { return m_guardianPets; }
-        
+
         bool isCharmed() const { return GetCharmerGUID() != 0; }
 
         CharmInfo* GetCharmInfo() { return m_charmInfo; }

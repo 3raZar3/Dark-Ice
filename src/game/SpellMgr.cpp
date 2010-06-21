@@ -489,7 +489,7 @@ SpellSpecific GetSpellSpecific(uint32 spellId)
     }
 
     // Tracking spells
-    if(IsSpellHaveAura(spellInfo, SPELL_AURA_TRACK_CREATURES) || IsSpellHaveAura(spellInfo, SPELL_AURA_TRACK_RESOURCES))
+    if(IsSpellHaveAura(spellInfo, SPELL_AURA_TRACK_CREATURES) || IsSpellHaveAura(spellInfo, SPELL_AURA_TRACK_RESOURCES) || IsSpellHaveAura(spellInfo, SPELL_AURA_TRACK_STEALTHED))
         return SPELL_TRACKER;
 
     // elixirs can have different families, but potion most ofc.
@@ -2184,6 +2184,11 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 if (spellInfo_1->SpellIconID == 62 && spellInfo_2->SpellIconID == 62)
                     return false;
 
+                // Lacerate and Moonfire
+                if((spellInfo_1->SpellIconID == 225 && spellInfo_2->SpellIconID == 2246) ||
+                   (spellInfo_2->SpellIconID == 225 && spellInfo_1->SpellIconID == 2246))
+                   return false;
+
                 // Wrath of Elune and Nature's Grace
                 if( spellInfo_1->Id == 16886 && spellInfo_2->Id == 46833 || spellInfo_2->Id == 16886 && spellInfo_1->Id == 46833 )
                     return false;
@@ -3251,7 +3256,7 @@ bool LoadPetDefaultSpells_helper(CreatureInfo const* cInfo, PetDefaultSpellsEntr
 
 void SpellMgr::LoadPetDefaultSpells()
 {
-    ASSERT(MAX_CREATURE_SPELL_DATA_SLOT==CREATURE_MAX_SPELLS);
+    //ASSERT(MAX_CREATURE_SPELL_DATA_SLOT==CREATURE_MAX_SPELLS);
 
     mPetDefaultSpellsMap.clear();
 
@@ -3791,7 +3796,8 @@ SpellCastResult SpellMgr::GetSpellAllowedInLocationError(SpellEntry const *spell
             BattleGround* bg = player->GetBattleGround();
             return bg && bg->GetStatus()==STATUS_WAIT_JOIN ? SPELL_CAST_OK : SPELL_FAILED_ONLY_IN_ARENA;
         }
-		case 72293:
+		case 69065:                                         // Impaled
+		case 72293:                                         // Mark of the Fallen Champion
 		    return map_id == 631 ? SPELL_CAST_OK : SPELL_FAILED_INCORRECT_AREA;
     }
 

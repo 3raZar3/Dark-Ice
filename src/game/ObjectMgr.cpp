@@ -3263,8 +3263,8 @@ void ObjectMgr::LoadGuilds()
 
     //                                                    0             1          2          3           4           5           6
     QueryResult *result = CharacterDatabase.Query("SELECT guild.guildid,guild.name,leaderguid,EmblemStyle,EmblemColor,BorderStyle,BorderColor,"
-    //   7               8    9    10         11        12
-        "BackgroundColor,info,motd,createdate,BankMoney,(SELECT COUNT(guild_bank_tab.guildid) FROM guild_bank_tab WHERE guild_bank_tab.guildid = guild.guildid) "
+    //   7               8    9    10         11        12                                                                                                       13
+        "BackgroundColor,info,motd,createdate,BankMoney,(SELECT COUNT(guild_bank_tab.guildid) FROM guild_bank_tab WHERE guild_bank_tab.guildid = guild.guildid), guild.friendlyGuildId "
         "FROM guild ORDER BY guildid ASC");
 
     if( !result )
@@ -5191,6 +5191,8 @@ void ObjectMgr::ReturnOrDeleteOldMails(bool serverUp)
                     uint32 item_template = fields2[1].GetUInt32();
 
                     m->AddItem(item_guid_low, item_template);
+                    CharacterDatabase.PExecute("UPDATE item_instance SET owner_guid='%u' WHERE guid='%u'", m->sender, item_guid_low);
+                    CharacterDatabase.PExecute("UPDATE mail_items SET receiver='%u' WHERE item_guid='%u'", m->sender, item_guid_low);
                 }
                 while (resultItems->NextRow());
 

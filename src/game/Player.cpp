@@ -511,6 +511,7 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this), m_reputa
     m_DelayedOperations = 0;
     m_bCanDelayTeleport = false;
     m_bHasDelayedTeleport = false;
+    m_bHasBeenAliveAtDelayedTeleport = true;                // overwrite always at setup teleport data, so not used infact
     m_teleport_options = 0;
 
     m_trade = NULL;
@@ -1645,9 +1646,7 @@ void Player::Update( uint32 p_time )
         }
     }
 
-    //we should execute delayed teleports only for alive(!) players
-    //because we don't want player's ghost teleported from graveyard
-    if(IsHasDelayedTeleport() && isAlive())
+    if (IsHasDelayedTeleport())
         TeleportTo(m_teleport_dest, m_teleport_options);
 
         // Playerbot mod
@@ -1965,10 +1964,9 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
         //lets reset far teleport flag if it wasn't reset during chained teleports
         SetSemaphoreTeleportFar(false);
         //setup delayed teleport flag
-        SetDelayedTeleportFlag(IsCanDelayTeleport());
         //if teleport spell is casted in Unit::Update() func
         //then we need to delay it until update process will be finished
-        if(IsHasDelayedTeleport())
+        if (SetDelayedTeleportFlagIfCan())
         {
             SetSemaphoreTeleportNear(true);
             //lets save teleport destination for player
@@ -1984,7 +1982,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
                 UnsummonPetTemporaryIfAny();
         }
 
-        if(!(options & TELE_TO_NOT_LEAVE_COMBAT))
+        if (!(options & TELE_TO_NOT_LEAVE_COMBAT))
             CombatStop();
 
         // this will be used instead of the current location in SaveToDB
@@ -2021,10 +2019,9 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
             //lets reset near teleport flag if it wasn't reset during chained teleports
             SetSemaphoreTeleportNear(false);
             //setup delayed teleport flag
-            SetDelayedTeleportFlag(IsCanDelayTeleport());
             //if teleport spell is casted in Unit::Update() func
             //then we need to delay it until update process will be finished
-            if(IsHasDelayedTeleport())
+            if (SetDelayedTeleportFlagIfCan())
             {
                 SetSemaphoreTeleportFar(true);
                 //lets save teleport destination for player
@@ -2040,7 +2037,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
             ResetContestedPvP();
 
             // remove player from battleground on far teleport (when changing maps)
-            if(BattleGround const* bg = GetBattleGround())
+            if (BattleGround const* bg = GetBattleGround())
             {
                 // Note: at battleground join battleground id set before teleport
                 // and we already will found "current" battleground
@@ -2058,14 +2055,14 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
 
             // stop spellcasting
             // not attempt interrupt teleportation spell at caster teleport
-            if(!(options & TELE_TO_SPELL))
-                if(IsNonMeleeSpellCasted(true))
+            if (!(options & TELE_TO_SPELL))
+                if (IsNonMeleeSpellCasted(true))
                     InterruptNonMeleeSpells(true);
 
             //remove auras before removing from map...
             RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_CHANGE_MAP | AURA_INTERRUPT_FLAG_MOVE | AURA_INTERRUPT_FLAG_TURNING);
 
-            if(!GetSession()->PlayerLogout())
+            if (!GetSession()->PlayerLogout())
             {
                 // send transfer packets
                 WorldPacket data(SMSG_TRANSFER_PENDING, (4+4+4));
@@ -2099,7 +2096,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
             }
 
             // remove from old map now
-            if(oldmap)
+            if (oldmap)
                 oldmap->Remove(this, false);
 
             // new final coordinates
@@ -2108,7 +2105,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
             float final_z = z;
             float final_o = orientation;
 
-            if(m_transport)
+            if (m_transport)
             {
                 final_x += m_movementInfo.GetTransportPos()->x;
                 final_y += m_movementInfo.GetTransportPos()->y;
@@ -2341,6 +2338,22 @@ void Player::Regenerate(Powers power, uint32 diff)
                             cd_diff = cd_diff * ((*i)->GetModifier()->m_amount + 100) / 100;
 
                     SetRuneCooldown(rune, (cd < cd_diff) ? 0 : cd - cd_diff);
+
+                    // check if we don't have cooldown, need convert and that our rune wasn't already converted
+                    if (cd < cd_diff && m_runes->IsRuneNeedsConvert(rune) && GetBaseRune(rune) == GetCurrentRune(rune))
+                    {
+                        // currently all delayed rune converts happen with rune death
+                        // ConvertedBy was initialized at proc
+                        ConvertRune(rune, RUNE_DEATH);
+                        SetNeedConvertRune(rune, false);
+                    }
+                }
+                else if (m_runes->IsRuneNeedsConvert(rune) && GetBaseRune(rune) == GetCurrentRune(rune))
+                {
+                    // currently all delayed rune converts happen with rune death
+                    // ConvertedBy was initialized at proc
+                    ConvertRune(rune, RUNE_DEATH);
+                    SetNeedConvertRune(rune, false);
                 }
             }
         }   break;
@@ -6110,20 +6123,29 @@ int16 Player::GetSkillTempBonusValue(uint32 skill) const
     return SKILL_TEMP_BONUS(GetUInt32Value(PLAYER_SKILL_BONUS_INDEX(itr->second.pos)));
 }
 
-void Player::SendInitialActionButtons() const
+void Player::SendActionButtons(uint32 state) const
 {
     DETAIL_LOG( "Initializing Action Buttons for '%u' spec '%u'", GetGUIDLow(), m_activeSpec);
 
     WorldPacket data(SMSG_ACTION_BUTTONS, 1+(MAX_ACTION_BUTTONS*4));
-    data << uint8(1);                                       // talent spec amount (in packet)
-    ActionButtonList const& currentActionButtonList = m_actionButtons[m_activeSpec];
-    for(uint8 button = 0; button < MAX_ACTION_BUTTONS; ++button)
+    data << uint8(state);
+    /*
+        state can be 0, 1, 2
+        0 - Looks to be sent when initial action buttons get sent, however on Trinity we use 1 since 0 had some difficulties
+        1 - Used in any SMSG_ACTION_BUTTONS packet with button data on Trinity. Only used after spec swaps on retail.
+        2 - Clears the action bars client sided. This is sent during spec swap before unlearning and before sending the new buttons
+    */
+    if (state != 2)
     {
-        ActionButtonList::const_iterator itr = currentActionButtonList.find(button);
-        if(itr != currentActionButtonList.end() && itr->second.uState != ACTIONBUTTON_DELETED)
-            data << uint32(itr->second.packedData);
-        else
-            data << uint32(0);
+        ActionButtonList const& currentActionButtonList = m_actionButtons[m_activeSpec];
+        for(uint8 button = 0; button < MAX_ACTION_BUTTONS; ++button)
+        {
+            ActionButtonList::const_iterator itr = currentActionButtonList.find(button);
+            if(itr != currentActionButtonList.end() && itr->second.uState != ACTIONBUTTON_DELETED)
+                data << uint32(itr->second.packedData);
+            else
+                data << uint32(0);
+        }
     }
 
     GetSession()->SendPacket( &data );
@@ -8909,7 +8931,7 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
                 FillInitialWorldState(data,count,0xbba,0x0);// 9 show
             }
             break;
-        case 4378:                                          // Dalaran Severs
+        case 4378:                                          // Dalaran Sewers
             if (bg && bg->GetTypeID(true) == BATTLEGROUND_DS)
                 bg->FillInitialWorldStates(data, count);
             else
@@ -8918,18 +8940,6 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
                 FillInitialWorldState(data,count,0xe10,0x0);// 8 green
                 FillInitialWorldState(data,count,0xe1a,0x0);// 9 show
             }
-            break;
-        case 4406:                                          // Ring of Valor
-            if (bg && bg->GetTypeID(true) == BATTLEGROUND_RV)
-                bg->FillInitialWorldStates(data, count);
-            else
-            {
-                FillInitialWorldState(data,count,0xe11,0x0);// 7 gold
-                FillInitialWorldState(data,count,0xe10,0x0);// 8 green
-                FillInitialWorldState(data,count,0xe1a,0x0);// 9 show
-            }
-            break;
-        case 3703:                                          // Shattrath City
             break;
         case 4384:                                          // SA
             /*if (bg && bg->GetTypeID() == BATTLEGROUND_SA)
@@ -8965,6 +8975,18 @@ void Player::SendInitWorldStates(uint32 zoneid, uint32 areaid)
                 data << uint32(0xe2a) << uint32(0x1);       // 30 3626 Beach2 - Alliance control
                 // and many unks...
             //}
+            break;
+        case 4406:                                          // Ring of Valor
+            if (bg && bg->GetTypeID(true) == BATTLEGROUND_RV)
+                bg->FillInitialWorldStates(data, count);
+            else
+            {
+                FillInitialWorldState(data,count,0xe11,0x0);// 7 gold
+                FillInitialWorldState(data,count,0xe10,0x0);// 8 green
+                FillInitialWorldState(data,count,0xe1a,0x0);// 9 show
+            }
+            break;
+        case 3703:                                          // Shattrath City
             break;
         default:
             FillInitialWorldState(data,count, 0x914, 0x0);  // 7
@@ -14186,10 +14208,6 @@ void Player::IncompleteQuest( uint32 quest_id )
 
 void Player::RewardQuest( Quest const *pQuest, uint32 reward, Object* questGiver, bool announce )
 {
-    //this THING should be here to protect code from quest, which cast on player far teleport as a reward
-    //should work fine, cause far teleport will be executed in Player::Update()
-    SetCanDelayTeleport(true);
-
     uint32 quest_id = pQuest->GetQuestId();
 
     for (int i = 0; i < QUEST_ITEM_OBJECTIVES_COUNT; ++i )
@@ -14341,9 +14359,6 @@ void Player::RewardQuest( Quest const *pQuest, uint32 reward, Object* questGiver
                 if (!HasAura(itr->second->spellId, EFFECT_INDEX_0))
                     CastSpell(this,itr->second->spellId,true);
     }
-
-    //lets remove flag for delayed teleports
-    SetCanDelayTeleport(false);
 }
 
 void Player::FailQuest(uint32 questId)
@@ -21514,7 +21529,7 @@ bool Player::CanCaptureTowerPoint()
            );
 }
 
-uint32 Player::GetBarberShopCost(uint8 newhairstyle, uint8 newhaircolor, uint8 newfacialhair)
+uint32 Player::GetBarberShopCost(uint8 newhairstyle, uint8 newhaircolor, uint8 newfacialhair, uint8 newskintone)
 {
     uint32 level = getLevel();
 
@@ -21524,8 +21539,10 @@ uint32 Player::GetBarberShopCost(uint8 newhairstyle, uint8 newhaircolor, uint8 n
     uint8 hairstyle = GetByteValue(PLAYER_BYTES, 2);
     uint8 haircolor = GetByteValue(PLAYER_BYTES, 3);
     uint8 facialhair = GetByteValue(PLAYER_BYTES_2, 0);
+    uint8 skintone = GetByteValue(PLAYER_BYTES, 0);
 
-    if((hairstyle == newhairstyle) && (haircolor == newhaircolor) && (facialhair == newfacialhair))
+    if((hairstyle == newhairstyle) && (haircolor == newhaircolor) && (facialhair == newfacialhair) &&
+        ((skintone == newskintone) || (newskintone == 0)))
         return 0;
 
     GtBarberShopCostBaseEntry const *bsc = sGtBarberShopCostBaseStore.LookupEntry(level - 1);
@@ -21543,6 +21560,9 @@ uint32 Player::GetBarberShopCost(uint8 newhairstyle, uint8 newhaircolor, uint8 n
 
     if(facialhair != newfacialhair)
         cost += bsc->cost * 0.75f;                          // +3/4 of price
+
+    if(skintone != newskintone && newskintone != 0)         // +1/2 of price
+        cost += bsc->cost * 0.5f;
 
     return uint32(cost);
 }
@@ -21734,9 +21754,12 @@ void Player::SetTitle(CharTitlesEntry const* title, bool lost)
     GetSession()->SendPacket(&data);
 }
 
-void Player::ConvertRune(uint8 index, RuneType newType)
+void Player::ConvertRune(uint8 index, RuneType newType, uint32 spellid)
 {
     SetCurrentRune(index, newType);
+
+    if (spellid != 0)
+        SetConvertedBy(index, spellid);
 
     WorldPacket data(SMSG_CONVERT_RUNE, 2);
     data << uint8(index);
@@ -21780,12 +21803,14 @@ void Player::InitRunes()
     m_runes = new Runes;
 
     m_runes->runeState = 0;
+    m_runes->needConvert = 0;
 
     for(uint32 i = 0; i < MAX_RUNES; ++i)
     {
         SetBaseRune(i, runeSlotTypes[i]);                   // init base types
         SetCurrentRune(i, runeSlotTypes[i]);                // init current types
         SetRuneCooldown(i, 0);                              // reset cooldowns
+        SetConvertedBy(i, 0);                               // init spellid
         m_runes->SetRuneState(i);
     }
 
@@ -22784,6 +22809,8 @@ void Player::ActivateSpec(uint8 specNum)
         return;
 
     UnsummonPetTemporaryIfAny();
+
+    SendActionButtons(2);
 
     ApplyGlyphs(false);
 

@@ -22,7 +22,7 @@
 
 #include "Common.h"
 #include "Database/DatabaseEnv.h"
-#include "Config/ConfigEnv.h"
+#include "Config/Config.h"
 #include "Log.h"
 #include "Master.h"
 #include "SystemConfig.h"
@@ -33,12 +33,13 @@
 #include <openssl/opensslv.h>
 #include <openssl/crypto.h>
 #include <ace/Version.h>
+#include <ace/Get_Opt.h>
 
 #ifdef WIN32
 #include "ServiceWin32.h"
 char serviceName[] = "mangosd";
-char serviceLongName[] = "MaNGOS world service";
-char serviceDescription[] = "Massive Network Game Object Server";
+char serviceLongName[] = "Dark-iCE world service";
+char serviceDescription[] = "Project Dark-iCE WoW Server";
 /*
  * -1 - not in service mode
  *  0 - stopped
@@ -58,12 +59,12 @@ uint32 realmID;                                             ///< Id of the realm
 void usage(const char *prog)
 {
     sLog.outString("Usage: \n %s [<options>]\n"
-        "    --version                print version and exist\n\r"
+        "    -v, --version            print version and exist\n\r"
         "    -c config_file           use config_file as configuration file\n\r"
         "    -m MangChat_config       use MangChat_config as configuration file for MangChat\n\r"
         #ifdef WIN32
         "    Running as service functions:\n\r"
-        "    --service                run as service\n\r"
+        "    -s run                   run as service\n\r"
         "    -s install               install service\n\r"
         "    -s uninstall             uninstall service\n\r"
         #endif
@@ -78,9 +79,14 @@ extern int main(int argc, char **argv)
 
     //char *leak = new char[1000];                          // test leak detection
 
-    ///- Command line parsing to get the configuration file name
-    char const* mc_cfg_file = _MANGCHAT_CONFIG;
+    ///- Command line parsing
     char const* cfg_file = _MANGOSD_CONFIG;
+
+#ifdef WIN32
+    char const *options = ":c:s:";
+#else
+    char const *options = ":c:";
+#endif
 
     int c=1;
     while( c < argc )
@@ -115,46 +121,60 @@ extern int main(int argc, char **argv)
             return 0;
         }
 
-        #ifdef WIN32
-        ////////////
-        //Services//
-        ////////////
-        if( strcmp(argv[c],"-s") == 0)
+    ACE_Get_Opt cmd_opts(argc, argv, options);
+    cmd_opts.long_option("version", 'v');
+
+    int option;
+    while ((option = cmd_opts()) != EOF)
+    {
+        switch (option)
         {
-            if( ++c >= argc )
+            case 'c':
+                cfg_file = cmd_opts.opt_arg();
+                break;
+            case 'v':
+                printf("%s\n", _FULLVERSION(REVISION_DATE,REVISION_TIME,REVISION_NR,REVISION_ID));
+                return 0;
+#ifdef WIN32
+            case 's':
             {
-                sLog.outError("Runtime-Error: -s option requires an input argument");
+                const char *mode = cmd_opts.opt_arg();
+
+                if (!strcmp(mode, "install"))
+                {
+                    if (WinServiceInstall())
+                        sLog.outString("Installing service");
+                    return 1;
+                }
+                else if (!strcmp(mode, "uninstall"))
+                {
+                    if (WinServiceUninstall())
+                        sLog.outString("Uninstalling service");
+                    return 1;
+                }
+                else if (!strcmp(mode, "run"))
+                    WinServiceRun();
+                else
+                {
+                    sLog.outError("Runtime-Error: -%c unsupported argument %s", cmd_opts.opt_opt(), mode);
+                    usage(argv[0]);
+                    Log::WaitBeforeContinueIfNeed();
+                    return 1;
+                }
+                break;
+            }
+#endif
+            case ':':
+                sLog.outError("Runtime-Error: -%c option requires an input argument", cmd_opts.opt_opt());
                 usage(argv[0]);
                 Log::WaitBeforeContinueIfNeed();
                 return 1;
-            }
-            if( strcmp(argv[c],"install") == 0)
-            {
-                if (WinServiceInstall())
-                    sLog.outString("Installing service");
-                return 1;
-            }
-            else if( strcmp(argv[c],"uninstall") == 0)
-            {
-                if(WinServiceUninstall())
-                    sLog.outString("Uninstalling service");
-                return 1;
-            }
-            else
-            {
-                sLog.outError("Runtime-Error: unsupported option %s",argv[c]);
+            default:
+                sLog.outError("Runtime-Error: bad format of commandline arguments");
                 usage(argv[0]);
                 Log::WaitBeforeContinueIfNeed();
                 return 1;
-            }
         }
-        if( strcmp(argv[c],"--service") == 0)
-        {
-            WinServiceRun();
-        }
-        ////
-        #endif
-        ++c;
     }
 
     if (!sConfig.SetSource(cfg_file))
@@ -181,7 +201,9 @@ extern int main(int argc, char **argv)
     sLog.outTitle( "#########  ###     ### ###    ### ###    ###  ########### ########  ########## ");
     sLog.outTitle( "                                                                               ");	
 	sLog.outTitle( "GIT: Github.com/Darkrulerz/Core     		                                   ");
+    sLog.outTitle( "                                                                               ");
 	sLog.outTitle( "Project Dark-iCE: http://projectdarkice.clanice.com                            ");
+    sLog.outTitle( "                                                                               ");
 	sLog.outString("Running on Revision %s.", cfg_file);
 	printf("%s\n", _FULLVERSION(REVISION_DATE,REVISION_TIME,REVISION_NR,REVISION_ID));
 

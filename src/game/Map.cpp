@@ -26,7 +26,6 @@
 #include "InstanceData.h"
 #include "Map.h"
 #include "GridNotifiersImpl.h"
-#include "Config/ConfigEnv.h"
 #include "Transports.h"
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
@@ -574,9 +573,9 @@ void Map::Update(const uint32 &t_diff)
         CellArea area = Cell::CalculateCellArea(*plr, GetVisibilityDistance());
         area.ResizeBorders(begin_cell, end_cell);
 
-        for(uint32 x = begin_cell.x_coord; x < end_cell.x_coord; ++x)
+        for(uint32 x = begin_cell.x_coord; x <= end_cell.x_coord; ++x)
         {
-            for(uint32 y = begin_cell.y_coord; y < end_cell.y_coord; ++y)
+            for(uint32 y = begin_cell.y_coord; y <= end_cell.y_coord; ++y)
             {
                 // marked cells are those that have been visited
                 // don't visit the same cell twice
@@ -622,9 +621,9 @@ void Map::Update(const uint32 &t_diff)
             begin_cell << 1; begin_cell -= 1;               // upper left
             end_cell >> 1; end_cell += 1;                   // lower right
 
-            for(uint32 x = begin_cell.x_coord; x < end_cell.x_coord; ++x)
+            for(uint32 x = begin_cell.x_coord; x <= end_cell.x_coord; ++x)
             {
-                for(uint32 y = begin_cell.y_coord; y < end_cell.y_coord; ++y)
+                for(uint32 y = begin_cell.y_coord; y <= end_cell.y_coord; ++y)
                 {
                     // marked cells are those that have been visited
                     // don't visit the same cell twice
@@ -1594,7 +1593,8 @@ void Map::AddObjectToRemoveList(WorldObject *obj)
 {
     ASSERT(obj->GetMapId()==GetId() && obj->GetInstanceId()==GetInstanceId());
 
-    obj->CleanupsBeforeDelete();                            // remove or simplify at least cross referenced links
+    // need clean references at end of update cycle, NOT during it! called at Map::Remove
+    //obj->CleanupsBeforeDelete();                            // remove or simplify at least cross referenced links
 
     i_objectsToRemove.insert(obj);
     //DEBUG_LOG("Object (GUID: %u TypeId: %u ) added to removing list.",obj->GetGUIDLow(),obj->GetTypeId());

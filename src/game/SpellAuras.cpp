@@ -1587,13 +1587,13 @@ void Aura::HandleAddModifier(bool apply, bool Real)
 
     ReapplyAffectedPassiveAuras();
 
-    if(m_spellProto->SpellFamilyName == SPELLFAMILY_DRUID && (m_spellmod->mask2 & UI64LIT(0x20000)))
+    if(GetSpellProto()->SpellFamilyName == SPELLFAMILY_DRUID && (m_spellmod->mask2 & UI64LIT(0x20000)))
     {
-        m_target->RemoveAurasDueToSpell(66530);
+        GetTarget()->RemoveAurasDueToSpell(66530);
 
         // Aura 66530 is immediately applied ONLY when "Improved Barkskin" is learned in Caster/Travel Form
-        if(apply && (m_target->m_form == FORM_NONE || m_target->m_form == FORM_TRAVEL))
-            m_target->CastSpell(m_target,66530,true);
+        if(apply && (GetTarget()->m_form == FORM_NONE || GetTarget()->m_form == FORM_TRAVEL))
+            GetTarget()->CastSpell(GetTarget(),66530,true);
     }
 }
 
@@ -2269,7 +2269,7 @@ void Aura::TriggerSpell()
             // Earthen Power (from Earthbind Totem Passive)
             case 6474:
             {
-                Unit *owner = target->GetOwner();
+                Unit *owner = triggerTarget->GetOwner();
 
                 if (!owner)
                     break;
@@ -2282,7 +2282,7 @@ void Aura::TriggerSpell()
                         if (!roll_chance_i((*itr)->GetModifier()->m_amount))
                             break;
 
-                        target->CastSpell(target, 59566, true, NULL, this);
+                        triggerTarget->CastSpell(triggerTarget, 59566, true, NULL, this);
                         break;
                     }
                  }
@@ -2307,7 +2307,7 @@ void Aura::TriggerSpell()
             }
             // Intense Cold
             case 48094:
-                target->CastSpell(target, trigger_spell_id, true, NULL, this);
+                triggerTarget->CastSpell(triggerTarget, trigger_spell_id, true, NULL, this);
                 return;
             // Beacon of Light
             case 53563:
@@ -2460,7 +2460,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                             ((Player*)target)->RemoveAmmo();
                         return;
                     case 47977:                             // Magic Broom
-                        Spell::SelectMountByAreaAndSkill(m_target, 42680, 42683, 42667, 42668, 0);
+                        Spell::SelectMountByAreaAndSkill(target, 42680, 42683, 42667, 42668, 0);
                         return;
                     case 48025:                             // Headless Horseman's Mount
                         Spell::SelectMountByAreaAndSkill(target, 51621, 48024, 51617, 48023, 0);
@@ -2469,34 +2469,34 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                         m_target->CastSpell(m_target, 52924, false);
                         return;
                     case 55328:                                 // Stoneclaw Totem I
-                        m_target->CastSpell(m_target, 5728, true);
+                        target->CastSpell(target, 5728, true);
                         return;
                     case 55329:                                 // Stoneclaw Totem II
-                        m_target->CastSpell(m_target, 6397, true);
+                        target->CastSpell(target, 6397, true);
                         return;
                     case 55330:                                 // Stoneclaw Totem III
-                        m_target->CastSpell(m_target, 6398, true);
+                        target->CastSpell(target, 6398, true);
                         return;
                     case 55332:                                 // Stoneclaw Totem IV
-                        m_target->CastSpell(m_target, 6399, true);
+                        target->CastSpell(target, 6399, true);
                         return;
                     case 55333:                                 // Stoneclaw Totem V
-                        m_target->CastSpell(m_target, 10425, true);
+                        target->CastSpell(target, 10425, true);
                         return;
                     case 55335:                                 // Stoneclaw Totem VI
-                        m_target->CastSpell(m_target, 10426, true);
+                        target->CastSpell(target, 10426, true);
                         return;
                     case 55278:                                 // Stoneclaw Totem VII
-                        m_target->CastSpell(m_target, 25513, true);
+                        target->CastSpell(target, 25513, true);
                         return;
                     case 58589:                                 // Stoneclaw Totem VIII
-                        m_target->CastSpell(m_target, 58583, true);
+                        target->CastSpell(target, 58583, true);
                         return;
                     case 58590:                                 // Stoneclaw Totem IX
-                        m_target->CastSpell(m_target, 58584, true);
+                        target->CastSpell(target, 58584, true);
                         return;
                     case 58591:                                 // Stoneclaw Totem X
-                        m_target->CastSpell(m_target, 58585, true);
+                        target->CastSpell(target, 58585, true);
                         return;
                     case 62061:                             // Festive Holiday Mount
                         if (target->HasAuraType(SPELL_AURA_MOUNTED))
@@ -2634,7 +2634,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                     if(!caster)
                         return;
 
-                    caster->CastSpell(m_target, 55095, true);
+                    caster->CastSpell(target, 55095, true);
                 }
                 break;
             }
@@ -3018,7 +3018,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                     int32 bp0 = m_modifier.m_amount;
 
                     if (Unit* caster = GetCaster())
-                        target->CastCustomSpell(caster,48210,&bp0,NULL,NULL,true,0,0, caster->GetObjectGuid());
+                        target->CastCustomSpell(caster,48210,&bp0,NULL,NULL,true,NULL,this,GetCasterGUID());
                 }
             }
             break;
@@ -3026,14 +3026,14 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
         case SPELLFAMILY_PRIEST:
         {
             // Penance
-            if (m_spellProto->SpellIconID == 2818)
+            if (GetSpellProto()->SpellIconID == 2818)
             {
                 Unit* caster = GetCaster();
                 if (!caster || caster->GetTypeId() != TYPEID_PLAYER)
                     return;
 
-                if (apply && m_target)
-                    ((Player*)caster)->SetSelection(m_target->GetGUID());
+                if (apply && target)
+                    ((Player*)caster)->SetSelection(target->GetGUID());
                 return;
             }
             // Pain and Suffering
@@ -3361,25 +3361,86 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
             modelid = ssEntry->modelID_A;
         else
         {
-            // players are a bit difficult since the dbc has seldomly an horde modelid
-            // so we add hacks here to set the right model
-            if (Player::TeamForRace(target->getRace()) == ALLIANCE)
-                modelid = ssEntry->modelID_A;
-            else                                            // 3.2.3 only the moonkin form has this information
-                modelid = ssEntry->modelID_H;
-
+            // The following are the different shapeshifting models for cat/bear forms according
+            // to hair color for druids and skin tone for tauren introduced in patch 3.2
+            if (form == FORM_CAT || form == FORM_BEAR || form == FORM_DIREBEAR)
+            {
+                if (Player::TeamForRace(target->getRace()) == ALLIANCE)
+                {
+                    uint8 hairColour = target->GetByteValue(PLAYER_BYTES, 3);
+                    if (form == FORM_CAT)
+                    {
+                        if (hairColour >= 0 && hairColour <= 2) modelid = 29407;
+                        else if (hairColour == 3 || hairColour == 5) modelid = 29405;
+                        else if (hairColour == 6) modelid = 892;
+                        else if (hairColour == 7) modelid = 29406;
+                        else if (hairColour == 4) modelid = 29408;
+                    }
+                    else
+                    {
+                        if (hairColour >= 0 && hairColour <= 2) modelid = 29413;
+                        else if (hairColour == 3 || hairColour == 5) modelid = 29415;
+                        else if (hairColour == 6) modelid = 29414;
+                        else if (hairColour == 7) modelid = 29417;
+                        else if (hairColour == 4) modelid = 29416;
+                    }
+                } 
+                else if (Player::TeamForRace(target->getRace()) == HORDE)
+                {
+                    uint8 skinColour = target->GetByteValue(PLAYER_BYTES, 0);
+                    if (target->getGender() == GENDER_MALE)
+                    {
+                        if (form == FORM_CAT)
+                        {
+                            if (skinColour >= 0 && skinColour <= 5) modelid = 29412;
+                            else if (skinColour >= 6 && skinColour <= 8) modelid = 29411;
+                            else if (skinColour >= 9 && skinColour <= 11) modelid = 29410;
+                            else if (skinColour >= 12 && skinColour <= 14 || skinColour == 18) modelid = 29409;
+                            else if (skinColour >= 15 && skinColour <= 17) modelid = 8571;
+                        }
+                        else
+                        {
+                            if (skinColour >= 0 && skinColour <= 2) modelid = 29418;
+                            else if (skinColour >= 3 && skinColour <= 5 || skinColour >= 12 && skinColour <= 14) modelid = 29419;
+                            else if (skinColour >= 9 && skinColour <= 11 || skinColour >= 15 && skinColour <= 17) modelid = 29420;
+                            else if (skinColour >= 6 && skinColour <= 8) modelid = 2289;
+                            else if (skinColour == 18) modelid = 29421;
+                        }
+                    }
+                    else
+                    {
+                        if (form == FORM_CAT)
+                        {
+                            if (skinColour >= 0 && skinColour <= 3) modelid = 29412;
+                            else if (skinColour == 4 || skinColour == 5) modelid = 29411;
+                            else if (skinColour == 6 || skinColour == 7) modelid = 29410;
+                            else if (skinColour == 8 || skinColour == 9) modelid = 8571;
+                            else if (skinColour == 10) modelid = 29409;
+                        }
+                        else
+                        {
+                            if (skinColour == 0 || skinColour == 1) modelid = 29418;
+                            else if (skinColour == 2 || skinColour == 3) modelid = 29419;
+                            else if (skinColour == 4 || skinColour == 5) modelid = 2289;
+                            else if (skinColour >= 6 && skinColour <= 9) modelid = 29420;
+                            else if (skinColour == 10) modelid = 29421;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (Player::TeamForRace(target->getRace()) == ALLIANCE) modelid = ssEntry->modelID_A;
+                if (Player::TeamForRace(target->getRace()) == HORDE) modelid = ssEntry->modelID_H;
+            }
             // no model found, if player is horde we look here for our hardcoded modelids
             if (!modelid && Player::TeamForRace(target->getRace()) == HORDE)
             {
-
                 switch(form)
                 {
                     case FORM_CAT:
-                        modelid = 8571;
-                        break;
                     case FORM_BEAR:
                     case FORM_DIREBEAR:
-                        modelid = 2289;
                         break;
                     case FORM_FLIGHT:
                         modelid = 20872;
@@ -3540,7 +3601,7 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
                 }
                 // Shadow Dance - apply stealth mode stand flag
                 case FORM_SHADOW_DANCE:
-                    m_target->SetStandFlags(UNIT_STAND_FLAGS_CREEP);
+                    target->SetStandFlags(UNIT_STAND_FLAGS_CREEP);
                     break;
                 default:
                     break;
@@ -3584,7 +3645,7 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
                 break;
             // Shadow Dance - remove stealth mode stand flag
             case FORM_SHADOW_DANCE:
-                m_target->RemoveStandFlags(UNIT_STAND_FLAGS_CREEP);
+                target->RemoveStandFlags(UNIT_STAND_FLAGS_CREEP);
                 break;
             default:
                 break;
@@ -4058,36 +4119,40 @@ void Aura::HandleModPossessPet(bool apply, bool Real)
     if(!caster || caster->GetTypeId() != TYPEID_PLAYER)
         return;
 
-    Pet *pet = caster->GetPet();
-    if(!pet || pet != GetTarget())
+    Unit* target = GetTarget();
+    if (target->GetTypeId() != TYPEID_UNIT)
         return;
+    Creature* pet = (Creature*)target;                      // not need more stricted type check
 
     Player* p_caster = (Player*)caster;
     Camera& camera = p_caster->GetCamera();
 
-    if(apply)
+    if (apply)
     {
-        pet->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
         camera.SetView(pet);
-    }
-    else
-    {
-        pet->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
-        camera.ResetView();
-    }
+        p_caster->SetCharm(pet);
+        p_caster->SetClientControl(pet, 1);
+        ((Player*)caster)->SetMover(pet);
 
-    p_caster->SetCharm(apply ? pet : NULL);
-    p_caster->SetClientControl(pet, apply ? 1 : 0);
-    ((Player*)caster)->SetMover(apply ? pet : NULL);
+        pet->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
 
-    if(apply)
-    {
         pet->StopMoving();
-        pet->GetMotionMaster()->Clear();
+        pet->GetMotionMaster()->Clear(false);
         pet->GetMotionMaster()->MoveIdle();
     }
     else
     {
+        camera.ResetView();
+        p_caster->SetCharm(NULL);
+        p_caster->SetClientControl(pet, 0);
+        p_caster->SetMover(NULL);
+
+        // on delete only do caster related effects
+        if(m_removeMode == AURA_REMOVE_BY_DELETE)
+            return;
+
+        pet->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+
         pet->AttackStop();
         pet->GetMotionMaster()->MoveFollow(caster, PET_FOLLOW_DIST, PET_FOLLOW_ANGLE);
         pet->AddSplineFlag(SPLINEFLAG_WALKMODE);
@@ -4280,13 +4345,13 @@ void Aura::HandleAuraModDisarm(bool apply, bool Real)
 
 void Aura::HandleAuraModStun(bool apply, bool Real)
 {
-    if(m_target->isInFlight())
-        return;
-
     if(!Real)
         return;
 
     Unit *target = GetTarget();
+
+    if(target->isInFlight())
+        return;
 
     if (apply)
     {
@@ -4820,7 +4885,7 @@ void Aura::HandleAuraModIncreaseFlightSpeed(bool apply, bool Real)
             data.Initialize(SMSG_MOVE_UNSET_CAN_FLY, 12);
             ((Player*)target)->SetCanFly(false);
         }
-        //data.append(m_target->GetPackGUID());
+        //data.append(target->GetPackGUID());
         data << target->GetPackGUID();
         data << uint32(0);                                      // unknown
         target->SendMessageToSet(&data, true);
@@ -4945,13 +5010,13 @@ void Aura::HandleModMechanicImmunity(bool apply, bool /*Real*/)
     // Demonic Circle
     if (GetSpellProto()->SpellFamilyName == SPELLFAMILY_WARLOCK && GetSpellProto()->SpellIconID == 3221)
     {
-        if (m_target->GetTypeId() != TYPEID_PLAYER)
+        if (target->GetTypeId() != TYPEID_PLAYER)
             return;
         if (apply)
         {
-            GameObject* obj = m_target->GetGameObject(48018);
+            GameObject* obj = target->GetGameObject(48018);
             if (obj)
-                ((Player*)m_target)->TeleportTo(obj->GetMapId(),obj->GetPositionX(),obj->GetPositionY(),obj->GetPositionZ(),obj->GetOrientation());
+                ((Player*)target)->TeleportTo(obj->GetMapId(),obj->GetPositionX(),obj->GetPositionY(),obj->GetPositionZ(),obj->GetOrientation());
         }
     }
 
@@ -5100,6 +5165,9 @@ void Aura::HandleAuraProcTriggerSpell(bool apply, bool Real)
             case 28200:                                     // Ascendance (Talisman of Ascendance trinket)
                 SetAuraCharges(6);
                 break;
+			case 50421:                                     // Scent of Blood (Proc)
+                SetAuraCharges(1);
+				break;
             default: break;
         }
     }
@@ -5228,10 +5296,10 @@ void Aura::HandlePeriodicEnergize(bool apply, bool Real)
     {
         switch (GetId())
         {
-            case 5229:                                      // Druid Bear Enrage
+            case 5229:			// Druid Bear Enrage
             {
-                if (m_target->HasAura(51185))               // King of the Jungle self Enrage bonus with infinity duration
-                    m_target->RemoveAurasDueToSpell(51185);
+      			if (target->HasAura(51185))               // King of the Jungle self Enrage bonus with infinity duration			
+                    target->RemoveAurasDueToSpell(51185);
                 break;
             }
             default:
@@ -5304,13 +5372,13 @@ void Aura::HandleAuraPeriodicDummy(bool apply, bool Real)
             switch (spell->Id)
             {
                 case 48018:
-                       if (apply)
-                          m_target->CastSpell(m_target, 62388, true);                
-                        else
-                        {
-                          m_target->RemoveGameObject(spell->Id,true);
-                          m_target->RemoveAurasDueToSpell(62388);
-                        }
+                    if (apply)
+                        target->CastSpell(target, 62388, true);                
+                    else
+                    {
+                        target->RemoveGameObject(spell->Id,true);
+                        target->RemoveAurasDueToSpell(62388);
+                    }
                 break;
             }
         }
@@ -5415,16 +5483,6 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
                     if (spellProto->CalculateSimpleValue(EFFECT_INDEX_1) !=0 &&
                         target->GetHealth() > target->GetMaxHealth() * spellProto->CalculateSimpleValue(EFFECT_INDEX_1) / 100)
                         m_modifier.m_amount += m_modifier.m_amount * spellProto->CalculateSimpleValue(EFFECT_INDEX_2) / 100;
-                }
-                break;
-            }
-            case SPELLFAMILY_WARLOCK:
-            {
-                // Drain Soul
-                if (spellProto->SpellFamilyFlags & UI64LIT(0x0000000000004000))
-                {
-                    if (target->GetHealth() * 100 / target->GetMaxHealth() <= 25)
-                        m_modifier.m_amount *= 4;
                 }
                 break;
             }
@@ -6619,8 +6677,6 @@ void Aura::HandleShapeshiftBoosts(bool apply)
             {
                 Unit::AuraList const& ShapeShifterAuras = target->GetAurasByType(SPELL_AURA_DUMMY);
                 for(Unit::AuraList::const_iterator i = ShapeShifterAuras.begin(); i != ShapeShifterAuras.end(); ++i)
-                // if we get a crash here, it should've been:
-                // for(Unit::AuraList::const_iterator i = ShapeShifterAuras.begin(); i != ShapeShifterAuras.end(); i++)
                 {
                     if ((*i)->GetSpellProto()->SpellIconID == 2851)
                     {
@@ -6648,8 +6704,6 @@ void Aura::HandleShapeshiftBoosts(bool apply)
             {
                 Unit::AuraList const& dummyAuras = target->GetAurasByType(SPELL_AURA_DUMMY);
                 for(Unit::AuraList::const_iterator i = dummyAuras.begin(); i != dummyAuras.end(); ++i)
-                // if we get a crash here, it should've been:
-                // for(Unit::AuraList::const_iterator i = dummyAuras.begin(); i != dummyAuras.end(); i++)
                 {
                     if ((*i)->GetSpellProto()->SpellFamilyName==SPELLFAMILY_DRUID &&
                         (*i)->GetSpellProto()->SpellIconID == 2855)
@@ -6673,21 +6727,21 @@ void Aura::HandleShapeshiftBoosts(bool apply)
             }
 
             // Improved Barkskin - apply/remove armor bonus due to shapeshift remove
-            if (((Player*)m_target)->HasSpell(63410) || ((Player*)m_target)->HasSpell(63411))
+            if (((Player*)target)->HasSpell(63410) || ((Player*)target)->HasSpell(63411))
             {
                 if (form == FORM_TRAVEL)
                 {
-                    m_target->RemoveAurasDueToSpell(66530);
-                    m_target->CastSpell(m_target,66530,true);
+                    target->RemoveAurasDueToSpell(66530);
+                    target->CastSpell(target,66530,true);
                 }
                 else
-                    m_target->RemoveAurasDueToSpell(66530);
+                    target->RemoveAurasDueToSpell(66530);
             }
 
             // Survival of the Fittest (Armor part)
             if (form == FORM_BEAR || form == FORM_DIREBEAR)
             {
-                Unit::AuraList const& modAuras = m_target->GetAurasByType(SPELL_AURA_MOD_TOTAL_STAT_PERCENTAGE);
+                Unit::AuraList const& modAuras = target->GetAurasByType(SPELL_AURA_MOD_TOTAL_STAT_PERCENTAGE);
                 for (Unit::AuraList::const_iterator i = modAuras.begin(); i != modAuras.end(); ++i)
                 {
                     if ((*i)->GetSpellProto()->SpellFamilyName==SPELLFAMILY_DRUID &&
@@ -6695,7 +6749,7 @@ void Aura::HandleShapeshiftBoosts(bool apply)
                     {
                         int32 bp = (*i)->GetSpellProto()->CalculateSimpleValue(EFFECT_INDEX_2);
                         if (bp)
-                            m_target->CastCustomSpell(m_target, 62069, &bp, NULL, NULL, true, NULL, this);
+                            target->CastCustomSpell(target, 62069, &bp, NULL, NULL, true, NULL, this);
                         break;
                     }
                 }
@@ -6786,10 +6840,10 @@ void Aura::HandleShapeshiftBoosts(bool apply)
                 ++itr;
         }
         // Improved Barkskin - apply/remove armor bonus due to shapeshift
-        if (((Player*)m_target)->HasSpell(63410) || ((Player*)m_target)->HasSpell(63411))
+        if (((Player*)target)->HasSpell(63410) || ((Player*)target)->HasSpell(63411))
         {
-            m_target->RemoveAurasDueToSpell(66530);
-            m_target->CastSpell(m_target,66530,true);
+            target->RemoveAurasDueToSpell(66530);
+            target->CastSpell(target,66530,true);
         }
     }
 }
@@ -7495,13 +7549,13 @@ void Aura::HandleAuraAllowFlight(bool apply, bool Real)
     WorldPacket data;
     if(apply)
     {
-        ((Player*)m_target)->SetCanFly(true);
+        ((Player*)GetTarget())->SetCanFly(true);
         data.Initialize(SMSG_MOVE_SET_CAN_FLY, 12);
     }
     else
     {
         data.Initialize(SMSG_MOVE_UNSET_CAN_FLY, 12);
-        ((Player*)m_target)->SetCanFly(false);
+        ((Player*)GetTarget())->SetCanFly(false);
     }
     data << GetTarget()->GetPackGUID();
     data << uint32(0);                                      // unk
@@ -7721,6 +7775,9 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
                         // +75% from spell power
                         DoneActualBenefit = caster->SpellBaseHealingBonusDone(GetSpellSchoolMask(spellProto)) * 0.75f;
                     }
+					case SPELLFAMILY_GENERIC:
+					if (GetId()==70845)
+					    DoneActualBenefit = caster->GetMaxHealth() * 0.2f;	
                     break;
                 default:
                     break;
@@ -8142,7 +8199,7 @@ void Aura::PeriodicTick()
 
             // calculate heal absorb and reduce healing
             uint32 absorb = 0;
-            pCaster->CalculateHealAbsorb(target, GetSpellProto(), pdamage, absorb);
+            pCaster->CalculateHealAbsorb(target, spellProto, pdamage, absorb);
 
             int32 gain = target->ModifyHealth(pdamage);
             SpellPeriodicAuraLogInfo pInfo(this, pdamage, (pdamage - uint32(gain)), absorb, 0, 0.0f, isCrit);
@@ -8718,25 +8775,25 @@ void Aura::PeriodicDummyTick()
                 case 66118:                                 // Leeching Swarm 10 man
                 case 68646:
                 {
-                    int32 damage = (m_modifier.m_amount * m_target->GetHealth()) / 100;
+                    int32 damage = (m_modifier.m_amount * target->GetHealth()) / 100;
                     if (damage < 250)
                         damage = 250;
                     int32 heal = damage * 68 / 100;
-                    m_target->CastCustomSpell(m_target, 66240, &damage, NULL, NULL, true, NULL, this);
+                    target->CastCustomSpell(target, 66240, &damage, NULL, NULL, true, NULL, this);
                     if (Unit* caster = GetCaster())
-                        m_target->CastCustomSpell(caster, 66125, &heal, NULL, NULL, true, NULL, this);
+                        target->CastCustomSpell(caster, 66125, &heal, NULL, NULL, true, NULL, this);
                     return;
                 }
                 case 67630:                                 // Leeching Swarm 25 man
                 case 68647:
                 {
-                    int32 damage = (m_modifier.m_amount * m_target->GetHealth()) / 100;
+                    int32 damage = (m_modifier.m_amount * target->GetHealth()) / 100;
                     if (damage < 250)
                         damage = 250;
                     int32 heal = damage * 155 / 100;
-                    m_target->CastCustomSpell(m_target, 66240, &damage, NULL, NULL, true, NULL, this);
+                    target->CastCustomSpell(target, 66240, &damage, NULL, NULL, true, NULL, this);
                     if (Unit* caster = GetCaster())
-                        m_target->CastCustomSpell(caster, 66125, &heal, NULL, NULL, true, NULL, this);
+                        target->CastCustomSpell(caster, 66125, &heal, NULL, NULL, true, NULL, this);
                     return;
                 }
 // Exist more after, need add later
@@ -8810,19 +8867,19 @@ void Aura::PeriodicDummyTick()
             switch (spell->Id)
             {
                 case 48018:
-                    GameObject* obj = m_target->GetGameObject(spell->Id);
+                    GameObject* obj = target->GetGameObject(spell->Id);
                     if (!obj)
                     {
-                         m_target->RemoveAurasDueToSpell(spell->Id);
-                         m_target->RemoveAurasDueToSpell(62388); 
+                         target->RemoveAurasDueToSpell(spell->Id);
+                         target->RemoveAurasDueToSpell(62388); 
                          return;
                     }
                     // We must take a range of teleport spell, not summon.
                     const SpellEntry* goToCircleSpell = sSpellStore.LookupEntry(48020);
-                    if (m_target->IsWithinDist(obj,GetSpellMaxRange(sSpellRangeStore.LookupEntry(goToCircleSpell->rangeIndex))))
-                        m_target->CastSpell(m_target, 62388, true);
+                    if (target->IsWithinDist(obj,GetSpellMaxRange(sSpellRangeStore.LookupEntry(goToCircleSpell->rangeIndex))))
+                        target->CastSpell(target, 62388, true);
                     else
-                        m_target->RemoveAurasDueToSpell(62388);
+                        target->RemoveAurasDueToSpell(62388);
             }
             break;
         case SPELLFAMILY_ROGUE:
@@ -8930,16 +8987,13 @@ void Aura::PeriodicDummyTick()
             // Hysteria
             if (spell->SpellFamilyFlags & UI64LIT(0x0000000020000000))
             {
-                uint32 deal = m_modifier.m_amount * m_target->GetMaxHealth() / 100;
-                m_target->DealDamage(m_target, deal, NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
-                m_target->SendSpellNonMeleeDamageLog(m_target, spell->Id, deal, SPELL_SCHOOL_MASK_NORMAL, 0, 0, false, 0, false);
+                uint32 deal = m_modifier.m_amount * target->GetMaxHealth() / 100;
+                target->DealDamage(target, deal, NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+                target->SendSpellNonMeleeDamageLog(target, spell->Id, deal, SPELL_SCHOOL_MASK_NORMAL, 0, 0, false, 0, false);
                 return;
             }
             // Summon Gargoyle
 //            if (spell->SpellFamilyFlags & UI64LIT(0x0000008000000000))
-//                return;
-            // Death Rune Mastery
-//            if (spell->SpellFamilyFlags & UI64LIT(0x0000000000004000))
 //                return;
             // Bladed Armor
             if (spell->SpellIconID == 2653)
@@ -8950,18 +9004,45 @@ void Aura::PeriodicDummyTick()
                 target->CastCustomSpell(target, 61217, &apBonus, &apBonus, NULL, true, NULL, this);
                 return;
             }
-            // Reaping
-//            if (spell->SpellIconID == 22)
-//                return;
-            // Blood of the North
-//            if (spell->SpellIconID == 30412)
-//                return;
-            // Hysteria
-            if (spell->SpellFamilyFlags & UI64LIT(0x0000000020000000))
+            // Death Rune Mastery
+            if (spell->SpellIconID == 2622)
             {
-                uint32 deal = m_modifier.m_amount * m_target->GetMaxHealth() / 100;
-                m_target->DealDamage(m_target, deal, NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
-                return;
+                if (target->GetTypeId() != TYPEID_PLAYER || target->isInCombat())
+                    return;
+
+                Player *player = (Player*)target;
+                for (uint32 i = 0; i < MAX_RUNES; ++i)
+                {
+                    if (!player->GetRuneCooldown(i))
+                    {
+                        RuneType type = player->GetBaseRune(i);
+                        if (player->GetCurrentRune(i) == RUNE_DEATH && (type == RUNE_FROST || type == RUNE_UNHOLY) && player->IsRuneConvertedBy(i, spell->Id))
+                        {
+                            player->ConvertRune(i, type);
+                            player->ClearConvertedBy(i);
+                        }
+                    }
+                }
+            }
+            // Blood of the North and Reaping
+            if (spell->SpellIconID == 3041 || spell->SpellIconID == 22)
+            {
+                if (target->GetTypeId() != TYPEID_PLAYER || target->isInCombat())
+                    return;
+
+                Player *player = (Player*)target;
+                for (uint32 i = 0; i < MAX_RUNES; ++i)
+                {
+                    if (!player->GetRuneCooldown(i) && player->IsRuneConvertedBy(i, spell->Id))
+                    {
+                        RuneType type = player->GetBaseRune(i);
+                        if (player->GetCurrentRune(i) == RUNE_DEATH && type == RUNE_BLOOD)
+                        {
+                            player->ConvertRune(i, type);
+                            player->ClearConvertedBy(i);
+                        }
+                    }
+                }
             }
             break;
         }
@@ -9029,10 +9110,6 @@ void Aura::HandleArenaPreparation(bool apply, bool Real)
         GetTarget()->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PREPARATION);
 }
 
-/**
- * Such auras are applied from a caster(=player) to a vehicle.
- * This has been verified using spell #49256
- */
 void Aura::HandleAuraControlVehicle(bool apply, bool Real)
 {
      if(!Real)
@@ -9091,7 +9168,7 @@ void Aura::HandleAuraConvertRune(bool apply, bool Real)
         {
             if (plr->GetCurrentRune(i) == runeFrom && !plr->GetRuneCooldown(i))
             {
-                plr->ConvertRune(i, runeTo);
+                plr->ConvertRune(i, runeTo, GetId());
                 break;
             }
         }
@@ -9103,6 +9180,7 @@ void Aura::HandleAuraConvertRune(bool apply, bool Real)
             if(plr->GetCurrentRune(i) == runeTo && plr->GetBaseRune(i) == runeFrom)
             {
                 plr->ConvertRune(i, runeFrom);
+                plr->ClearConvertedBy(i);
                 break;
             }
         }
@@ -9254,6 +9332,17 @@ bool Aura::IsCritFromAbilityAura(Unit* caster, uint32& damage)
         damage = caster->SpellCriticalDamageBonus(GetSpellProto(), damage, GetTarget());
         return true;
     }
+
+    // Special exception for Rupture spell, damage can crit after patch 3.3.3
+    if (m_spellProto->SpellFamilyName == SPELLFAMILY_ROGUE && m_spellProto->SpellFamilyFlags & UI64LIT(0x000000000000100000))
+    {
+        if(caster->IsSpellCrit(m_target, m_spellProto, GetSpellSchoolMask(m_spellProto)))
+        {
+            damage = caster->SpellCriticalDamageBonus(m_spellProto, damage, m_target);
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -9289,7 +9378,7 @@ void Aura::HandleAuraLinked(bool apply, bool Real)
     if (!Real)
         return;
 
-    uint32 linkedSpell = m_spellProto->EffectTriggerSpell[m_effIndex];
+    uint32 linkedSpell = GetSpellProto()->EffectTriggerSpell[m_effIndex];
     SpellEntry const *spellInfo = sSpellStore.LookupEntry(linkedSpell);
     if (!spellInfo)
     {
@@ -9298,9 +9387,9 @@ void Aura::HandleAuraLinked(bool apply, bool Real)
     }
 
     if (apply)
-        m_target->CastSpell(m_target, linkedSpell, true, NULL, this);
+        GetTarget()->CastSpell(GetTarget(), linkedSpell, true, NULL, this);
     else
-        m_target->RemoveAurasByCasterSpell(linkedSpell, GetCasterGUID());
+        GetTarget()->RemoveAurasByCasterSpell(linkedSpell, GetCasterGUID());
 }
 
 void Aura::HandleAuraOpenStable(bool apply, bool Real)
