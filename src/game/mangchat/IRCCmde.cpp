@@ -1,11 +1,11 @@
 /*
- * Dark-Ice Chat By |Death| And Cybrax, And continued by Xeross
+ * MangChat By |Death| And Cybrax, And continued by Xeross
  *
  * This Program Is Free Software; You Can Redistribute It And/Or Modify It Under The Terms
  * Of The GNU General Public License
  * Written and Developed by Cybrax. cybraxvd@gmail.com
  * |Death| <death@hell360.net>, Lice <lice@yeuxverts.net>, Dj_baby & Sanaell, Tase
- * Conversion to Dark-Ice Chat version 1.7.2 for Mangos 7252 by Shinzon <shinzon@wowgollum.com>
+ * Conversion to MangChat version 1.7.2 for Mangos 7252 by Shinzon <shinzon@wowgollum.com>
  * Continued by Xeross
  * With Help And Support From The MaNGOS Project Community.
  * PLEASE RETAIN THE COPYRIGHT OF THE AUTHORS.
@@ -58,7 +58,7 @@ void IRCCmd::Handle_Login(_CDATA *CD)
                         NewClient->UName    = MakeUpper(_PARAMS[0]);
                         NewClient->GMLevel  = fields[0].GetInt16();
                         _CLIENTS.push_back(NewClient);
-                        Send_IRCA(CD->USER, MakeMsg("You Are Now Logged In As %s, Welcome To Dark-Ice Chat Admin Mode.", _PARAMS[0].c_str()), true, CD->TYPE);
+                        Send_IRCA(CD->USER, MakeMsg("You Are Now Logged In As %s, Welcome To MangChat Admin Mode.", _PARAMS[0].c_str()), true, CD->TYPE);
 
                         if (sIRC._op_gm == 1 && GMLevel >= sIRC._op_gm_lev)
                         {
@@ -73,7 +73,7 @@ void IRCCmd::Handle_Login(_CDATA *CD)
         } else
             Send_IRCA(CD->USER, "\0034[ERROR] : You Are Already Logged In As "+ _PARAMS[0] +"!", true, "ERROR");
     } else
-        Send_IRCA(CD->USER, "\0034[ERROR] : Sorry You Are "+isbanned+". You Cannot Log In To Dark-Ice Chat "+CD->USER.c_str()+"!", true, "ERROR");
+        Send_IRCA(CD->USER, "\0034[ERROR] : Sorry You Are "+isbanned+". You Cannot Log In To MangChat "+CD->USER.c_str()+"!", true, "ERROR");
 }
 
 void IRCCmd::Handle_Logout(_CDATA *CD)
@@ -384,7 +384,7 @@ void IRCCmd::Help_IRC(_CDATA *CD)
                 QueryResult *result = WorldDatabase.PQuery("SELECT * FROM `IRC_Commands` WHERE `gmlevel` <= %u ORDER BY `Command`", GetLevel(CD->USER));
                 if (result)
                 {
-                    std::string output = "\002Dark-Ice Chat IRC Commands:\017 ";
+                    std::string output = "\002MangChat IRC Commands:\017 ";
                     for (uint64 i=0; i < result->GetRowCount(); i++)
                     {
                         Field *fields = result->Fetch();
@@ -424,7 +424,7 @@ void IRCCmd::Help_IRC(_CDATA *CD)
                 QueryResult *result = WorldDatabase.PQuery("SELECT * FROM `IRC_Commands` WHERE `gmlevel` = 0 ORDER BY `Command`");
                 if (result)
                 {
-                    std::string output = "\002Dark-Ice Chat IRC Commands:\017 ";
+                    std::string output = "\002MangChat IRC Commands:\017 ";
                     for (uint64 i=0; i < result->GetRowCount(); i++)
                     {
                         Field *fields = result->Fetch();
@@ -800,7 +800,7 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
             plguid = sObjectMgr.GetPlayerGUIDByName(_PARAMS[1].c_str());
         if (plguid > 0)
         {
-            QueryResult *result = CharacterDatabase.PQuery("SELECT guid, account, name, race, class, online, level, xp, money, totalKills, totaltime FROM characters WHERE guid =%i", plguid);
+            QueryResult *result = CharacterDatabase.PQuery("SELECT guid, account, name, race, class, online, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 35), ' ' , -1) AS level, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 238), ' ' , -1) AS guildid, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 239), ' ' , -1) AS guildrank, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 927), ' ' , -1) AS xp, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 928), ' ' , -1) AS maxxp, SUBSTRING_INDEX(SUBSTRING_INDEX(data, ' ' , 1462), ' ' , -1) AS gold, SUBSTRING_INDEX(SUBSTRING_INDEX(`data`, ' ' , 1454), ' ' , -1) AS hk, totaltime FROM characters WHERE guid =%i", plguid);
             uint32 latency = 0;
             Player *chr = sObjectMgr.GetPlayer(plguid);
             if (chr)
@@ -819,23 +819,34 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
                 uint32 pclassid = fields[4].GetUInt32();
                 std::string ponline = (fields[5].GetInt32() == 1 ? "\x3\x30\x33Online" : "\x3\x30\x34Offline\xF");
                 std::string plevel = fields[6].GetCppString();
-                std::string pxp = fields[7].GetCppString();
-                unsigned int money = fields[8].GetInt32();
-                std::string hk = fields[9].GetCppString();
+                uint32 pguildid = fields[7].GetUInt32();
+                uint32 pguildrank = fields[8].GetUInt32();
+                std::string pxp = fields[9].GetCppString();
+                std::string pmaxxp = fields[10].GetCppString();
                 unsigned int money = fields[11].GetInt32();
-
+                std::string hk = fields[12].GetCppString();
+                std::string totaltim = SecToDay(fields[13].GetCppString());
                 delete result;
                 std::string sqlquery = "SELECT `gmlevel` FROM `account` WHERE `id` = '" + pacct + "';";
                 QueryResult *result = loginDatabase.Query(sqlquery.c_str());
                 Field *fields2 = result->Fetch();
                 std::string pgmlvl = fields2[0].GetCppString();
                 delete result;
-
+                std::string guildinfo = "";
+                if (pguildid != 0)
+                {
+                    Guild* guild = sObjectMgr.GetGuildById(pguildid);
+                    if (guild)
+                    {
+                        guildinfo = " " + guild->GetRankName(pguildrank) + " Of " + guild->GetName();
+                    }
+                }
+                else guildinfo = " None";
                 ChrRacesEntry const* prace = sChrRacesStore.LookupEntry(praceid);
                 ChrClassesEntry const* pclass = sChrClassesStore.LookupEntry(pclassid);
 
                 if (atoi(plevel.c_str()) < sWorld.getConfig(CONFIG_UINT32_MAX_PLAYER_LEVEL))
-                    plevel += " (" + pxp + ")";
+                    plevel += " (" + pxp + "/" + pmaxxp + ")";
                 unsigned int gold = money / 10000;
                 unsigned int silv = (money % 10000) / 100;
                 unsigned int cop = (money % 10000) % 100;
@@ -856,7 +867,7 @@ void IRCCmd::Lookup_Player(_CDATA *CD)
                     }
                 }
                 std::string pinfo  = "\x2 About Player:\x3\x31\x30 " +pname+ "\xF |\x2 GM Level:\x3\x31\x30 " +pgmlvl+ "\xF |\x2 AcctID:\x3\x31\x30 " +pacct+ "\xF |\x2 CharID:\x3\x31\x30 " +pguid+ " \xF |\x2 Played Time:\x2\x3\x31\x30 " +totaltim.c_str()+" \xF |\x2 Latency:\x2\x3\x31\x30 "+templatency;
-                std::string pinfo2 = "\x2 Race:\x2\x3\x31\x30 " + (std::string)prace->name[sWorld.GetDefaultDbcLocale()] + "\xF |\x2 Class:\x2\x3\x31\x30 " + (std::string)pclass->name[sWorld.GetDefaultDbcLocale()] + "\xF |\x2 Level:\x2\x3\x31\x30 " + plevel + "\xF |\x2 Money:\x2 " + tempgold + "\xF |\x2 Guild Info:\x2\x3\x31\x30 "+guildinfo+"\xF |\x2 Status:\x2 " + ponline;
+                std::string pinfo2 = "\x2 Level:\x2\x3\x31\x30 " + plevel + "\xF |\x2 Money:\x2 " + tempgold + "\xF |\x2 Guild Info:\x2\x3\x31\x30 "+guildinfo+"\xF |\x2 Status:\x2 " + ponline;
                 //        pinfo3 = " :" + " \x2Honor Kills:\x2\x3\x31\x30 " + hk;
                 Send_IRCA(ChanOrPM(CD),pinfo , true, CD->TYPE);
                 Send_IRCA(ChanOrPM(CD),pinfo2 , true, CD->TYPE);
@@ -1329,7 +1340,7 @@ void IRCCmd::Money_Player(_CDATA *CD)
             moneyuser = chr->GetMoney();
         else {
             CharacterDatabase.escape_string(player);
-            std::string sqlquery = "SELECT `money` FROM `characters` WHERE `name` = '"+player+"';";
+            std::string sqlquery = "SELECT SUBSTRING_INDEX(SUBSTRING_INDEX(data, ' ' , 1462), ' ' , -1) AS `gold` FROM `characters` WHERE `name` = '"+player+"';";
             QueryResult *result = CharacterDatabase.Query(sqlquery.c_str());
             Field *fields = result->Fetch();
             moneyuser = fields[0].GetInt32();
@@ -1340,42 +1351,42 @@ void IRCCmd::Money_Player(_CDATA *CD)
         char s_newmoney[255];
         sprintf(s_newmoney,"%d",newmoney);
         if (addmoney < 0)
-          {
-              sLog.outDetail("USER1: %i, ADD: %i, DIF: %i\\n", moneyuser, addmoney, newmoney);
-              if(newmoney <= 0 )
-              {
-                  Send_IRCA(ChanOrPM(CD), "\00313["+player+"] : Has Had All Money Taken By: "+CD->USER.c_str()+".", true, CD->TYPE);
-                  if(chr)
-                  {
-                      chr->SetMoney(0);
-                      Send_Player(chr, MakeMsg("You Have Been Liquidated By: %s. Total Money Is Now 0.", CD->USER.c_str()));
-                  }
-                  else
-                      CharacterDatabase.PExecute("UPDATE `characters` SET `money` where guid='%u'",newmoney, guid );
-              }
-              else
-              {
-                  Send_IRCA(ChanOrPM(CD), "\00313["+player+"] : Has Had ("+s_money+"\00313) Taken From Them By: "+CD->USER.c_str()+".", true, CD->TYPE);
-                  if(chr)
-                  {
-                      chr->SetMoney( newmoney );
-                      Send_Player(chr, MakeMsg("You Have Had %s Copper Taken From You By: %s.", _PARAMS[1].c_str(), CD->USER.c_str()));
-                  }
-                  else
-                      CharacterDatabase.PExecute("UPDATE `characters` SET `money` where guid='%u'",newmoney, guid );
-              }
+        {
+            sLog.outDetail("USER1: %i, ADD: %i, DIF: %i\\n", moneyuser, addmoney, newmoney);
+            if (newmoney <= 0 )
+            {
+                Send_IRCA(ChanOrPM(CD), "\00313["+player+"] : Has Had All Money Taken By: "+CD->USER.c_str()+".", true, CD->TYPE);
+                if (chr)
+                {
+                    chr->SetMoney(0);
+                    Send_Player(chr, MakeMsg("You Have Been Liquidated By: %s. Total Money Is Now 0.", CD->USER.c_str()));
+                }
+                else
+                    CharacterDatabase.PExecute("UPDATE `characters` SET data=concat(substring_index(data,' ',1462-1),' ','%u',' ', right(data,length(data)-length(substring_index(data,' ',1462))-1) ) where guid='%u'",newmoney, guid );
             }
             else
             {
-              Send_IRCA(ChanOrPM(CD), "\00313["+player+"] : Has Been Given ("+tempgold+"\00313) From: "+CD->USER.c_str()+".", true, CD->TYPE);
-              if(chr)
-              {
+                Send_IRCA(ChanOrPM(CD), "\00313["+player+"] : Has Had ("+s_money+"\00313) Taken From Them By: "+CD->USER.c_str()+".", true, CD->TYPE);
+                if (chr)
+                {
+                    chr->SetMoney( newmoney );
+                    Send_Player(chr, MakeMsg("You Have Had %s Copper Taken From You By: %s.", _PARAMS[1].c_str(), CD->USER.c_str()));
+                }
+                else
+                    CharacterDatabase.PExecute("UPDATE `characters` SET data=concat(substring_index(data,' ',1462-1),' ','%u',' ', right(data,length(data)-length(substring_index(data,' ',1462))-1) ) where guid='%u'",newmoney, guid );
+            }
+        }
+        else
+        {
+            Send_IRCA(ChanOrPM(CD), "\00313["+player+"] : Has Been Given ("+tempgold+"\00313) From: "+CD->USER.c_str()+".", true, CD->TYPE);
+            if (chr)
+            {
                 chr->ModifyMoney( addmoney );
                 Send_Player(chr, MakeMsg("You Have Been Given %s Copper. From: %s.", _PARAMS[1].c_str(), CD->USER.c_str()));
-              }
-              else
-                CharacterDatabase.PExecute("UPDATE `characters` SET `money` where guid='%u'",newmoney, guid );
             }
+            else
+                CharacterDatabase.PExecute("UPDATE `characters` SET data=concat(substring_index(data,' ',1462-1),' ','%u',' ', right(data,length(data)-length(substring_index(data,' ',1462))-1) ) where guid='%u'",newmoney, guid );
+        }
     }
 }
 

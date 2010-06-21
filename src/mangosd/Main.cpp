@@ -79,7 +79,8 @@ extern int main(int argc, char **argv)
 
     //char *leak = new char[1000];                          // test leak detection
 
-    ///- Command line parsing
+    ///- Command line parsing to get the configuration file name
+    char const* mc_cfg_file = _MANGCHAT_CONFIG;
     char const* cfg_file = _MANGOSD_CONFIG;
 
 #ifdef WIN32
@@ -121,60 +122,46 @@ extern int main(int argc, char **argv)
             return 0;
         }
 
-    ACE_Get_Opt cmd_opts(argc, argv, options);
-    cmd_opts.long_option("version", 'v');
-
-    int option;
-    while ((option = cmd_opts()) != EOF)
-    {
-        switch (option)
+        #ifdef WIN32
+        ////////////
+        //Services//
+        ////////////
+        if( strcmp(argv[c],"-s") == 0)
         {
-            case 'c':
-                cfg_file = cmd_opts.opt_arg();
-                break;
-            case 'v':
-                printf("%s\n", _FULLVERSION(REVISION_DATE,REVISION_TIME,REVISION_NR,REVISION_ID));
-                return 0;
-#ifdef WIN32
-            case 's':
+            if( ++c >= argc )
             {
-                const char *mode = cmd_opts.opt_arg();
-
-                if (!strcmp(mode, "install"))
-                {
-                    if (WinServiceInstall())
-                        sLog.outString("Installing service");
-                    return 1;
-                }
-                else if (!strcmp(mode, "uninstall"))
-                {
-                    if (WinServiceUninstall())
-                        sLog.outString("Uninstalling service");
-                    return 1;
-                }
-                else if (!strcmp(mode, "run"))
-                    WinServiceRun();
-                else
-                {
-                    sLog.outError("Runtime-Error: -%c unsupported argument %s", cmd_opts.opt_opt(), mode);
-                    usage(argv[0]);
-                    Log::WaitBeforeContinueIfNeed();
-                    return 1;
-                }
-                break;
+                sLog.outError("Runtime-Error: -s option requires an input argument");
+                usage(argv[0]);
+                Log::WaitBeforeContinueIfNeed();
+                return 1;
             }
-#endif
-            case ':':
-                sLog.outError("Runtime-Error: -%c option requires an input argument", cmd_opts.opt_opt());
+            if( strcmp(argv[c],"install") == 0)
+            {
+                if (WinServiceInstall())
+                    sLog.outString("Installing service");
+                return 1;
+            }
+            else if( strcmp(argv[c],"uninstall") == 0)
+            {
+                if(WinServiceUninstall())
+                    sLog.outString("Uninstalling service");
+                return 1;
+            }
+            else
+            {
+                sLog.outError("Runtime-Error: unsupported option %s",argv[c]);
                 usage(argv[0]);
                 Log::WaitBeforeContinueIfNeed();
                 return 1;
-            default:
-                sLog.outError("Runtime-Error: bad format of commandline arguments");
-                usage(argv[0]);
-                Log::WaitBeforeContinueIfNeed();
-                return 1;
+            }
         }
+        if( strcmp(argv[c],"--service") == 0)
+        {
+            WinServiceRun();
+        }
+        ////
+        #endif
+        ++c;
     }
 
     if (!sConfig.SetSource(cfg_file))
@@ -185,27 +172,28 @@ extern int main(int argc, char **argv)
         return 1;
     }
 
-    sIRC.SetCfg(mc_cfg_file);
+		sIRC.SetCfg(mc_cfg_file);
 
-    sLog.outString( "%s [world-daemon]", _FULLVERSION(REVISION_DATE,REVISION_TIME,REVISION_NR,REVISION_ID) );
-    sLog.outString( "<Ctrl-C> to stop.\n\n" );
+		sLog.outString( "%s [world-daemon]", _FULLVERSION(REVISION_DATE,REVISION_TIME,REVISION_NR,REVISION_ID) );
+		sLog.outString( "<Ctrl-C> to stop.\n\n" );
 
-    sLog.outTitle( "                         P   R   O   J   E   C   T                             ");	
-    sLog.outTitle( "                                                                               ");	
-    sLog.outTitle( ":::::::::      :::     :::::::::  :::    :::  ::::::::::: ::::::::  :::::::::: ");
-	sLog.outTitle( ":+:    :+:   :+: :+:   :+:    :+: :+:   :+:       :+:    :+:    :+: :+:        ");
-	sLog.outTitle( "+:+    +:+  +:+   +:+  +:+    +:+ +:+  +:+        +:+    +:+        +:+        ");
-    sLog.outTitle( "+#+    +:+ +#++:++#++: +#++:++#:  +#++:++         +#+    +#+        +#++:++#   ");
-    sLog.outTitle( "+#+    +#+ +#+     +#+ +#+    +#+ +#+  +#+        +#+    +#+        +#+        ");
-    sLog.outTitle( "#+#    #+# #+#     #+# #+#    #+# #+#   #+#       #+#    #+#    #+# #+#        ");
-    sLog.outTitle( "#########  ###     ### ###    ### ###    ###  ########### ########  ########## ");
-    sLog.outTitle( "                                                                               ");	
-	sLog.outTitle( "GIT: Github.com/Darkrulerz/Core     		                                   ");
-    sLog.outTitle( "                                                                               ");
-	sLog.outTitle( "Project Dark-iCE: http://projectdarkice.clanice.com                            ");
-    sLog.outTitle( "                                                                               ");
-	sLog.outString("Running on Revision %s.", cfg_file);
-	printf("%s\n", _FULLVERSION(REVISION_DATE,REVISION_TIME,REVISION_NR,REVISION_ID));
+		sLog.outTitle( "                         P   R   O   J   E   C   T                             ");	
+		sLog.outTitle( "                                                                               ");	
+		sLog.outTitle( ":::::::::      :::     :::::::::  :::    :::  ::::::::::: ::::::::  :::::::::: ");
+		sLog.outTitle( ":+:    :+:   :+: :+:   :+:    :+: :+:   :+:       :+:    :+:    :+: :+:        ");
+		sLog.outTitle( "+:+    +:+  +:+   +:+  +:+    +:+ +:+  +:+        +:+    +:+        +:+        ");
+		sLog.outTitle( "+#+    +:+ +#++:++#++: +#++:++#:  +#++:++         +#+    +#+        +#++:++#   ");
+		sLog.outTitle( "+#+    +#+ +#+     +#+ +#+    +#+ +#+  +#+        +#+    +#+        +#+        ");
+		sLog.outTitle( "#+#    #+# #+#     #+# #+#    #+# #+#   #+#       #+#    #+#    #+# #+#        ");
+		sLog.outTitle( "#########  ###     ### ###    ### ###    ###  ########### ########  ########## ");
+		sLog.outTitle( "                                                                               ");	
+		sLog.outTitle( "GIT: Github.com/Darkrulerz/Core     		                                   ");
+		sLog.outTitle( "                                                                               ");
+		sLog.outTitle( "Project Dark-iCE: http://projectdarkice.clanice.com                            ");
+		sLog.outTitle( "                                                                               ");
+		sLog.outString("Running on Revision %s.", cfg_file);
+		printf("%s\n", _FULLVERSION(REVISION_DATE,REVISION_TIME,REVISION_NR,REVISION_ID));
+
 
     DETAIL_LOG("%s (Library: %s)", OPENSSL_VERSION_TEXT, SSLeay_version(SSLEAY_VERSION));
     if (SSLeay() < 0x009080bfL )

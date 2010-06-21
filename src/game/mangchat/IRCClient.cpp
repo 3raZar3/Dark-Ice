@@ -36,18 +36,18 @@ IRCClient::~IRCClient(){}
 // ZThread Entry This function is called when the thread is created in Master.cpp (mangosd)
 void IRCClient::run()
 {
-    sIRC.iLog.WriteLog(" %s : ****** MaNGOS With Dark-Ice Chat Has Been Started ******", sIRC.iLog.GetLogDateTimeStr().c_str());
+    sIRC.iLog.WriteLog(" %s : ****** Dark-Ice Chat Has Been Started ******", sIRC.iLog.GetLogDateTimeStr().c_str());
 
     // Before we begin we wait a while MaNGOS is still starting up.
     ACE_Based::Thread::Sleep(500);
     sLog.outString("\n%s\n%s\n%s\n%s\n%s\n%s\n%s",
-        "***************************************",
-        "**     Dark-Ice Chat IRC Client      **",
-        "**     With Enhanced GM Control.     **",
-        "**        Updated by 3raZar3         **",
-        "**   http://clanice.game-host.org    **",
-        "***************************************");
-        " ** Dark-Ice Chat: %s ** ", sIRC._Mver.c_str());
+        " ***************************************** ",
+        "**    Dark-Ice integrated IRC Client     **",
+        "**  Built exclusively for Dark-iCE Core  **",
+        "**        Maintained by 3raZar3          **",
+        "**     http://clanice.game-host.org      **",
+        " ***************************************** ",
+        "  **        Dark-Ice Chat: v1.8        **  ");
     int cCount = 0;
     // Clean Up MySQL Tables
     sLog.outString("*** Dark-Ice Chat Cleaning Up Inchan Table*");
